@@ -1,0 +1,10 @@
+github.com/jameswhoughton/migrate v0.0.0-20241025154145-1cac7cf62775 h1:djdpBT+6St2L7LfIi+yBTnzCm2AgRCZWcE86ounmdFM=
+github.com/jameswhoughton/migrate v0.0.0-20241025154145-1cac7cf62775/go.mod h1:y0p7539Mix+RIxAJQrN85fV4CWFGvn6e1nkfv0syRFU=
+github.com/jameswhoughton/migrate v0.0.0-20241026185909-40710d324260 h1:HG7BzVeWUef546ReFUwWysOnfVLc421unfSvji+RAQg=
+github.com/jameswhoughton/migrate v0.0.0-20241026185909-40710d324260/go.mod h1:y0p7539Mix+RIxAJQrN85fV4CWFGvn6e1nkfv0syRFU=
+github.com/jameswhoughton/migrate v0.0.0-20241106214517-ffb38f905042 h1:Evv34BzyNyuQvReK63y6bp0gleud5fBH5x77WF4Qphg=
+github.com/jameswhoughton/migrate v0.0.0-20241106214517-ffb38f905042/go.mod h1:y0p7539Mix+RIxAJQrN85fV4CWFGvn6e1nkfv0syRFU=
+github.com/jameswhoughton/migrate v0.0.0-20241109204654-71e186e5a03c h1:T35ZuLxuQSrVAC0Cz+0tnDmyIn2MfsD6r0kpZikEly4=
+github.com/jameswhoughton/migrate v0.0.0-20241109204654-71e186e5a03c/go.mod h1:y0p7539Mix+RIxAJQrN85fV4CWFGvn6e1nkfv0syRFU=
+github.com/mattn/go-sqlite3 v1.14.22 h1:2gZY6PC6kBnID23Tichd1K+Z0oS6nE/XwU+Vz/5o4kU=
+github.com/mattn/go-sqlite3 v1.14.22/go.mod h1:Uh1q+B4BYcTPb+yiD3kU8Ct7aC0hY9fxUwlHK0RXw+Y=
