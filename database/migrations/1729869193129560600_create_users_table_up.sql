@@ -1,0 +1,6 @@
+CREATE TABLE users (
+	id INTEGER PRIMARY KEY,
+	email TEXT NOT NULL, 
+        password TEXT NOT NULL,
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)

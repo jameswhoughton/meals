@@ -1,2 +1,9 @@
+# binaries
 createmigration
+meals_server
+
+# Database
 meals.db
+
+# Dependencies
+node_modules

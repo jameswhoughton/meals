@@ -1,0 +1,12 @@
+{{define "body"}}
+<div class="flex w-full grow items-center justify-center"> 
+    <div class="flex flex-col gap-3 w-full items-center">
+        <div class="p-5 bg-zinc-800 rounded-md shadow-lg max-w-[400px] w-full">
+            {{template "yield" .}}
+        </div>
+        <div>
+            {{template "formFooter" .}}
+        </div>
+    </div>
+</div>
+{{end}}

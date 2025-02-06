@@ -30,12 +30,15 @@
 
 ## Endpoints
 - GET /
+    - redirect to /login if not authed
     - shows current mealplan for the week
     - individual or multiple days can be generated or edited
     - each day can have parameters to generate a meal (e.g. quick/family)
     - typeahead to select meals
     - button to create meal
     - calendar to select week (can select future dates)
+- GET /login
+- GET /register
 - POST /plan/{DATE}
     - save meal for a date 
 - GET /meals - meal list page
@@ -69,6 +72,5 @@
 
 
 ## Stretch goals
-- User accounts (make public)
-    - Defaults for daily meal requirements
+- Defaults for daily meal requirements
 - Import/export meals

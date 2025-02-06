@@ -1,0 +1,23 @@
+{{define "layout"}}
+<html !DOCTYPE html>
+
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>{{.Title}}</title>
+
+    <link href="/static/main.css" rel="stylesheet">
+</head>
+
+<body class="flex flex-col w-screen min-h-screen bg-zinc-900 text-slate-300">
+    {{template "navigation" .}}
+    <div class="p-4">
+        {{template "body" .}}
+    </div>
+</body>
+
+</html>
+{{end}}
+
+{{define "body"}}
+<h1>Default Layout</h1>
+{{end}}

@@ -8,3 +8,5 @@ github.com/jameswhoughton/migrate v0.0.0-20241109204654-71e186e5a03c h1:T35ZuLxu
 github.com/jameswhoughton/migrate v0.0.0-20241109204654-71e186e5a03c/go.mod h1:y0p7539Mix+RIxAJQrN85fV4CWFGvn6e1nkfv0syRFU=
 github.com/mattn/go-sqlite3 v1.14.22 h1:2gZY6PC6kBnID23Tichd1K+Z0oS6nE/XwU+Vz/5o4kU=
 github.com/mattn/go-sqlite3 v1.14.22/go.mod h1:Uh1q+B4BYcTPb+yiD3kU8Ct7aC0hY9fxUwlHK0RXw+Y=
+golang.org/x/crypto v0.32.0 h1:euUpcYgM8WcP71gNpTqQCn6rC2t6ULUPiOzfWaXVVfc=
+golang.org/x/crypto v0.32.0/go.mod h1:ZnnJkOaASj8g0AjIduWNlq2NRxL0PlBrbKVyZ6V/Ugc=
