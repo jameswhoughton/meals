@@ -1,4 +1,4 @@
-package web
+package helpers
 
 import (
 	"encoding/base64"
@@ -12,7 +12,7 @@ func TestSetMessageAddsCookieWithMessageToResponse(t *testing.T) {
 
 	cookieValue := "A message about something"
 
-	setMessage(response, "test-key", cookieValue)
+	SetMessage(response, "test-key", cookieValue)
 
 	cookies := response.Result().Cookies()
 
@@ -39,7 +39,7 @@ func TestGetMessageRetrievesMessageAndRemovesCookie(t *testing.T) {
 		Value: base64.StdEncoding.EncodeToString([]byte(cookieValue)),
 	})
 
-	message, err := getMessage(response, request, cookieKey)
+	message, err := GetMessage(response, request, cookieKey)
 
 	if err != nil {
 		t.Fatal(err)

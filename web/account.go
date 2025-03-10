@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	meals "github.com/jameswhoughton/meals"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func getRegistrationHandler(templateFiles fs.FS) http.Handler {
@@ -28,17 +27,24 @@ func postRegistrationHandler(userService meals.UserService) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 
-		hash, err := bcrypt.GenerateFromPassword([]byte(r.FormValue("password")), bcrypt.MinCost)
-		if err != nil {
-			log.Println(err)
+		form := meals.UserForm{
+			Email:           r.FormValue("email"),
+			Password:        r.FormValue("password"),
+			PasswordConfirm: r.FormValue("passwordConfirm"),
+			Name:            r.FormValue("name"),
 		}
 
-		user := meals.User{
-			Email:    r.FormValue("email"),
-			Password: string(hash),
+		if !form.Validate(userService) {
+			errorJson, _ := json.Marshal(form.Errors)
+			setMessage(w, "errors", string(errorJson))
+
+			http.Redirect(w, r, "/register", http.StatusFound)
+
+			return
+
 		}
 
-		_, err = userService.Add(user)
+		_, err := userService.Add(form)
 
 		if err != nil {
 			log.Fatal(err)
@@ -50,7 +56,7 @@ func postRegistrationHandler(userService meals.UserService) http.Handler {
 	})
 }
 
-func getAccountHandler(templateFiles fs.FS, userService meals.UserService) http.Handler {
+func getAccountHandler(templateFiles fs.FS, sessionService meals.SessionService) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(templateFiles, "templates/layout.gohtml", "templates/navigation.gohtml", "templates/account.gohtml")
 
@@ -67,7 +73,7 @@ func getAccountHandler(templateFiles fs.FS, userService meals.UserService) http.
 			http.Error(w, "server error", http.StatusInternalServerError)
 		}
 
-		user, err := userService.GetFromSessionId(session.Value)
+		user, err := sessionService.GetUser(session.Value)
 
 		if err != nil {
 			log.Println(err)
@@ -78,7 +84,7 @@ func getAccountHandler(templateFiles fs.FS, userService meals.UserService) http.
 			Title   string
 			Email   string
 			Success string
-			Errors  formErrors
+			Errors  map[string]string
 		}
 
 		success, err := getMessage(w, r, "success")
@@ -95,7 +101,7 @@ func getAccountHandler(templateFiles fs.FS, userService meals.UserService) http.
 			http.Error(w, "server error", http.StatusInternalServerError)
 		}
 
-		formErrors := formErrors{}
+		formErrors := map[string]string{}
 
 		json.Unmarshal([]byte(errorJson), &formErrors)
 
@@ -112,41 +118,7 @@ func getAccountHandler(templateFiles fs.FS, userService meals.UserService) http.
 	})
 }
 
-type formErrors struct {
-	Password string `json:"password"`
-	Email    string `json:"email"`
-}
-
-type userForm struct {
-	password        string
-	passwordConfirm string
-	email           string
-	errors          formErrors
-}
-
-func (uf *userForm) isValid(currentUser meals.User, userService meals.UserService) bool {
-	if uf.password != uf.passwordConfirm {
-		uf.errors.Password = "password and confirm do not match"
-
-		return false
-	}
-
-	if currentUser.Email == uf.email {
-		return true
-	}
-
-	existingUser, _ := userService.GetFromEmail(uf.email)
-
-	if existingUser.Id > 0 {
-		uf.errors.Email = "email already in use"
-
-		return false
-	}
-
-	return true
-}
-
-func putAccountHandler(userService meals.UserService) http.Handler {
+func putAccountHandler(userService meals.UserService, sessionService meals.SessionService) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		session, err := r.Cookie("session")
 
@@ -157,7 +129,7 @@ func putAccountHandler(userService meals.UserService) http.Handler {
 			return
 		}
 
-		user, err := userService.GetFromSessionId(session.Value)
+		user, err := sessionService.GetUser(session.Value)
 
 		if err != nil {
 			log.Println(err)
@@ -168,14 +140,15 @@ func putAccountHandler(userService meals.UserService) http.Handler {
 
 		r.ParseForm()
 
-		form := userForm{
-			password:        r.FormValue("password"),
-			passwordConfirm: r.FormValue("passwordConfirm"),
-			email:           r.FormValue("email"),
+		form := meals.UserForm{
+			Password:        r.FormValue("password"),
+			PasswordConfirm: r.FormValue("passwordConfirm"),
+			Email:           r.FormValue("email"),
+			Name:            r.FormValue("name"),
 		}
 
-		if !form.isValid(user, userService) {
-			errorJson, _ := json.Marshal(form.errors)
+		if !form.Validate(user, userService) {
+			errorJson, _ := json.Marshal(form.Errors)
 			setMessage(w, "errors", string(errorJson))
 
 			http.Redirect(w, r, "/account", http.StatusFound)
@@ -183,27 +156,10 @@ func putAccountHandler(userService meals.UserService) http.Handler {
 			return
 		}
 
-		if form.password != "" {
-			hash, err := bcrypt.GenerateFromPassword([]byte(form.password), bcrypt.MinCost)
-			if err != nil {
-				log.Println(err)
-			}
+		err = userService.Update(user.Id, form)
 
-			err = userService.UpdatePassword(user, string(hash))
-
-			if err != nil {
-				log.Println(err)
-				http.Error(w, "server error", http.StatusInternalServerError)
-			}
-		}
-
-		if user.Email != form.email {
-			err = userService.UpdateEmail(user, form.email)
-
-			if err != nil {
-				log.Println(err)
-				http.Error(w, "server error", http.StatusInternalServerError)
-			}
+		if err != nil {
+			http.Error(w, "server error", http.StatusInternalServerError)
 		}
 
 		setMessage(w, "success", "you account has been updated")

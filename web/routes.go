@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/jameswhoughton/meals"
+	"github.com/jameswhoughton/meals/internal/auth"
 )
 
 //go:embed templates/*.gohtml
@@ -17,11 +17,10 @@ var publicFiles embed.FS
 
 func AddRoutes(
 	mux *http.ServeMux,
-	userService meals.UserService,
-	sessionService meals.SessionService,
+	userService auth.UserService,
 ) {
 	// Middleware
-	isAuthed := newIsAuthenticatedMiddleware(sessionService)
+	isAuthed := auth.NewIsAuthenticatedMiddleware(userService)
 
 	// Root redirect
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
@@ -46,13 +45,13 @@ func AddRoutes(
 	mux.Handle("GET /static/", getStaticFilesHandler(publicFiles))
 
 	// Authentication
-	mux.Handle("GET /login", getLoginHandler(templateFiles))
-	mux.Handle("POST /login", postLoginHandler(userService, sessionService))
-	mux.Handle("GET /register", getRegistrationHandler(templateFiles))
-	mux.Handle("POST /register", postRegistrationHandler(userService))
-	mux.Handle("GET /logout", getLogoutHandler(sessionService))
+	mux.Handle("GET /login", auth.GetLoginHandler(templateFiles))
+	mux.Handle("POST /login", auth.PostLoginHandler(userService))
+	mux.Handle("GET /register", auth.GetRegistrationHandler(templateFiles))
+	mux.Handle("POST /register", auth.PostRegistrationHandler(userService))
+	mux.Handle("GET /logout", auth.GetLogoutHandler(userService))
 
 	// Account
-	mux.Handle("GET /account", isAuthed(getAccountHandler(templateFiles, userService)))
-	mux.Handle("POST /account", isAuthed(putAccountHandler(userService)))
+	mux.Handle("GET /account", isAuthed(auth.GetAccountHandler(templateFiles, userService)))
+	mux.Handle("POST /account", isAuthed(auth.PutAccountHandler(userService)))
 }
