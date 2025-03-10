@@ -241,7 +241,9 @@ func (us *UserService) CreateSession(userId int) (Session, error) {
 
 	us.sessionRepo.DestroyByUserId(userId)
 
-	us.sessionRepo.DestroyExpired(us.sessionLifetime)
+	olderThan := time.Now().Add(-time.Second * time.Duration(us.sessionLifetime*1000))
+
+	us.sessionRepo.DestroyExpired(olderThan)
 
 	session, err := us.sessionRepo.Create(Session{
 		UserId:    userId,

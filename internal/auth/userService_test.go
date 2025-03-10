@@ -319,7 +319,7 @@ func TestAnyExpiredSessionsAreRemovedWhenANewSessionIsCreated(t *testing.T) {
 			// Expired session
 			{
 				UserId:    2,
-				CreatedAt: time.Now().Add(-time.Duration(sessionLifetime * 1)),
+				CreatedAt: time.Now().Add(-time.Duration((sessionLifetime + 1) * 1000)),
 			},
 		},
 	}

@@ -22,5 +22,5 @@ type SessionRepository interface {
 	IsValid(sessionId string) bool
 	Get(sessionId string) (Session, error)
 	DestroyByUserId(userId int) error
-	DestroyExpired(lifetime int) error
+	DestroyExpired(olderThan time.Time) error
 }

@@ -77,11 +77,11 @@ func (sr *SessionRepository) DestroyByUserId(userId int) error {
 	return nil
 }
 
-func (sr *SessionRepository) DestroyExpired(lifetime int) error {
+func (sr *SessionRepository) DestroyExpired(olderThan time.Time) error {
 	var sessions []auth.Session
 
 	for _, session := range sr.Store {
-		if time.Now().Sub(session.CreatedAt) > time.Duration(lifetime) {
+		if olderThan.Compare(session.CreatedAt) < 1 {
 			continue
 		}
 

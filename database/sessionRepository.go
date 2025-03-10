@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jameswhoughton/meals/internal/auth"
 )
@@ -78,8 +79,8 @@ func (sr *SessionRepository) DestroyByUserId(userId int) error {
 	return nil
 }
 
-func (sr *SessionRepository) DestroyExpired(lifetime int) error {
-	_, err := sr.db.Exec("DELETE FROM sessions WHERE created_at - ? < NOW()", lifetime)
+func (sr *SessionRepository) DestroyExpired(olderThan time.Time) error {
+	_, err := sr.db.Exec("DELETE FROM sessions WHERE created_at < ?", olderThan)
 
 	if err != nil {
 		return fmt.Errorf("error removing expired sessions: %v", err)
