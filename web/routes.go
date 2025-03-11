@@ -10,6 +10,7 @@ import (
 )
 
 //go:embed templates/*.gohtml
+//go:embed templates/**/*.gohtml
 var templateFiles embed.FS
 
 //go:embed static/*

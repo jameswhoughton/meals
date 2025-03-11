@@ -2,11 +2,10 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
-	"net/http"
 
 	"github.com/jameswhoughton/meals/database"
+	"github.com/jameswhoughton/meals/internal/auth"
 	"github.com/jameswhoughton/meals/web"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -24,14 +23,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	userService := database.NewUserService(conn)
-	sessionService := database.NewSessionService(conn)
+	userRepository := database.NewUserRespository(conn)
+	sessionRepsoitory := database.NewSessionRepository(conn)
 
-	mux := http.NewServeMux()
+	userService := auth.NewUserService(userRepository, sessionRepsoitory, 3600)
 
-	web.AddRoutes(mux, &userService, &sessionService)
+	server := web.NewServer("8000", &userService)
 
-	fmt.Println("listening on port :8000")
-
-	http.ListenAndServe(":8000", mux)
+	log.Fatal(server.Start())
 }

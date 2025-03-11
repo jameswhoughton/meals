@@ -15,7 +15,12 @@ type middleware func(http.Handler) http.Handler
 
 func GetRegistrationHandler(templateFiles fs.FS) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tmpl, err := template.ParseFS(templateFiles, "templates/layout.gohtml", "templates/form.gohtml", "templates/register.gohtml")
+		tmpl, err := template.ParseFS(
+			templateFiles,
+			"templates/layout_guest.gohtml",
+			"templates/form.gohtml",
+			"templates/pages/register.gohtml",
+		)
 
 		if err != nil {
 			w.Write([]byte("Template error: " + err.Error()))
@@ -179,7 +184,12 @@ func PutAccountHandler(userService UserService) http.Handler {
 
 func GetLoginHandler(templateFiles fs.FS) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tmpl, err := template.ParseFS(templateFiles, "templates/layout.gohtml", "templates/form.gohtml", "templates/login.gohtml")
+		tmpl, err := template.ParseFS(
+			templateFiles,
+			"templates/layout_guest.gohtml",
+			"templates/form.gohtml",
+			"templates/pages/login.gohtml",
+		)
 
 		if err != nil {
 			w.Write([]byte("Template error: " + err.Error()))
@@ -229,6 +239,7 @@ func PostLoginHandler(userService UserService) http.Handler {
 		user, err := userService.GetUserFromCredentials(email, password)
 
 		if err != nil {
+			log.Println(err)
 			helpers.SetMessage(w, "error", "credentials are invalid")
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return
