@@ -1,0 +1,29 @@
+{{define "yield"}}
+<div class="flex flex-col w-full grow items-center justify-center"> 
+    <h1 class="text-xl mb-6 text-center">Create an Account</h1>
+    <form method="post" action="/register" class="flex flex-col gap-4 mb-0 w-full">
+        <div class="flex flex-col gap-1">
+            <label class="text-sm text-slate-300" for="name">Name</label>
+            <input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400" type="text" name="name" />
+        </div>
+        <div class="flex flex-col gap-1">
+            <label class="text-sm text-slate-300" for="email">Email</label>
+            <input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400" type="text" name="email" />
+        </div>
+        <div class="flex flex-col gap-1">
+            <label class="text-sm text-slate-300" for="password">Password</label>
+            <input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400" type="password" name="password" />
+        </div>
+        <div class="flex flex-col gap-1">
+            <label class="text-sm text-slate-300" for="passwordConfirm">Confirm Password</label>
+            <input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400" type="password" name="passwordConfirm" />
+        </div>
+        <button class="py-2 px-1.5 rounded-md bg-cyan-800 hover:bg-cyan-900 transition-colors"
+            type="submit">Register</button>
+    </form>
+    {{end}}
+
+    {{define "formFooter"}}
+    Already have an account? <a href="/login" class="text-cyan-600 hover:text-cyan-700 transition-colors">Login here</a>
+    {{end}}
+</div>
