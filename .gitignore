@@ -7,3 +7,6 @@ meals.db
 
 # Dependencies
 node_modules
+
+# Build files
+main.css
