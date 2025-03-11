@@ -187,6 +187,7 @@ func (us *UserService) CreateUser(form *UserFormCreate) (User, error) {
 	user.Name = form.Name
 	user.Email = form.Email
 	user.Password = string(HashPassword(form.Password))
+	user.CreatedAt = time.Now()
 	user.UpdatedAt = user.CreatedAt
 
 	createdUser, err := us.userRepo.Create(user)
@@ -242,15 +243,17 @@ func (us *UserService) sessionExpired() time.Time {
 }
 
 func (us *UserService) CreateSession(userId int) (Session, error) {
-	sessionId := GenerateKey()
-
 	// Remove any sessions that have expired
 	us.sessionRepo.DestroyExpired(us.sessionExpired())
 
-	session, err := us.sessionRepo.Create(Session{
-		UserId:    userId,
-		SessionId: sessionId,
-	})
+	var session Session
+
+	session.SessionId = GenerateKey()
+	session.UserId = userId
+	session.CreatedAt = time.Now()
+	session.UpdatedAt = session.CreatedAt
+
+	session, err := us.sessionRepo.Create(session)
 
 	if err != nil {
 		return Session{}, err

@@ -55,6 +55,16 @@ func (sr *SessionRepository) Get(sessionId string, expiredTime time.Time) (auth.
 		return auth.Session{}, fmt.Errorf("error fetching session: %v", err)
 	}
 
+	updatedAt := time.Now()
+
+	_, err := sr.db.Exec("UPDATE sessions SET updated_at = ? WHERE id = ?", updatedAt, session.Id)
+
+	if err != nil {
+		return auth.Session{}, fmt.Errorf("Error updating user session: %v", err)
+	}
+
+	session.UpdatedAt = updatedAt
+
 	return session, nil
 }
 

@@ -79,6 +79,8 @@ func GetAccountHandler(templateFiles fs.FS, userService UserService) http.Handle
 		if err != nil {
 			log.Println(err)
 			http.Error(w, "server error", http.StatusInternalServerError)
+
+			return
 		}
 
 		user, err := userService.GetUserFromSession(session.Value)
@@ -86,6 +88,8 @@ func GetAccountHandler(templateFiles fs.FS, userService UserService) http.Handle
 		if err != nil {
 			log.Println(err)
 			http.Error(w, "server error", http.StatusInternalServerError)
+
+			return
 		}
 
 		type templateData struct {
@@ -100,6 +104,8 @@ func GetAccountHandler(templateFiles fs.FS, userService UserService) http.Handle
 		if err != nil {
 			log.Println(err)
 			http.Error(w, "server error", http.StatusInternalServerError)
+
+			return
 		}
 
 		errorJson, err := helpers.GetMessage(w, r, "errors")
@@ -107,6 +113,8 @@ func GetAccountHandler(templateFiles fs.FS, userService UserService) http.Handle
 		if err != nil {
 			log.Println(err)
 			http.Error(w, "server error", http.StatusInternalServerError)
+
+			return
 		}
 
 		formErrors := map[string]string{}
@@ -322,11 +330,16 @@ func NewIsAuthenticatedMiddleware(userService UserService) middleware {
 
 			if err != nil {
 				if errors.Is(err, ErrorSessionNotFound{}) {
+					helpers.SetMessage(w, "error", "Session has expired, please login again")
 					http.Redirect(w, r, "/login", http.StatusFound)
+
+					return
 				}
 
 				log.Println(err)
 				http.Error(w, "server error", http.StatusInternalServerError)
+
+				return
 			}
 
 			next.ServeHTTP(w, r)

@@ -65,7 +65,7 @@ func (rc *SessionRepositoryContract) Test(t *testing.T) {
 			t.Errorf("Expected user ID %d, got %d", newSession.UserId, fetchedSession.Id)
 		}
 
-		if fetchedSession.UpdatedAt == createdSession.UpdatedAt {
+		if fetchedSession.UpdatedAt.Round(time.Minute).Equal(createdSession.UpdatedAt.Round(time.Minute)) {
 			t.Error("updated_at should update when using Get, dates match")
 		}
 
