@@ -39,9 +39,9 @@ func (us *UserRepository) Get(filter auth.UserGet) (auth.User, error) {
 		values = append(values, *filter.Email)
 	}
 
-	query := "SELECT id, name, email FROM users WHERE 1 = 1 AND " + strings.Join(wheres, " AND ")
+	query := "SELECT id, name, email, password FROM users WHERE 1 = 1 AND " + strings.Join(wheres, " AND ")
 
-	err = us.db.QueryRow(query, values...).Scan(&user.Id, &user.Name, &user.Email)
+	err = us.db.QueryRow(query, values...).Scan(&user.Id, &user.Name, &user.Email, &user.Password)
 
 	if err != nil {
 		fmt.Println(err)

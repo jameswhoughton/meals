@@ -73,6 +73,10 @@ func (c *UserRepositoryContract) Test(t *testing.T) {
 			t.Errorf("Expected ID %d found %d", user.Id, fetchedUser.Id)
 		}
 
+		if fetchedUser.Password == "" {
+			t.Error("Password missing")
+		}
+
 		newName = "James Smith"
 		newEmail := "james.smith@example.com"
 
