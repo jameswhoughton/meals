@@ -2,7 +2,6 @@ package database
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"time"
 
@@ -13,12 +12,12 @@ type SessionRepository struct {
 	db *sql.DB
 }
 
-func NewSessionRepository(db *sql.DB) SessionRepository {
-	return SessionRepository{db}
+func NewSessionRepository(db *sql.DB) *SessionRepository {
+	return &SessionRepository{db}
 }
 
-func (sr *SessionRepository) Add(session auth.Session) (auth.Session, error) {
-	result, err := sr.db.Exec("INSERT INTO sessions (session_id, user_id) VALUES (?, ?)", session.SessionId, session.UserId)
+func (sr *SessionRepository) Create(session auth.Session) (auth.Session, error) {
+	result, err := sr.db.Exec("INSERT INTO sessions (session_id, user_id, created_at, updated_at) VALUES (?, ?, ?, ?)", session.SessionId, session.UserId, session.CreatedAt, session.UpdatedAt)
 
 	if err != nil {
 		return auth.Session{}, err
@@ -45,42 +44,22 @@ func (sr *SessionRepository) Destroy(sessionId string) error {
 	return nil
 }
 
-func (sr *SessionRepository) IsValid(sessionId string) bool {
-	row := sr.db.QueryRow("SELECT id FROM sessions WHERE session_id = ?", sessionId)
+func (sr *SessionRepository) Get(sessionId string, expiredTime time.Time) (auth.Session, error) {
+	var session auth.Session
 
-	if err := row.Scan(); errors.Is(err, sql.ErrNoRows) {
-		return false
-	}
-
-	return true
-}
-
-func (sr *SessionRepository) GetUser(sessionId string) (auth.User, error) {
-	var user auth.User
-
-	if err := sr.db.QueryRow("SELECT u.id, u.email, u.name FROM sessions s LEFT JOIN users u ON s.user_id = u.id WHERE session_id = ?", sessionId).Scan(&user.Id, &user.Email, &user.Name); err != nil {
+	if err := sr.db.QueryRow("SELECT id, session_id, user_id, created_at, updated_at FROM sessions WHERE session_id = ? AND updated_at > ?", sessionId, expiredTime).Scan(&session.Id, &session.SessionId, &session.UserId, &session.CreatedAt, &session.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
-			return auth.User{}, fmt.Errorf("session ID invalid")
+			return auth.Session{}, auth.ErrorSessionNotFound{}
 		}
 
-		return auth.User{}, fmt.Errorf("error fetching user: %v", err)
+		return auth.Session{}, fmt.Errorf("error fetching session: %v", err)
 	}
 
-	return user, nil
+	return session, nil
 }
 
-func (sr *SessionRepository) DestroyByUserId(userId int) error {
-	_, err := sr.db.Exec("DELETE FROM sessions WHERE user_id = ?", userId)
-
-	if err != nil {
-		return fmt.Errorf("error removing old user sessions (user %d): %v", userId, err)
-	}
-
-	return nil
-}
-
-func (sr *SessionRepository) DestroyExpired(olderThan time.Time) error {
-	_, err := sr.db.Exec("DELETE FROM sessions WHERE created_at < ?", olderThan)
+func (sr *SessionRepository) DestroyExpired(expiredTime time.Time) error {
+	_, err := sr.db.Exec("DELETE FROM sessions WHERE updated_at < ?", expiredTime)
 
 	if err != nil {
 		return fmt.Errorf("error removing expired sessions: %v", err)

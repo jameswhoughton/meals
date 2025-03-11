@@ -147,10 +147,11 @@ func HashPassword(password string) []byte {
 	return hash
 }
 
-func NewUserService(userRepo UserRepository, sessionRepo SessionRepository) UserService {
+func NewUserService(userRepo UserRepository, sessionRepo SessionRepository, sessionLifetime int) UserService {
 	return UserService{
-		userRepo:    userRepo,
-		sessionRepo: sessionRepo,
+		userRepo:        userRepo,
+		sessionRepo:     sessionRepo,
+		sessionLifetime: sessionLifetime,
 	}
 }
 
@@ -236,14 +237,15 @@ func (us *UserService) UpdateUser(form *UserFormUpdate) error {
 	return us.userRepo.Update(currentUser.Id, toUpdate)
 }
 
+func (us *UserService) sessionExpired() time.Time {
+	return time.Now().Add(time.Second * time.Duration(-us.sessionLifetime))
+}
+
 func (us *UserService) CreateSession(userId int) (Session, error) {
 	sessionId := GenerateKey()
 
-	us.sessionRepo.DestroyByUserId(userId)
-
-	olderThan := time.Now().Add(-time.Second * time.Duration(us.sessionLifetime*1000))
-
-	us.sessionRepo.DestroyExpired(olderThan)
+	// Remove any sessions that have expired
+	us.sessionRepo.DestroyExpired(us.sessionExpired())
 
 	session, err := us.sessionRepo.Create(Session{
 		UserId:    userId,
@@ -258,7 +260,7 @@ func (us *UserService) CreateSession(userId int) (Session, error) {
 }
 
 func (us *UserService) GetUserFromSession(sessionId string) (User, error) {
-	session, err := us.sessionRepo.Get(sessionId)
+	session, err := us.sessionRepo.Get(sessionId, us.sessionExpired())
 
 	if err != nil {
 		return User{}, fmt.Errorf("error fetching session: %w", err)

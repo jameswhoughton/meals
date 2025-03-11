@@ -73,7 +73,7 @@ func TestCreateUserFailsIfFormIsInvalid(t *testing.T) {
 					},
 				},
 			}
-			service := auth.NewUserService(&userRepo, &memory.SessionRepository{})
+			service := auth.NewUserService(&userRepo, &memory.SessionRepository{}, 0)
 
 			_, err := service.CreateUser(&testCase.form)
 
@@ -151,7 +151,7 @@ func TestUpdateUserFailsIfFormIsInvalid(t *testing.T) {
 				},
 			}
 
-			service := auth.NewUserService(&userRepo, &memory.SessionRepository{})
+			service := auth.NewUserService(&userRepo, &memory.SessionRepository{}, 0)
 
 			err := service.UpdateUser(&testCase.form)
 
@@ -174,7 +174,7 @@ func TestUpdateUserFailsIfFormIsInvalid(t *testing.T) {
 
 // test can create, get and update a user
 func TestCanCreateGetAndUpdateAUser(t *testing.T) {
-	service := auth.NewUserService(&memory.UserRepository{}, &memory.SessionRepository{})
+	service := auth.NewUserService(&memory.UserRepository{}, &memory.SessionRepository{}, 0)
 
 	form := auth.UserFormCreate{
 		Name:            "John Smith",
@@ -254,7 +254,7 @@ func TestCanCreateGetAndUpdateAUser(t *testing.T) {
 
 // test returns expected error if a user does not exist
 func TestReturnExpectedErrorIfUserDoesNotExist(t *testing.T) {
-	service := auth.NewUserService(&memory.UserRepository{}, &memory.SessionRepository{})
+	service := auth.NewUserService(&memory.UserRepository{}, &memory.SessionRepository{}, 0)
 
 	_, err := service.GetUserFromCredentials("", "")
 
@@ -265,42 +265,6 @@ func TestReturnExpectedErrorIfUserDoesNotExist(t *testing.T) {
 	if !errors.Is(err, auth.ErrorUserNotFound{}) {
 		t.Errorf("Expected ErrorUserNotFound, got %v", err)
 	}
-}
-
-// Test any previous sessions for a user are removed when creating a new one
-func TestPreviousSessionsAreRemovedWhenNewOneCreated(t *testing.T) {
-	userRepo := memory.UserRepository{
-		Store: []auth.User{
-			{
-				Id: 1,
-			},
-		},
-	}
-
-	sessionRepo := memory.SessionRepository{
-		Store: []auth.Session{
-			{
-				UserId:    1,
-				SessionId: "old ID",
-			},
-		},
-	}
-	service := auth.NewUserService(&userRepo, &sessionRepo)
-
-	newSession, err := service.CreateSession(1)
-
-	if err != nil {
-		t.Errorf("Unexpected error: %v", err)
-	}
-
-	if len(sessionRepo.Store) != 1 {
-		t.Errorf("Expected only 1 session, found %d", len(sessionRepo.Store))
-	}
-
-	if newSession.SessionId != sessionRepo.Store[0].SessionId {
-		t.Errorf("Expected session ID %s, found %s", newSession.SessionId, sessionRepo.Store[0].SessionId)
-	}
-
 }
 
 // Test any expired sessions are removed when a new session is created
@@ -324,7 +288,7 @@ func TestAnyExpiredSessionsAreRemovedWhenANewSessionIsCreated(t *testing.T) {
 		},
 	}
 
-	service := auth.NewUserService(&userRepo, &sessionRepo)
+	service := auth.NewUserService(&userRepo, &sessionRepo, sessionLifetime)
 
 	newSession, err := service.CreateSession(1)
 
@@ -339,8 +303,4 @@ func TestAnyExpiredSessionsAreRemovedWhenANewSessionIsCreated(t *testing.T) {
 	if newSession.SessionId != sessionRepo.Store[0].SessionId {
 		t.Errorf("Expected session ID %s, found %s", newSession.SessionId, sessionRepo.Store[0].SessionId)
 	}
-}
-
-func TestExpectedErrorWhenFetchingAUserWithExpiredSession(t *testing.T) {
-
 }

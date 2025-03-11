@@ -7,6 +7,7 @@ type Session struct {
 	SessionId string
 	UserId    int
 	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type ErrorSessionNotFound struct {
@@ -19,8 +20,6 @@ func (e ErrorSessionNotFound) Error() string {
 type SessionRepository interface {
 	Create(session Session) (Session, error)
 	Destroy(sessionId string) error
-	IsValid(sessionId string) bool
-	Get(sessionId string) (Session, error)
-	DestroyByUserId(userId int) error
-	DestroyExpired(olderThan time.Time) error
+	Get(sessionId string, expiredTime time.Time) (Session, error)
+	DestroyExpired(expiredTime time.Time) error
 }

@@ -307,8 +307,15 @@ func NewIsAuthenticatedMiddleware(userService UserService) middleware {
 				return
 			}
 
-			if !userService.sessionRepo.IsValid(session.Value) {
-				http.Redirect(w, r, "/login", http.StatusFound)
+			_, err = userService.GetUserFromSession(session.Value)
+
+			if err != nil {
+				if errors.Is(err, ErrorSessionNotFound{}) {
+					http.Redirect(w, r, "/login", http.StatusFound)
+				}
+
+				log.Println(err)
+				http.Error(w, "server error", http.StatusInternalServerError)
 			}
 
 			next.ServeHTTP(w, r)

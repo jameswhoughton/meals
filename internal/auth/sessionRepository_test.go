@@ -1,18 +1,23 @@
 package auth_test
 
 import (
+	"database/sql"
 	"errors"
+	"log"
+	"os"
 	"testing"
 	"time"
 
+	"github.com/jameswhoughton/meals/database"
 	"github.com/jameswhoughton/meals/internal/auth"
+	"github.com/jameswhoughton/meals/memory"
 )
 
 type SessionRepositoryContract struct {
 	repo func() (auth.SessionRepository, func())
 }
 
-func (rc *SessionRepositoryContract) Init(t *testing.T) {
+func (rc *SessionRepositoryContract) Test(t *testing.T) {
 	t.Run("Can create get and destroy a session", func(t *testing.T) {
 		repo, closeDown := rc.repo()
 		defer closeDown()
@@ -21,6 +26,7 @@ func (rc *SessionRepositoryContract) Init(t *testing.T) {
 			SessionId: "NEW_SESSION_01",
 			UserId:    1,
 			CreatedAt: time.Now(),
+			UpdatedAt: time.Now().Add(time.Second * -30),
 		}
 
 		createdSession, err := repo.Create(newSession)
@@ -41,7 +47,7 @@ func (rc *SessionRepositoryContract) Init(t *testing.T) {
 			t.Errorf("Expected user ID %d, got %d", newSession.UserId, createdSession.Id)
 		}
 
-		fetchedSession, err := repo.Get(newSession.SessionId)
+		fetchedSession, err := repo.Get(newSession.SessionId, time.Now().Add(-time.Second*100))
 
 		if err != nil {
 			t.Errorf("Unexpected error when fetching a session: %v", err)
@@ -59,13 +65,17 @@ func (rc *SessionRepositoryContract) Init(t *testing.T) {
 			t.Errorf("Expected user ID %d, got %d", newSession.UserId, fetchedSession.Id)
 		}
 
+		if fetchedSession.UpdatedAt == createdSession.UpdatedAt {
+			t.Error("updated_at should update when using Get, dates match")
+		}
+
 		err = repo.Destroy(newSession.SessionId)
 
 		if err != nil {
 			t.Errorf("Unexpected error when destroying a session: %v", err)
 		}
 
-		_, err = repo.Get(newSession.SessionId)
+		_, err = repo.Get(newSession.SessionId, time.Now().Add(-time.Second*100))
 
 		if err == nil {
 			t.Error("Expected error when fetching destroyed session, got none")
@@ -76,80 +86,26 @@ func (rc *SessionRepositoryContract) Init(t *testing.T) {
 		}
 	})
 
-	t.Run("Can validate a session", func(t *testing.T) {
-		repo, closeDown := rc.repo()
-		defer closeDown()
-
-		newSession := auth.Session{
-			SessionId: "A001",
-			UserId:    1,
-		}
-
-		repo.Create(newSession)
-
-		validSession := repo.IsValid(newSession.SessionId)
-
-		if !validSession {
-			t.Errorf("Expected session to be valid")
-		}
-
-		invalidSession := repo.IsValid("INVALID")
-
-		if invalidSession {
-			t.Errorf("Expected session to be invalid")
-		}
-	})
-
-	t.Run("Can destroy individual user sessions", func(t *testing.T) {
+	t.Run("Cannot get a session with a valid ID that has expired", func(t *testing.T) {
 		repo, closeDown := rc.repo()
 		defer closeDown()
 
 		repo.Create(auth.Session{
 			UserId:    1,
 			SessionId: "AA",
+			UpdatedAt: time.Date(2025, time.March, 5, 12, 30, 0, 0, time.UTC),
 		})
 
-		repo.Create(auth.Session{
-			UserId:    2,
-			SessionId: "BB",
-		})
-
-		repo.Create(auth.Session{
-			UserId:    1,
-			SessionId: "CC",
-		})
-
-		err := repo.DestroyByUserId(1)
+		_, err := repo.Get("AA", time.Date(2025, time.March, 5, 13, 0, 0, 0, time.UTC))
 
 		if err == nil {
-			t.Error("Expected error when destroying user sessions, got none")
-		}
-
-		_, err = repo.Get("AA")
-
-		if err == nil {
-			t.Error("Expected error when fetching destroyed session, got none")
+			t.Error("Expected error, got nil")
 		}
 
 		if !errors.Is(err, auth.ErrorSessionNotFound{}) {
 			t.Errorf("Expected error of type %T, got %T (%v)", auth.ErrorSessionNotFound{}, err, err)
 		}
 
-		_, err = repo.Get("BB")
-
-		if err != nil {
-			t.Errorf("Unexpected error when fetching session that should still exist: %v", err)
-		}
-
-		_, err = repo.Get("CC")
-
-		if err == nil {
-			t.Error("Expected error when fetching destroyed session, got none")
-		}
-
-		if !errors.Is(err, auth.ErrorSessionNotFound{}) {
-			t.Errorf("Expected error of type %T, got %T (%v)", auth.ErrorSessionNotFound{}, err, err)
-		}
 	})
 
 	t.Run("Can delete sessions that have exceeded the given lifetime", func(t *testing.T) {
@@ -159,28 +115,30 @@ func (rc *SessionRepositoryContract) Init(t *testing.T) {
 		repo.Create(auth.Session{
 			UserId:    1,
 			SessionId: "AA",
-			CreatedAt: time.Date(2025, time.March, 5, 12, 30, 0, 0, nil),
+			UpdatedAt: time.Date(2025, time.March, 5, 12, 30, 0, 0, time.UTC),
 		})
 
 		repo.Create(auth.Session{
 			UserId:    2,
 			SessionId: "BB",
-			CreatedAt: time.Date(2025, time.March, 5, 12, 45, 0, 0, nil),
+			UpdatedAt: time.Date(2025, time.March, 5, 12, 45, 0, 0, time.UTC),
 		})
 
 		repo.Create(auth.Session{
 			UserId:    3,
 			SessionId: "CC",
-			CreatedAt: time.Date(2025, time.March, 5, 13, 30, 0, 0, nil),
+			UpdatedAt: time.Date(2025, time.March, 5, 13, 31, 0, 0, time.UTC),
 		})
 
-		err := repo.DestroyExpired(time.Date(2025, time.March, 5, 13, 30, 0, 0, nil))
+		expiredTime := time.Date(2025, time.March, 5, 13, 30, 0, 0, time.UTC)
 
-		if err == nil {
-			t.Error("Expected error when destroying user sessions, got none")
+		err := repo.DestroyExpired(expiredTime)
+
+		if err != nil {
+			t.Errorf("Unexpected error when destroying user sessions: %v", err)
 		}
 
-		_, err = repo.Get("AA")
+		_, err = repo.Get("AA", expiredTime)
 
 		if err == nil {
 			t.Error("Expected error when fetching destroyed session, got none")
@@ -190,13 +148,13 @@ func (rc *SessionRepositoryContract) Init(t *testing.T) {
 			t.Errorf("Expected error of type %T, got %T (%v)", auth.ErrorSessionNotFound{}, err, err)
 		}
 
-		_, err = repo.Get("BB")
+		_, err = repo.Get("CC", expiredTime)
 
 		if err != nil {
 			t.Errorf("Unexpected error when fetching session that should still exist: %v", err)
 		}
 
-		_, err = repo.Get("CC")
+		_, err = repo.Get("BB", expiredTime)
 
 		if err == nil {
 			t.Error("Expected error when fetching destroyed session, got none")
@@ -206,4 +164,47 @@ func (rc *SessionRepositoryContract) Init(t *testing.T) {
 			t.Errorf("Expected error of type %T, got %T (%v)", auth.ErrorSessionNotFound{}, err, err)
 		}
 	})
+}
+
+func TestDatabaseSessionService(t *testing.T) {
+	init := func() (auth.SessionRepository, func()) {
+		conn, err := sql.Open("sqlite3", "meals.db")
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		err = database.Migrate(conn)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		closeDown := func() {
+			os.Remove("meals.db")
+		}
+		return database.NewSessionRepository(conn), closeDown
+	}
+
+	contract := SessionRepositoryContract{
+		init,
+	}
+
+	contract.Test(t)
+
+}
+
+func TestMemorySessionService(t *testing.T) {
+	init := func() (auth.SessionRepository, func()) {
+		return &memory.SessionRepository{
+			Store: []auth.Session{},
+		}, func() {}
+	}
+
+	contract := SessionRepositoryContract{
+		repo: init,
+	}
+
+	contract.Test(t)
+
 }

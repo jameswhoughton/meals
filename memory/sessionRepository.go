@@ -11,7 +11,7 @@ type SessionRepository struct {
 }
 
 func (sr *SessionRepository) Create(session auth.Session) (auth.Session, error) {
-	session.Id = len(sr.Store)
+	session.Id = len(sr.Store) + 1
 
 	sr.Store = append(sr.Store, session)
 
@@ -42,46 +42,24 @@ func (sr *SessionRepository) Destroy(sessionId string) error {
 	return nil
 }
 
-func (sr *SessionRepository) IsValid(sessionId string) bool {
-	for _, session := range sr.Store {
-		if session.SessionId == sessionId {
-			return true
-		}
-	}
+func (sr *SessionRepository) Get(sessionId string, expiredTime time.Time) (auth.Session, error) {
+	for i, session := range sr.Store {
+		if session.SessionId == sessionId && session.UpdatedAt.After(expiredTime) {
+			session.UpdatedAt = time.Now()
+			sr.Store[i] = session
 
-	return false
-}
-
-func (sr *SessionRepository) Get(sessionId string) (auth.Session, error) {
-	for _, session := range sr.Store {
-		if session.SessionId == sessionId {
-			return session, nil
+			return sr.Store[i], nil
 		}
 	}
 
 	return auth.Session{}, auth.ErrorSessionNotFound{}
 }
 
-func (sr *SessionRepository) DestroyByUserId(userId int) error {
+func (sr *SessionRepository) DestroyExpired(expiredTime time.Time) error {
 	var sessions []auth.Session
 
 	for _, session := range sr.Store {
-		if session.UserId == userId {
-			continue
-		}
-		sessions = append(sessions, session)
-	}
-
-	sr.Store = sessions
-
-	return nil
-}
-
-func (sr *SessionRepository) DestroyExpired(olderThan time.Time) error {
-	var sessions []auth.Session
-
-	for _, session := range sr.Store {
-		if olderThan.Compare(session.CreatedAt) < 1 {
+		if session.UpdatedAt.Before(expiredTime) {
 			continue
 		}
 
