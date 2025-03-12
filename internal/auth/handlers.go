@@ -189,11 +189,14 @@ func PutAccountHandler(userService UserService) http.Handler {
 		name := r.FormValue("name")
 
 		form := UserFormUpdate{
-			Id:              user.Id,
-			Password:        &password,
-			PasswordConfirm: passwordConfirm,
-			Email:           &email,
-			Name:            &name,
+			Id:    user.Id,
+			Email: &email,
+			Name:  &name,
+		}
+
+		if password != "" {
+			form.Password = &password
+			form.PasswordConfirm = passwordConfirm
 		}
 
 		err = userService.UpdateUser(&form)

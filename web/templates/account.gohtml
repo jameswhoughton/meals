@@ -6,16 +6,22 @@
     {{end}}
     <form method="post" action="/account" class="mb-0">
         <div class="flex flex-col gap-2 mb-4">
+            <label class="text-sm text-slate-300" for="name">name</label>
+            <input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" type="text" name="name"
+                value="{{.Form.Name}}" />
+            {{if .Form.Errors.Name}}<div class="text-sm text-red-400">{{.Form.Errors.Name}}</div>{{end}}
+        </div>
+        <div class="flex flex-col gap-2 mb-4">
             <label class="text-sm text-slate-300" for="email">email</label>
             <input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" type="text" name="email"
-                value="{{.Email}}" />
-            {{if .Errors.Email}}<div class="text-sm text-red-400">{{.Errors.Email}}</div>{{end}}
+                value="{{.Form.Email}}" />
+            {{if .Form.Errors.Email}}<div class="text-sm text-red-400">{{.Form.Errors.Email}}</div>{{end}}
         </div>
         <div class="flex flex-col gap-2 mb-4">
             <label class="text-sm text-slate-300" for="password">password</label>
             <input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" type="password"
                 name="password" />
-            {{if .Errors.Password}}<div class="text-sm text-red-400">{{.Errors.Password}}</div>{{end}}
+            {{if .Form.Errors.Password}}<div class="text-sm text-red-400">{{.Form.Errors.Password}}</div>{{end}}
         </div>
         <div class="flex flex-col gap-2 mb-4">
             <label class="text-sm text-slate-300" for="passwordConfirm">confirm password</label>
