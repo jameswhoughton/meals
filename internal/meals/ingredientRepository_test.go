@@ -1,17 +1,20 @@
 package meals_test
 
 import (
+	"database/sql"
 	"errors"
+	"log"
+	"os"
 	"testing"
 
 	"github.com/jameswhoughton/meals/internal/meals"
 )
 
-type IngredientRepositoryContractTest struct {
+type IngredientRepositoryContract struct {
 	repo func() (meals.IngredientRepository, func())
 }
 
-func (i IngredientRepositoryContractTest) Test(t *testing.T) {
+func (i IngredientRepositoryContract) Test(t *testing.T) {
 	t.Run("Can create get update and delete an ingredient", func(t *testing.T) {
 		repo, closeDown := i.repo()
 		defer closeDown()
@@ -98,5 +101,61 @@ func (i IngredientRepositoryContractTest) Test(t *testing.T) {
 
 	})
 
-	t.Run("Expected error when trying to filter with an empty user id", func(t *testing.T) {})
+	t.Run("Expected error when trying to filter with an empty user id", func(t *testing.T) {
+		repo, closeDown := i.repo()
+		defer closeDown()
+
+		_, err := repo.List(meals.IngredientFilter{})
+
+		if err == nil {
+			t.Error("Expected error got none")
+		}
+
+		if !errors.Is(err, meals.ErrorIngredientFilterInvalid{}) {
+			t.Errorf("Expected error of type %T, got %T (%v)", meals.ErrorIngredientNotFound{}, err, err)
+		}
+	})
+}
+
+func TestDatabaseIngredientRepository(t *testing.T) {
+	init := func() (meals.IngredientRepository, func()) {
+		conn, err := sql.Open("sqlite3", "meals.db")
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		err = database.Migrate(conn)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		closeDown := func() {
+			os.Remove("meals.db")
+		}
+		return database.NewIngredientRepository(conn), closeDown
+	}
+
+	contract := IngredientRepositoryContract{
+		init,
+	}
+
+	contract.Test(t)
+
+}
+
+func TestMemoryUserService(t *testing.T) {
+	init := func() (meals.IngredientRepository, func()) {
+		return &memory.IngredientRepository{
+			Store: []meals.Ingredient{},
+		}, func() {}
+	}
+
+	contract := IngredientRepositoryContract{
+		init,
+	}
+
+	contract.Test(t)
+
 }
