@@ -44,7 +44,6 @@ func (us *UserRepository) Get(filter auth.UserGet) (auth.User, error) {
 	err = us.db.QueryRow(query, values...).Scan(&user.Id, &user.Name, &user.Email, &user.Password)
 
 	if err != nil {
-		fmt.Println(err)
 		if err == sql.ErrNoRows {
 			return auth.User{}, auth.ErrorUserNotFound{}
 		}
