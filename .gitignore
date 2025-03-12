@@ -9,4 +9,4 @@ meals.db
 node_modules
 
 # Build files
-main.css
+web/static/main.css
