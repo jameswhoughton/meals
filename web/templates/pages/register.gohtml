@@ -4,15 +4,18 @@
     <form method="post" action="/register" class="flex flex-col gap-4 mb-0 w-full">
         <div class="flex flex-col gap-1">
             <label class="text-sm text-slate-300" for="name">Name</label>
-            <input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400" type="text" name="name" />
+            <input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400" type="text" name="name" value="{{.Form.Name}}" />
+            {{if .Form.Errors.Name}}<div class="text-sm text-red-400">{{.Form.Errors.Name}}</div>{{end}}
         </div>
         <div class="flex flex-col gap-1">
             <label class="text-sm text-slate-300" for="email">Email</label>
-            <input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400" type="text" name="email" />
+            <input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400" type="text" name="email" value="{{.Form.Email}}" />
+            {{if .Form.Errors.Email}}<div class="text-sm text-red-400">{{.Form.Errors.Email}}</div>{{end}}
         </div>
         <div class="flex flex-col gap-1">
             <label class="text-sm text-slate-300" for="password">Password</label>
             <input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400" type="password" name="password" />
+            {{if .Form.Errors.Password}}<div class="text-sm text-red-400">{{.Form.Errors.Password}}</div>{{end}}
         </div>
         <div class="flex flex-col gap-1">
             <label class="text-sm text-slate-300" for="passwordConfirm">Confirm Password</label>

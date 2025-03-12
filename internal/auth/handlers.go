@@ -27,7 +27,31 @@ func GetRegistrationHandler(templateFiles fs.FS) http.Handler {
 
 			return
 		}
-		tmpl.ExecuteTemplate(w, "layout", nil)
+
+		formJson, err := helpers.GetMessage(w, r, "formData")
+
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "server error", http.StatusInternalServerError)
+
+			return
+		}
+
+		formData := UserFormCreate{}
+
+		if formJson != "" {
+			json.Unmarshal([]byte(formJson), &formData)
+		}
+
+		type templateData struct {
+			Title string
+			Form  UserFormCreate
+		}
+
+		tmpl.ExecuteTemplate(w, "layout", templateData{
+			Title: "Register",
+			Form:  formData,
+		})
 	})
 }
 
@@ -45,8 +69,8 @@ func PostRegistrationHandler(userService UserService) http.Handler {
 		_, err := userService.CreateUser(&form)
 
 		if err != nil && errors.Is(err, ErrorFormInvalid{}) {
-			errorJson, _ := json.Marshal(form.Errors)
-			helpers.SetMessage(w, "errors", string(errorJson))
+			formJson, _ := json.Marshal(form)
+			helpers.SetMessage(w, "formData", string(formJson))
 
 			http.Redirect(w, r, "/register", http.StatusFound)
 
@@ -94,9 +118,8 @@ func GetAccountHandler(templateFiles fs.FS, userService UserService) http.Handle
 
 		type templateData struct {
 			Title   string
-			Email   string
 			Success string
-			Errors  map[string]string
+			Form    UserFormUpdate
 		}
 
 		success, err := helpers.GetMessage(w, r, "success")
@@ -108,7 +131,7 @@ func GetAccountHandler(templateFiles fs.FS, userService UserService) http.Handle
 			return
 		}
 
-		errorJson, err := helpers.GetMessage(w, r, "errors")
+		formJson, err := helpers.GetMessage(w, r, "formData")
 
 		if err != nil {
 			log.Println(err)
@@ -117,15 +140,19 @@ func GetAccountHandler(templateFiles fs.FS, userService UserService) http.Handle
 			return
 		}
 
-		formErrors := map[string]string{}
+		formData := UserFormUpdate{
+			Name:  &user.Name,
+			Email: &user.Email,
+		}
 
-		json.Unmarshal([]byte(errorJson), &formErrors)
+		if formJson != "" {
+			json.Unmarshal([]byte(formJson), &formData)
+		}
 
 		err = tmpl.ExecuteTemplate(w, "layout", templateData{
 			Title:   "My Account",
-			Email:   user.Email,
+			Form:    formData,
 			Success: success,
-			Errors:  formErrors,
 		})
 
 		if err != nil {
@@ -172,8 +199,8 @@ func PutAccountHandler(userService UserService) http.Handler {
 		err = userService.UpdateUser(&form)
 
 		if err != nil && errors.Is(err, ErrorFormInvalid{}) {
-			errorJson, _ := json.Marshal(form.Errors)
-			helpers.SetMessage(w, "errors", string(errorJson))
+			formJson, _ := json.Marshal(form)
+			helpers.SetMessage(w, "formData", string(formJson))
 
 			http.Redirect(w, r, "/account", http.StatusFound)
 

@@ -69,8 +69,8 @@ func validateEmail(email string) (bool, string) {
 
 type UserFormUpdate struct {
 	Id              int
-	Password        *string
-	PasswordConfirm string
+	Password        *string `json:"-"`
+	PasswordConfirm string  `json:"-"`
 	Email           *string
 	Name            *string
 	Errors          map[string]string
@@ -81,25 +81,25 @@ func (f *UserFormUpdate) Validate(currentUser User, userRepository UserRepositor
 
 	if f.Password != nil {
 		if passes, message := validatePassword(*f.Password, f.PasswordConfirm); !passes {
-			f.Errors["password"] = message
+			f.Errors["Password"] = message
 		}
 	}
 
 	if f.Name != nil {
 		if passes, message := validateName(*f.Name); !passes {
-			f.Errors["name"] = message
+			f.Errors["Name"] = message
 		}
 	}
 
 	if f.Email != nil && currentUser.Email != *f.Email {
 		if passes, message := validateEmail(*f.Email); !passes {
-			f.Errors["email"] = message
+			f.Errors["Email"] = message
 		}
 
 		existingUser, err := userRepository.Get(UserGet{Email: f.Email})
 
 		if err == nil && existingUser.Id != currentUser.Id {
-			f.Errors["email"] = "email already in use"
+			f.Errors["Email"] = "email already in use"
 		}
 	}
 
@@ -108,8 +108,8 @@ func (f *UserFormUpdate) Validate(currentUser User, userRepository UserRepositor
 
 type UserFormCreate struct {
 	Id              int
-	Password        string
-	PasswordConfirm string
+	Password        string `json:"-"`
+	PasswordConfirm string `json:"-"`
 	Email           string
 	Name            string
 	Errors          map[string]string
@@ -119,21 +119,21 @@ func (f *UserFormCreate) Validate(userRepository UserRepository) bool {
 	f.Errors = make(map[string]string)
 
 	if passes, message := validatePassword(f.Password, f.PasswordConfirm); !passes {
-		f.Errors["password"] = message
+		f.Errors["Password"] = message
 	}
 
 	if passes, message := validateName(f.Name); !passes {
-		f.Errors["name"] = message
+		f.Errors["Name"] = message
 	}
 
 	if passes, message := validateEmail(f.Email); !passes {
-		f.Errors["email"] = message
+		f.Errors["Email"] = message
 	}
 
 	user, _ := userRepository.Get(UserGet{Email: &f.Email})
 
 	if user.Id > 0 {
-		f.Errors["email"] = "email already in use"
+		f.Errors["Email"] = "email already in use"
 	}
 
 	return len(f.Errors) == 0
