@@ -31,11 +31,11 @@ func (f IngredientFilter) Validate() error {
 }
 
 type ErrorIngredientNotFound struct {
-	id int
+	Id int
 }
 
 func (e ErrorIngredientNotFound) Error() string {
-	return fmt.Sprintf("Ingredient with the id: %d does not exist.", e.id)
+	return fmt.Sprintf("Ingredient with the id: %d does not exist.", e.Id)
 }
 
 type IngredientRepository interface {

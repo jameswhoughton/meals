@@ -7,7 +7,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/jameswhoughton/meals/database"
 	"github.com/jameswhoughton/meals/internal/meals"
+	"github.com/jameswhoughton/meals/memory"
 )
 
 type IngredientRepositoryContract struct {
@@ -75,7 +77,7 @@ func (i IngredientRepositoryContract) Test(t *testing.T) {
 			t.Error("Expected error, got none")
 		}
 
-		if !errors.Is(err, meals.ErrorIngredientNotFound{}) {
+		if !errors.Is(err, meals.ErrorIngredientNotFound{Id: fetchedIngredient.Id}) {
 			t.Errorf("Expected error of type %T, got %T (%v)", meals.ErrorIngredientNotFound{}, err, err)
 		}
 
@@ -85,11 +87,12 @@ func (i IngredientRepositoryContract) Test(t *testing.T) {
 		repo, closeDown := i.repo()
 		defer closeDown()
 
-		repo.Create(meals.Ingredient{Name: "Garlic"})
-		repo.Create(meals.Ingredient{Name: "Onion"})
-		repo.Create(meals.Ingredient{Name: "Spring onion"})
+		repo.Create(meals.Ingredient{Name: "Garlic", UserId: 1})
+		repo.Create(meals.Ingredient{Name: "Onion", UserId: 1})
+		repo.Create(meals.Ingredient{Name: "Spring onion", UserId: 1})
+		repo.Create(meals.Ingredient{Name: "Red onion", UserId: 2})
 		searchString := "Onio"
-		ingredients, err := repo.List(meals.IngredientFilter{Name: &searchString})
+		ingredients, err := repo.List(meals.IngredientFilter{Name: &searchString, UserId: 1})
 
 		if err != nil {
 			t.Errorf("List ingredients: Unexpected error: %v", err)
