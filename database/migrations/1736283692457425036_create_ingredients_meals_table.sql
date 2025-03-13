@@ -1,4 +1,4 @@
 CREATE TABLE ingredients_meals (
-	ingredient_id INT,
-	meal_id INT
+	ingredient_id INTEGER,
+	meal_id INTEGER
 );

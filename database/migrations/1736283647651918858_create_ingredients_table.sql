@@ -1,4 +1,6 @@
 CREATE TABLE ingredients (
-	id INT PRIMARY KEY,
-	name VARCHAR(100) NOT NULL
+	id INTEGER PRIMARY KEY,
+	user_id INTEGER,
+	name TEXT NOT NULL,
+	FOREIGN KEY(user_id) REFERENCES users(id)
 );

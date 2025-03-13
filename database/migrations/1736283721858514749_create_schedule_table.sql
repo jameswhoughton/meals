@@ -1,5 +1,5 @@
 CREATE TABLE schedule (
-	id INT PRIMARY KEY,
-	meal_id INT NOT NULL,
+	id INTEGER PRIMARY KEY,
+	meal_id INTEGER NOT NULL,
 	date DATE NOT NULL
 );
