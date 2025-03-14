@@ -29,7 +29,7 @@ func TestCreateUserFailsIfFormIsInvalid(t *testing.T) {
 				PasswordConfirm: "pssword",
 				Email:           "john@example.com",
 			},
-			expectedErrors: []string{"password"},
+			expectedErrors: []string{"Password"},
 		},
 		{
 			description: "Fields missing",
@@ -39,7 +39,7 @@ func TestCreateUserFailsIfFormIsInvalid(t *testing.T) {
 				PasswordConfirm: "",
 				Email:           "",
 			},
-			expectedErrors: []string{"name", "email", "password"},
+			expectedErrors: []string{"Name", "Email", "Password"},
 		},
 		{
 			description: "Fields too long",
@@ -49,7 +49,7 @@ func TestCreateUserFailsIfFormIsInvalid(t *testing.T) {
 				PasswordConfirm: strings.Repeat("A", 256),
 				Email:           strings.Repeat("A", 256),
 			},
-			expectedErrors: []string{"name", "email", "password"},
+			expectedErrors: []string{"Name", "Email", "Password"},
 		},
 		{
 			description: "Email in use",
@@ -59,7 +59,7 @@ func TestCreateUserFailsIfFormIsInvalid(t *testing.T) {
 				PasswordConfirm: "aaabbbcccd",
 				Email:           "paul@example.com",
 			},
-			expectedErrors: []string{"email"},
+			expectedErrors: []string{"Email"},
 		},
 	}
 
@@ -114,7 +114,7 @@ func TestUpdateUserFailsIfFormIsInvalid(t *testing.T) {
 				PasswordConfirm: "pssword",
 				Email:           strPtr("john@example.com"),
 			},
-			expectedErrors: []string{"password"},
+			expectedErrors: []string{"Password"},
 		},
 		{
 			description: "Fields too long",
@@ -125,7 +125,7 @@ func TestUpdateUserFailsIfFormIsInvalid(t *testing.T) {
 				PasswordConfirm: strings.Repeat("A", 256),
 				Email:           strPtr(strings.Repeat("A", 256)),
 			},
-			expectedErrors: []string{"name", "email", "password"},
+			expectedErrors: []string{"Name", "Email", "Password"},
 		},
 		{
 			description: "Email in use",
@@ -133,7 +133,7 @@ func TestUpdateUserFailsIfFormIsInvalid(t *testing.T) {
 				Id:    1,
 				Email: strPtr("paul@example.com"),
 			},
-			expectedErrors: []string{"email"},
+			expectedErrors: []string{"Email"},
 		},
 	}
 
