@@ -148,7 +148,7 @@ func TestDatabaseIngredientRepository(t *testing.T) {
 
 }
 
-func TestMemoryUserService(t *testing.T) {
+func TestMemoryIngredientRepository(t *testing.T) {
 	init := func() (meals.IngredientRepository, func()) {
 		return &memory.IngredientRepository{
 			Store: []meals.Ingredient{},
