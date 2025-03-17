@@ -1,6 +1,9 @@
 package meals
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type MealAttributes struct {
 	Quick  bool
@@ -56,6 +59,14 @@ func (mf MealFilter) Validate() error {
 	}
 
 	return nil
+}
+
+type ErrorMealNotFound struct {
+	Id int
+}
+
+func (e ErrorMealNotFound) Error() string {
+	return fmt.Sprintf("Meal with the id: %d does not exist.", e.Id)
 }
 
 type MealRepository interface {
