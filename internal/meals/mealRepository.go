@@ -12,12 +12,11 @@ type MealAttributes struct {
 }
 
 type MealIngredient struct {
-	Id           int
-	IngredientId int
-	Name         string
-	Quantity     int
-	Unit         string
-	IsMain       bool
+	Id       int
+	Name     string
+	Quantity int
+	Unit     string
+	IsMain   bool
 }
 
 type Meal struct {
@@ -41,7 +40,7 @@ type MealFilter struct {
 	Family *bool
 	Easy   *bool
 	// Only include meals eaten before the given date
-	ExcludeIngredient *[]int
+	ExcludeIngredient []int
 	DateRange         *DateRange
 }
 
