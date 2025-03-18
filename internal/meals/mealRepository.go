@@ -30,15 +30,19 @@ type Meal struct {
 	LastEatenOn time.Time
 }
 
+type DateRange struct {
+	Start *time.Time
+	End   *time.Time
+}
+
 type MealFilter struct {
 	UserId int
 	Quick  *bool
 	Family *bool
 	Easy   *bool
 	// Only include meals eaten before the given date
-	EatenBeforeDate *time.Time
-	// Exclude any meals that have a main ingredient found in the given slice
 	ExcludeIngredient *[]int
+	DateRange         *DateRange
 }
 
 type ErrorMealFilterInvalid struct {
@@ -54,8 +58,18 @@ func (mf MealFilter) Validate() error {
 		return ErrorMealFilterInvalid{"UserID must be set"}
 	}
 
-	if mf.EatenBeforeDate != nil && time.Now().Before(*mf.EatenBeforeDate) {
-		return ErrorMealFilterInvalid{"EatenBeforeDate cannot be a future date"}
+	if mf.DateRange != nil {
+		if mf.DateRange.Start != nil && time.Now().Before(*mf.DateRange.Start) {
+			return ErrorMealFilterInvalid{"DateRange.Start cannot be a future date"}
+		}
+
+		if mf.DateRange.End != nil && time.Now().Before(*mf.DateRange.End) {
+			return ErrorMealFilterInvalid{"DateRange.End cannot be a future date"}
+		}
+
+		if mf.DateRange.Start != nil && mf.DateRange.End != nil && mf.DateRange.End.Before(*mf.DateRange.Start) {
+			return ErrorMealFilterInvalid{"DateRange.End cannot become before DateRange.Start"}
+		}
 	}
 
 	return nil
@@ -72,9 +86,8 @@ func (e ErrorMealNotFound) Error() string {
 type MealRepository interface {
 	Get(id int) (Meal, error)
 	List(filter MealFilter) ([]Meal, error)
-	Create(Meal) (Meal, error)
-	Update(Meal) error
+	Create(meal Meal) (Meal, error)
+	Update(meal Meal) error
 	Destroy(id int) error
-	GetForDateRange(userId int, startDate, endDate time.Time) ([]Meal, error)
 	AssignToDate(id int, date time.Time) error
 }

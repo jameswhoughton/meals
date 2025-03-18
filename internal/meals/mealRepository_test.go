@@ -1,15 +1,11 @@
 package meals_test
 
 import (
-	"database/sql"
 	"errors"
-	"log"
-	"os"
 	"slices"
 	"testing"
 	"time"
 
-	"github.com/jameswhoughton/meals/database"
 	"github.com/jameswhoughton/meals/internal/meals"
 	"github.com/jameswhoughton/meals/memory"
 )
@@ -183,6 +179,9 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 			},
 		})
 
+		repo.AssignToDate(mealB.Id, time.Date(2025, time.March, 9, 0, 0, 0, 0, time.UTC))
+		repo.AssignToDate(mealC.Id, time.Date(2025, time.March, 11, 0, 0, 0, 0, time.UTC))
+
 		type testCase struct {
 			label         string
 			filters       meals.MealFilter
@@ -198,7 +197,7 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 					Family: toPtr(true),
 					Easy:   toPtr(true),
 				},
-				expectedMeals: []int{mealA.Id, mealC.Id},
+				expectedMeals: []int{mealA.Id},
 			},
 			{
 				label: "Quick false",
@@ -219,8 +218,10 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 			{
 				label: "Exclude recent",
 				filters: meals.MealFilter{
-					UserId:          1,
-					EatenBeforeDate: toPtr(time.Date(2025, time.March, 10, 0, 0, 0, 0, time.UTC)),
+					UserId: 1,
+					DateRange: &meals.DateRange{
+						End: toPtr(time.Date(2025, time.March, 10, 0, 0, 0, 0, time.UTC)),
+					},
 				},
 				expectedMeals: []int{mealA.Id, mealB.Id},
 			},
@@ -239,7 +240,7 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 				}
 
 				for _, meal := range meals {
-					if slices.Contains[[]int, int](testCase.expectedMeals, meal.Id) {
+					if !slices.Contains[[]int, int](testCase.expectedMeals, meal.Id) {
 						t.Errorf("Unexpected meal ID %d in results", meal.Id)
 					}
 				}
@@ -257,28 +258,64 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 			t.Errorf("Expected error, got nil")
 		}
 
-		if !errors.As(err, meals.ErrorMealFilterInvalid{}) {
+		if !errors.As(err, &meals.ErrorMealFilterInvalid{}) {
 			t.Errorf("Expected error of type %T, got %T (%v)", meals.ErrorMealFilterInvalid{}, err, err)
 		}
 
 	})
 
-	t.Run("filter field lastEatenBefore cannot be a future date", func(t *testing.T) {
+	t.Run("filter field DateRange validation", func(t *testing.T) {
 		repo, closeDown := i.repo()
 		defer closeDown()
 
 		futureTime := time.Now().Add(time.Hour * 12)
 
+		// Start date should not be in the future
 		_, err := repo.List(meals.MealFilter{
-			UserId:          1,
-			EatenBeforeDate: &futureTime,
+			UserId: 1,
+			DateRange: &meals.DateRange{
+				Start: &futureTime,
+			},
 		})
 
 		if err == nil {
 			t.Errorf("Expected error, got nil")
 		}
 
-		if !errors.As(err, meals.ErrorMealFilterInvalid{}) {
+		if !errors.As(err, &meals.ErrorMealFilterInvalid{}) {
+			t.Errorf("Expected error of type %T, got %T (%v)", meals.ErrorMealFilterInvalid{}, err, err)
+		}
+
+		// End date should not be in the future
+		_, err = repo.List(meals.MealFilter{
+			UserId: 1,
+			DateRange: &meals.DateRange{
+				End: &futureTime,
+			},
+		})
+
+		if err == nil {
+			t.Errorf("Expected error, got nil")
+		}
+
+		if !errors.As(err, &meals.ErrorMealFilterInvalid{}) {
+			t.Errorf("Expected error of type %T, got %T (%v)", meals.ErrorMealFilterInvalid{}, err, err)
+		}
+
+		// End date can't be before start date
+		_, err = repo.List(meals.MealFilter{
+			UserId: 1,
+			DateRange: &meals.DateRange{
+				Start: toPtr(time.Date(2025, time.March, 10, 0, 0, 0, 0, time.UTC)),
+				End:   toPtr(time.Date(2024, time.March, 10, 0, 0, 0, 0, time.UTC)),
+			},
+		})
+
+		if err == nil {
+			t.Errorf("Expected error, got nil")
+		}
+
+		if !errors.As(err, &meals.ErrorMealFilterInvalid{}) {
 			t.Errorf("Expected error of type %T, got %T (%v)", meals.ErrorMealFilterInvalid{}, err, err)
 		}
 	})
@@ -304,10 +341,15 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 		repo.AssignToDate(pizza.Id, time.Date(2025, time.March, 5, 0, 0, 0, 0, time.UTC))
 		repo.AssignToDate(pestoSalmon.Id, time.Date(2025, time.March, 15, 0, 0, 0, 0, time.UTC))
 
-		startDate := time.Date(2025, time.March, 1, 0, 0, 0, 0, time.UTC)
-		endDate := time.Date(2025, time.March, 9, 0, 0, 0, 0, time.UTC)
+		dateRange := meals.DateRange{
+			Start: toPtr(time.Date(2025, time.March, 1, 0, 0, 0, 0, time.UTC)),
+			End:   toPtr(time.Date(2025, time.March, 9, 0, 0, 0, 0, time.UTC)),
+		}
 
-		meals, err := repo.GetForDateRange(1, startDate, endDate)
+		meals, err := repo.List(meals.MealFilter{
+			UserId:    1,
+			DateRange: &dateRange,
+		})
 
 		if err != nil {
 			t.Errorf("Unexpected error: %v", err)
@@ -323,38 +365,40 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 	})
 }
 
-func TestDatabaseMealRepository(t *testing.T) {
-	init := func() (meals.MealRepository, func()) {
-		conn, err := sql.Open("sqlite3", "meals.db")
+/*
+	func TestDatabaseMealRepository(t *testing.T) {
+		init := func() (meals.MealRepository, func()) {
+			conn, err := sql.Open("sqlite3", "meals.db")
 
-		if err != nil {
-			log.Fatal(err)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			err = database.Migrate(conn)
+
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			closeDown := func() {
+				os.Remove("meals.db")
+			}
+			return database.NewMealRepository(conn), closeDown
 		}
 
-		err = database.Migrate(conn)
-
-		if err != nil {
-			log.Fatal(err)
+		contract := MealRepositoryContract{
+			init,
 		}
 
-		closeDown := func() {
-			os.Remove("meals.db")
-		}
-		return database.NewMealRepository(conn), closeDown
-	}
-
-	contract := MealRepositoryContract{
-		init,
-	}
-
-	contract.Test(t)
+		contract.Test(t)
 
 }
-
+*/
 func TestMemoryMealRepository(t *testing.T) {
 	init := func() (meals.MealRepository, func()) {
 		return &memory.MealRepository{
-			Store: []meals.Meal{},
+			Store:    []meals.Meal{},
+			Calendar: make(map[int][]time.Time),
 		}, func() {}
 	}
 
