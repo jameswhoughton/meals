@@ -3,5 +3,6 @@ CREATE TABLE ingredients_meals (
 	meal_id INTEGER,
 	quantity INTEGER,
 	unit TEXT,
-	is_main BIT
+	is_main BIT,
+	UNIQUE(ingredient_id, meal_id)
 );

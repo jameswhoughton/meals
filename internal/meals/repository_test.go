@@ -1,11 +1,15 @@
 package meals_test
 
 import (
+	"database/sql"
 	"errors"
+	"log"
+	"os"
 	"slices"
 	"testing"
 	"time"
 
+	"github.com/jameswhoughton/meals/database"
 	"github.com/jameswhoughton/meals/internal/meals"
 	"github.com/jameswhoughton/meals/memory"
 )
@@ -16,11 +20,11 @@ type toPtrValue interface {
 
 func toPtr[T toPtrValue](v T) *T { return &v }
 
-type MealRepositoryContract struct {
-	repo func() (meals.MealRepository, func())
+type RepositoryContract struct {
+	repo func() (meals.Repository, func())
 }
 
-func (i MealRepositoryContract) Test(t *testing.T) {
+func (i RepositoryContract) Test(t *testing.T) {
 	t.Run("Can create get update and delete a meal", func(t *testing.T) {
 		repo, closeDown := i.repo()
 		defer closeDown()
@@ -48,6 +52,13 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 					Unit:     "can",
 					IsMain:   false,
 				},
+				{
+					// New ingredient
+					Name:     "Garlic",
+					Quantity: 3,
+					Unit:     "clove",
+					IsMain:   false,
+				},
 			},
 		}
 
@@ -65,12 +76,18 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 			t.Errorf("Expected Name %s, got %s", newMeal.Name, createdMeal.Name)
 		}
 
+		for _, ingredient := range newMeal.Ingredients {
+			if ingredient.Id == 0 {
+				t.Errorf("Ingredient %s has an ID of 0", ingredient.Name)
+			}
+		}
+
 		updatedMeal := createdMeal
 
 		updatedMeal.Attributes.Easy = false
 
 		updatedMeal.Ingredients = append(updatedMeal.Ingredients, meals.MealIngredient{
-			Id:       3,
+			Id:       4,
 			Name:     "Onion",
 			Quantity: 2,
 		})
@@ -211,7 +228,7 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 				label: "Exclude ingredient",
 				filters: meals.MealFilter{
 					UserId:            1,
-					ExcludeIngredient: toPtr([]int{1}),
+					ExcludeIngredient: []int{1},
 				},
 				expectedMeals: []int{mealB.Id, mealC.Id},
 			},
@@ -365,44 +382,43 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 	})
 }
 
-/*
-	func TestDatabaseMealRepository(t *testing.T) {
-		init := func() (meals.MealRepository, func()) {
-			conn, err := sql.Open("sqlite3", "meals.db")
+func TestDatabaseRepository(t *testing.T) {
+	init := func() (meals.Repository, func()) {
+		conn, err := sql.Open("sqlite3", "meals.db")
 
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			err = database.Migrate(conn)
-
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			closeDown := func() {
-				os.Remove("meals.db")
-			}
-			return database.NewMealRepository(conn), closeDown
+		if err != nil {
+			log.Fatal(err)
 		}
 
-		contract := MealRepositoryContract{
-			init,
+		err = database.Migrate(conn)
+
+		if err != nil {
+			log.Fatal(err)
 		}
 
-		contract.Test(t)
+		closeDown := func() {
+			os.Remove("meals.db")
+		}
+		return database.NewMealRepository(conn), closeDown
+	}
+
+	contract := RepositoryContract{
+		init,
+	}
+
+	contract.Test(t)
 
 }
-*/
-func TestMemoryMealRepository(t *testing.T) {
-	init := func() (meals.MealRepository, func()) {
+
+func TestMemoryRepository(t *testing.T) {
+	init := func() (meals.Repository, func()) {
 		return &memory.MealRepository{
 			Store:    []meals.Meal{},
 			Calendar: make(map[int][]time.Time),
 		}, func() {}
 	}
 
-	contract := MealRepositoryContract{
+	contract := RepositoryContract{
 		init,
 	}
 

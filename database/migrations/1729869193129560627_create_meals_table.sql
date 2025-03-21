@@ -1,5 +1,6 @@
 CREATE TABLE meals (
 	id INTEGER PRIMARY KEY,
+	user_id INTEGER,
 	name TEXT NOT NULL,
 	notes TEXT NULL,
 	quick BIT DEFAULT 0 NOT NULL,

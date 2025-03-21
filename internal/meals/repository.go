@@ -82,7 +82,7 @@ func (e ErrorMealNotFound) Error() string {
 	return fmt.Sprintf("Meal with the id: %d does not exist.", e.Id)
 }
 
-type MealRepository interface {
+type Repository interface {
 	Get(id int) (Meal, error)
 	List(filter MealFilter) ([]Meal, error)
 	Create(meal Meal) (Meal, error)

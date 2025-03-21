@@ -50,7 +50,7 @@ func (mr *MealRepository) List(filter meals.MealFilter) ([]meals.Meal, error) {
 		if filter.ExcludeIngredient != nil {
 			skip := false
 			for _, ingredient := range meal.Ingredients {
-				if ingredient.IsMain && slices.Contains(*filter.ExcludeIngredient, ingredient.Id) {
+				if ingredient.IsMain && slices.Contains(filter.ExcludeIngredient, ingredient.Id) {
 					skip = true
 					break
 				}
@@ -87,8 +87,27 @@ func (mr *MealRepository) List(filter meals.MealFilter) ([]meals.Meal, error) {
 	return meals, nil
 }
 
+// Loop over all ingredients across all meals to compute the next ID
+func (mr *MealRepository) getNextIngredientId() int {
+	var id int
+
+	for _, meal := range mr.Store {
+		id += len(meal.Ingredients)
+	}
+
+	return id + 1
+}
+
 func (mr *MealRepository) Create(meal meals.Meal) (meals.Meal, error) {
 	meal.Id = len(mr.Store) + 1
+
+	for i, ingredient := range meal.Ingredients {
+		if ingredient.Id == 0 {
+			ingredient.Id = mr.getNextIngredientId()
+
+			meal.Ingredients[i] = ingredient
+		}
+	}
 
 	mr.Store = append(mr.Store, meal)
 
