@@ -18,8 +18,8 @@ func GetRegistrationHandler(templateFiles fs.FS) http.Handler {
 		tmpl, err := template.ParseFS(
 			templateFiles,
 			"templates/layout_guest.gohtml",
-			"templates/form.gohtml",
-			"templates/pages/register.gohtml",
+			"templates/pages/auth/partials/form.gohtml",
+			"templates/pages/auth/register.gohtml",
 		)
 
 		if err != nil {
@@ -90,7 +90,7 @@ func PostRegistrationHandler(userService UserService) http.Handler {
 
 func GetAccountHandler(templateFiles fs.FS, userService UserService) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tmpl, err := template.ParseFS(templateFiles, "templates/layout.gohtml", "templates/navigation.gohtml", "templates/account.gohtml")
+		tmpl, err := template.ParseFS(templateFiles, "templates/layout.gohtml", "templates/navigation.gohtml", "templates/pages/auth/account.gohtml")
 
 		if err != nil {
 			w.Write([]byte("Template error: " + err.Error()))
@@ -225,8 +225,8 @@ func GetLoginHandler(templateFiles fs.FS) http.Handler {
 		tmpl, err := template.ParseFS(
 			templateFiles,
 			"templates/layout_guest.gohtml",
-			"templates/form.gohtml",
-			"templates/pages/login.gohtml",
+			"templates/pages/auth/partials/form.gohtml",
+			"templates/pages/auth/login.gohtml",
 		)
 
 		if err != nil {
