@@ -7,10 +7,12 @@ import (
 	"net/http"
 
 	"github.com/jameswhoughton/meals/internal/auth"
+	"github.com/jameswhoughton/meals/internal/meals"
 )
 
 //go:embed templates/*.gohtml
-//go:embed templates/**/*.gohtml
+//go:embed templates/**/**/*.gohtml
+//go:embed templates/**/**/**/*.gohtml
 var templateFiles embed.FS
 
 //go:embed static/*
@@ -55,4 +57,7 @@ func AddRoutes(
 	// Account
 	mux.Handle("GET /account", isAuthed(auth.GetAccountHandler(templateFiles, userService)))
 	mux.Handle("POST /account", isAuthed(auth.PutAccountHandler(userService)))
+
+	// Meals
+	mux.Handle("GET /meals/create", meals.GetCreateMealHandler(templateFiles))
 }

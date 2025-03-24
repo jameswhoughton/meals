@@ -2,6 +2,7 @@ package meals
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 )
 
@@ -27,6 +28,41 @@ type Meal struct {
 	Attributes  MealAttributes
 	Ingredients []MealIngredient
 	LastEatenOn time.Time
+	Errors      map[string]string
+}
+
+func (m *Meal) Validate() bool {
+	m.Errors = make(map[string]string)
+
+	if m.Name == "" {
+		m.Errors["Name"] = "Name cannot be blank"
+	}
+
+	if len(m.Ingredients) == 0 {
+		m.Errors["Ingredients"] = "Meal must have at least one ingredient"
+	}
+
+	var mainIngredientCount int
+
+	for i, ingredient := range m.Ingredients {
+		if ingredient.IsMain {
+			mainIngredientCount++
+		}
+
+		if ingredient.Quantity == 0 {
+			m.Errors["Ingredients."+strconv.Itoa(i)] = "Ingredient quantity must be greater than zero"
+		}
+
+		if ingredient.Unit == "" {
+			m.Errors["Ingredients."+strconv.Itoa(i)] = "Ingredient unit cannot be blank"
+		}
+	}
+
+	if mainIngredientCount != 1 {
+		m.Errors["Ingredients"] = "Meal must have one main ingredient"
+	}
+
+	return len(m.Errors) == 0
 }
 
 type DateRange struct {
