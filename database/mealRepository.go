@@ -125,13 +125,13 @@ func (mr *MealRepository) List(filter meals.MealFilter) ([]meals.Meal, error) {
 	if filter.DateRange != nil {
 
 		if filter.DateRange.Start != nil && filter.DateRange.End != nil {
-			wheres = append(wheres, "AND (s.date IS NULL OR (s.date > ? AND s.date < ?))")
+			wheres = append(wheres, "AND (IFNULL(s.date, 0) > ? AND IFNULL(s.date, 0) < ?)")
 			values = append(values, *filter.DateRange.Start, *filter.DateRange.End)
 		} else if filter.DateRange.Start != nil {
-			wheres = append(wheres, "AND (s.date IS NULL OR s.date > ?)")
+			wheres = append(wheres, "AND IFNULL(s.date, 0) > ?")
 			values = append(values, *filter.DateRange.Start)
 		} else {
-			wheres = append(wheres, "AND (IFNULL(s.date, 0) < ?)")
+			wheres = append(wheres, "AND IFNULL(s.date, 0) < ?")
 			values = append(values, *filter.DateRange.End)
 		}
 		query += `
