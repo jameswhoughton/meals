@@ -74,3 +74,12 @@
 ## Stretch goals
 - Defaults for daily meal requirements
 - Import/export meals
+
+## Assumptions
+- Each meal must have:
+    - atleast 1 ingredient
+    - 1 main ingredient
+    - a name
+- Ingredients must be associated with a meal (no orphaned ingredients)
+- Both meals and ingredients are specific to the user
+

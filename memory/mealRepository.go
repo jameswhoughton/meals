@@ -47,10 +47,10 @@ func (mr *MealRepository) List(filter meals.MealFilter) ([]meals.Meal, error) {
 			continue
 		}
 
-		if filter.ExcludeIngredient != nil {
+		if filter.ExcludeMainIngredient != nil {
 			skip := false
 			for _, ingredient := range meal.Ingredients {
-				if ingredient.IsMain && slices.Contains(filter.ExcludeIngredient, ingredient.Id) {
+				if ingredient.IsMain && slices.Contains(filter.ExcludeMainIngredient, ingredient.Id) {
 					skip = true
 					break
 				}

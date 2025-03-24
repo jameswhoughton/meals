@@ -157,7 +157,12 @@ func (i RepositoryContract) Test(t *testing.T) {
 				Family: false,
 				Easy:   false,
 			},
-			Ingredients: []meals.MealIngredient{},
+			Ingredients: []meals.MealIngredient{
+				{
+					Id:     4,
+					IsMain: true,
+				},
+			},
 		})
 
 		mealC, _ := repo.Create(meals.Meal{
@@ -196,8 +201,17 @@ func (i RepositoryContract) Test(t *testing.T) {
 			},
 		})
 
-		repo.AssignToDate(mealB.Id, time.Date(2025, time.March, 9, 0, 0, 0, 0, time.UTC))
-		repo.AssignToDate(mealC.Id, time.Date(2025, time.March, 11, 0, 0, 0, 0, time.UTC))
+		err := repo.AssignToDate(mealB.Id, time.Date(2025, time.March, 9, 0, 0, 0, 0, time.UTC))
+
+		if err != nil {
+			t.Errorf("Unexpected error when assigning date: %v", err)
+		}
+
+		err = repo.AssignToDate(mealC.Id, time.Date(2025, time.March, 11, 0, 0, 0, 0, time.UTC))
+
+		if err != nil {
+			t.Errorf("Unexpected error when assigning date: %v", err)
+		}
 
 		type testCase struct {
 			label         string
@@ -227,8 +241,8 @@ func (i RepositoryContract) Test(t *testing.T) {
 			{
 				label: "Exclude ingredient",
 				filters: meals.MealFilter{
-					UserId:            1,
-					ExcludeIngredient: []int{1},
+					UserId:                1,
+					ExcludeMainIngredient: []int{1},
 				},
 				expectedMeals: []int{mealB.Id, mealC.Id},
 			},
@@ -354,9 +368,23 @@ func (i RepositoryContract) Test(t *testing.T) {
 			UserId: 1,
 		})
 
-		repo.AssignToDate(chickenPie.Id, time.Date(2025, time.March, 5, 0, 0, 0, 0, time.UTC))
-		repo.AssignToDate(pizza.Id, time.Date(2025, time.March, 5, 0, 0, 0, 0, time.UTC))
-		repo.AssignToDate(pestoSalmon.Id, time.Date(2025, time.March, 15, 0, 0, 0, 0, time.UTC))
+		err := repo.AssignToDate(chickenPie.Id, time.Date(2025, time.March, 5, 0, 0, 0, 0, time.UTC))
+
+		if err != nil {
+			t.Errorf("Unexpected error when assigning date: %v", err)
+		}
+
+		err = repo.AssignToDate(pizza.Id, time.Date(2025, time.March, 5, 0, 0, 0, 0, time.UTC))
+
+		if err != nil {
+			t.Errorf("Unexpected error when assigning date: %v", err)
+		}
+
+		err = repo.AssignToDate(pestoSalmon.Id, time.Date(2025, time.March, 15, 0, 0, 0, 0, time.UTC))
+
+		if err != nil {
+			t.Errorf("Unexpected error when assigning date: %v", err)
+		}
 
 		dateRange := meals.DateRange{
 			Start: toPtr(time.Date(2025, time.March, 1, 0, 0, 0, 0, time.UTC)),

@@ -40,8 +40,8 @@ type MealFilter struct {
 	Family *bool
 	Easy   *bool
 	// Only include meals eaten before the given date
-	ExcludeIngredient []int
-	DateRange         *DateRange
+	ExcludeMainIngredient []int
+	DateRange             *DateRange
 }
 
 type ErrorMealFilterInvalid struct {

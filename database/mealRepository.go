@@ -78,12 +78,17 @@ func (mr *MealRepository) List(filter meals.MealFilter) ([]meals.Meal, error) {
 	}
 
 	wheres := []string{
-		"AND user_id = ?",
+		"AND m.user_id = ?",
 	}
 	values := []any{
 		filter.UserId,
 	}
 	var mealList []meals.Meal
+
+	query := `
+	SELECT DISTINCT m.id, m.name, m.user_id
+	FROM meals m
+	`
 
 	if filter.Quick != nil {
 		wheres = append(wheres, "AND quick = ?")
@@ -100,18 +105,44 @@ func (mr *MealRepository) List(filter meals.MealFilter) ([]meals.Meal, error) {
 		values = append(values, *filter.Family)
 	}
 
-	if len(filter.ExcludeIngredient) != 0 {
+	if len(filter.ExcludeMainIngredient) != 0 {
 		var params []string
 
-		for _, v := range filter.ExcludeIngredient {
+		for _, v := range filter.ExcludeMainIngredient {
 			params = append(params, "?")
 			values = append(values, v)
 		}
 
-		wheres = append(wheres, "AND meal_id NOT IN ("+strings.Join(params, ", ")+")")
+		wheres = append(wheres, "AND (is_main = 1 AND ingredient_id NOT IN ("+strings.Join(params, ", ")+"))")
+
+		query += `
+		LEFT JOIN ingredients_meals i
+		ON m.id = i.meal_id
+		`
+
 	}
 
-	query := "SELECT id, name, user_id FROM ingredients WHERE 1 = 1 " + strings.Join(wheres, " ")
+	if filter.DateRange != nil {
+
+		if filter.DateRange.Start != nil && filter.DateRange.End != nil {
+			wheres = append(wheres, "AND (s.date IS NULL OR (s.date > ? AND s.date < ?))")
+			values = append(values, *filter.DateRange.Start, *filter.DateRange.End)
+		} else if filter.DateRange.Start != nil {
+			wheres = append(wheres, "AND (s.date IS NULL OR s.date > ?)")
+			values = append(values, *filter.DateRange.Start)
+		} else {
+			wheres = append(wheres, "AND (IFNULL(s.date, 0) < ?)")
+			values = append(values, *filter.DateRange.End)
+		}
+		query += `
+		LEFT JOIN schedule s
+		ON m.id = s.meal_id
+		`
+	}
+
+	query += "WHERE 1 = 1 " + strings.Join(wheres, " ")
+
+	fmt.Println(query, values)
 
 	rows, err := mr.db.Query(query, values...)
 
@@ -135,7 +166,7 @@ func (mr *MealRepository) List(filter meals.MealFilter) ([]meals.Meal, error) {
 }
 
 func createIngredient(tx *sql.Tx, userId int, name string) (int, error) {
-	result, err := tx.Exec("INSERT INTO ingredients (user_id, name), VALUES (?, ?)", userId, name)
+	result, err := tx.Exec("INSERT INTO ingredients (user_id, name) VALUES (?, ?)", userId, name)
 
 	if err != nil {
 		return 0, err
@@ -152,10 +183,9 @@ func createIngredient(tx *sql.Tx, userId int, name string) (int, error) {
 
 func associateIngredientToMeal(tx *sql.Tx, mealId int, ingredient meals.MealIngredient) error {
 	insertUpdateQuery := `
-	INSERT INTO ingredients_meals
+	REPLACE INTO ingredients_meals
 	(ingredient_id, meal_id, quantity, unit, is_main)
 	VALUES (?, ?, ?, ?, ?)
-	ON CONFLICT REPLACE
 	`
 
 	_, err := tx.Exec(
@@ -247,6 +277,8 @@ func (mr *MealRepository) Create(meal meals.Meal) (meals.Meal, error) {
 		}
 	}
 
+	tx.Commit()
+
 	return meal, nil
 
 }
@@ -266,7 +298,7 @@ func (mr *MealRepository) Update(meal meals.Meal) error {
 	notes = ?,
 	quick = ?,
 	family = ?,
-	easy = ?,
+	easy = ?
 	WHERE id = ?
 	`
 
@@ -310,7 +342,7 @@ func (mr *MealRepository) Update(meal meals.Meal) error {
 	_, err = tx.Exec(`
 	DELETE FROM ingredients_meals
 	WHERE meal_id = ?
-	AND ingrediend_id NOT IN (?`+strings.Repeat(",?", len(deleteParams)-2)+`)
+	AND ingredient_id NOT IN (?`+strings.Repeat(",?", len(deleteParams)-2)+`)
 	`, deleteParams...)
 
 	if err != nil {
@@ -356,5 +388,17 @@ func (mr *MealRepository) Destroy(id int) error {
 }
 
 func (mr *MealRepository) AssignToDate(id int, date time.Time) error {
+	query := `
+	INSERT OR REPLACE INTO schedule 
+	(meal_id, date)
+	SELECT ?, ?
+	WHERE NOT EXISTS (SELECT * FROM schedule WHERE meal_id = ? AND date = ?)
+	`
+	_, err := mr.db.Exec(query, id, date, id, date)
+
+	if err != nil {
+		return fmt.Errorf("MealRepository.AssignToDate: Error assigning meal %d to date %v: %v", id, date, err)
+	}
+
 	return nil
 }
