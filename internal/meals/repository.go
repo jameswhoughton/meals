@@ -12,6 +12,12 @@ type MealAttributes struct {
 	Easy   bool
 }
 
+type Ingredient struct {
+	Id     int
+	UserId int
+	Name   string
+}
+
 type MealIngredient struct {
 	Id       int
 	Name     string
