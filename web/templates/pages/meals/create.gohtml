@@ -1,4 +1,3 @@
-
 {{define "body"}}
 <div class="bg-zinc-800 p-6 rounded-md shadow-md w-full h-full">
     <h1 class="text-xl mb-6">Create a Meal</h1>
@@ -17,7 +16,7 @@
             {{if .Form.Errors.Notes}}<div class="text-sm text-red-400">{{.Form.Errors.Notes}}</div>{{end}}
         </div>
         <div id="ingredients">
-            <meal-ingredient data-index="1" data-id="5" data-name="tomatoes" data-quantity="3" data-unit="tins" />
+            <meal-ingredient data-index="0" data-id="5" data-name="tomatoes" data-quantity="3" data-unit="tins" />
         </div>
         <button type="button" onclick="addIngredient()">Add ingredient</button>
         <button class="py-2 px-1.5 rounded-md bg-cyan-800 hover:bg-cyan-900 transition-colors w-auto"
@@ -25,10 +24,10 @@
     </form>
 </div>
 <template id="ingredient-template">
-    <div class="flex justify-between items-center gap-4">
-        <input class="name" />
-        <input class="quantity" />
-        <input class="unit" />
+    <div class="flex items-center gap-4">
+        <input name="ingredientName" class="name | py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" />
+        <input name="ingredientQuantity" class="quantity | py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" />
+        <input name="ingredientUnit" class="unit | py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" />
         <button class="remove-ingredient">remove</button>
     </div>
 </template>
@@ -38,7 +37,7 @@ function addIngredient() {
     const node = document.createElement('meal-ingredient')
     const ingredientCount = document.querySelectorAll('meal-ingredient').length
 
-    node.dataset.index = ingredientCount + 1
+    node.dataset.index = ingredientCount
 
     document.getElementById('ingredients').append(node)
 }
@@ -57,15 +56,16 @@ customElements.define(
 
             const index = this.getAttribute('data-index')
 
-            template.querySelector('.name').value = this.getAttribute('data-name')
+            const nameEl = template.querySelector('.name')
+
+            nameEl.value = this.getAttribute('data-name')
             template.querySelector('.quantity').value = this.getAttribute('data-quantity')
             template.querySelector('.unit').value = this.getAttribute('data-unit')
             template.querySelector('.remove-ingredient').onclick = () => {
                 document.querySelector('meal-ingredient[data-index="' + index + '"]').remove()
             }
 
-            const shadowRoot = this.attachShadow({ mode: "open" })
-            shadowRoot.appendChild(template)
+            this.appendChild(template)
         }
     }
 )
