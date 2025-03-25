@@ -42,11 +42,13 @@ func (s *Service) UpdateMeal(meal *Meal) error {
 	return nil
 }
 
-// Destroy a meal
+func (s *Service) DestroyMeal(id int) error {
+	return s.repo.Destroy(id)
+}
 
-// Filter a list of meals
-
-// List assigned meals for a date range
+func (s *Service) ListMeals(filter MealFilter) ([]Meal, error) {
+	return s.repo.List(filter)
+}
 
 // Assign a meal to a date
 

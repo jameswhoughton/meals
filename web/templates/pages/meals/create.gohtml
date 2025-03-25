@@ -2,10 +2,7 @@
 {{define "body"}}
 <div class="bg-zinc-800 p-6 rounded-md shadow-md w-full h-full">
     <h1 class="text-xl mb-6">Create a Meal</h1>
-    {{if .Success}}
-    <div class="py-2 px-3 bg-green-200 text-slate-900">{{.Success}}</div>
-    {{end}}
-    <form method="post" action="/account" class="mb-0">
+    <form method="post" action="/meals/create" class="mb-0">
         <div class="flex flex-col gap-2 mb-4">
             <label class="text-sm text-slate-300" for="name">name</label>
             <input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" type="text" name="name"
@@ -13,24 +10,64 @@
             {{if .Form.Errors.Name}}<div class="text-sm text-red-400">{{.Form.Errors.Name}}</div>{{end}}
         </div>
         <div class="flex flex-col gap-2 mb-4">
-            <label class="text-sm text-slate-300" for="email">email</label>
-            <input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" type="text" name="email"
-                value="{{.Form.Email}}" />
-            {{if .Form.Errors.Email}}<div class="text-sm text-red-400">{{.Form.Errors.Email}}</div>{{end}}
+            <label class="text-sm text-slate-300" for="notes">notes</label>
+            <textearea class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[400px] min-h-[100px]" name="notes">
+                {{.Form.Notes}}
+            </textarea>
+            {{if .Form.Errors.Notes}}<div class="text-sm text-red-400">{{.Form.Errors.Notes}}</div>{{end}}
         </div>
-        <div class="flex flex-col gap-2 mb-4">
-            <label class="text-sm text-slate-300" for="password">password</label>
-            <input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" type="password"
-                name="password" />
-            {{if .Form.Errors.Password}}<div class="text-sm text-red-400">{{.Form.Errors.Password}}</div>{{end}}
+        <div id="ingredients">
+            <meal-ingredient data-index="1" data-id="5" data-name="tomatoes" data-quantity="3" data-unit="tins" />
         </div>
-        <div class="flex flex-col gap-2 mb-4">
-            <label class="text-sm text-slate-300" for="passwordConfirm">confirm password</label>
-            <input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" type="password"
-                name="passwordConfirm" />
-        </div>
+        <button type="button" onclick="addIngredient()">Add ingredient</button>
         <button class="py-2 px-1.5 rounded-md bg-cyan-800 hover:bg-cyan-900 transition-colors w-auto"
-            type="submit">Update</button>
+            type="submit">Create</button>
     </form>
 </div>
+<template id="ingredient-template">
+    <div class="flex justify-between items-center gap-4">
+        <input class="name" />
+        <input class="quantity" />
+        <input class="unit" />
+        <button class="remove-ingredient">remove</button>
+    </div>
+</template>
+
+<script>
+function addIngredient() {
+    const node = document.createElement('meal-ingredient')
+    const ingredientCount = document.querySelectorAll('meal-ingredient').length
+
+    node.dataset.index = ingredientCount + 1
+
+    document.getElementById('ingredients').append(node)
+}
+
+customElements.define(
+    'meal-ingredient',
+    class extends HTMLElement {
+        constructor() {
+            super()
+        }
+
+        connectedCallback() {
+            const template = document.getElementById(
+                "ingredient-template",
+            ).content.cloneNode(true)
+
+            const index = this.getAttribute('data-index')
+
+            template.querySelector('.name').value = this.getAttribute('data-name')
+            template.querySelector('.quantity').value = this.getAttribute('data-quantity')
+            template.querySelector('.unit').value = this.getAttribute('data-unit')
+            template.querySelector('.remove-ingredient').onclick = () => {
+                document.querySelector('meal-ingredient[data-index="' + index + '"]').remove()
+            }
+
+            const shadowRoot = this.attachShadow({ mode: "open" })
+            shadowRoot.appendChild(template)
+        }
+    }
+)
+</script>
 {{end}}
