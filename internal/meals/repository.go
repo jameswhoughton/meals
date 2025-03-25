@@ -125,4 +125,5 @@ type Repository interface {
 	Update(meal Meal) error
 	Destroy(id int) error
 	AssignToDate(id int, date time.Time) error
+	FindIngredients(search string, userId int) ([]Ingredient, error)
 }

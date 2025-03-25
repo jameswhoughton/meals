@@ -2,6 +2,7 @@ package memory
 
 import (
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/jameswhoughton/meals/internal/meals"
@@ -150,4 +151,30 @@ func (mr *MealRepository) AssignToDate(id int, date time.Time) error {
 	}
 
 	return nil
+}
+
+func (mr *MealRepository) FindIngredients(search string, userId int) ([]meals.Ingredient, error) {
+	var ingredients []meals.Ingredient
+
+	seen := make(map[int]bool)
+	search = strings.ToLower(search)
+
+	for _, meal := range mr.Store {
+
+		if meal.UserId != userId {
+			continue
+		}
+		for _, ingredient := range meal.Ingredients {
+			if _, ok := seen[ingredient.Id]; ok {
+				continue
+			}
+
+			if strings.Contains(strings.ToLower(ingredient.Name), search) {
+				ingredients = append(ingredients, meals.Ingredient{Id: ingredient.Id, Name: ingredient.Name})
+				seen[ingredient.Id] = true
+			}
+		}
+	}
+
+	return ingredients, nil
 }

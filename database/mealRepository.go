@@ -142,8 +142,6 @@ func (mr *MealRepository) List(filter meals.MealFilter) ([]meals.Meal, error) {
 
 	query += "WHERE 1 = 1 " + strings.Join(wheres, " ")
 
-	fmt.Println(query, values)
-
 	rows, err := mr.db.Query(query, values...)
 
 	if err != nil {
@@ -401,4 +399,34 @@ func (mr *MealRepository) AssignToDate(id int, date time.Time) error {
 	}
 
 	return nil
+}
+
+func (mr *MealRepository) FindIngredients(search string, userId int) ([]meals.Ingredient, error) {
+	var ingredients []meals.Ingredient
+
+	results, err := mr.db.Query(
+		"SELECT id, user_id, name FROM ingredients WHERE user_id = ? AND name LIKE ?",
+		userId,
+		"%"+search+"%",
+	)
+
+	if err != nil {
+		return ingredients, fmt.Errorf("MealRepository.FetchIngredients: Error querying for ingredients: %v", err)
+	}
+
+	defer results.Close()
+
+	for results.Next() {
+		var ingredient meals.Ingredient
+
+		err = results.Scan(&ingredient.Id, &ingredient.UserId, &ingredient.Name)
+
+		if err != nil {
+			return ingredients, fmt.Errorf("MealRepository.FetchIngredients: Error scanning ingredients: %v", err)
+		}
+
+		ingredients = append(ingredients, ingredient)
+	}
+
+	return ingredients, nil
 }

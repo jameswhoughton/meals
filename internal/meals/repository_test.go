@@ -408,6 +408,70 @@ func (i RepositoryContract) Test(t *testing.T) {
 			t.Errorf("Expected Id %d, got %d (%s)", chickenPie.Id, meals[0].Id, meals[0].Name)
 		}
 	})
+
+	t.Run("Can filter a list of ingredients by name", func(t *testing.T) {
+		repo, closeDown := i.repo()
+		defer closeDown()
+
+		mealA := meals.Meal{
+			Name:   "Bolognese",
+			UserId: 1,
+			Ingredients: []meals.MealIngredient{
+				{
+					Name: "Beef mince",
+				},
+				{
+					Name: "Tinned tomatoes",
+				},
+				{
+					Name: "Garlic",
+				},
+				{
+					Name: "Onion",
+				},
+			},
+		}
+
+		mealB := meals.Meal{
+			Name:   "Stir fry",
+			UserId: 1,
+			Ingredients: []meals.MealIngredient{
+				{
+					Name: "Spring onion",
+				},
+				{
+					Name: "Chicken",
+				},
+			},
+		}
+
+		mealC := meals.Meal{
+			Name:   "Fajitas",
+			UserId: 2,
+			Ingredients: []meals.MealIngredient{
+				{
+					Name: "Chicken",
+				},
+				{
+					Name: "Red Onion",
+				},
+			},
+		}
+		repo.Create(mealA)
+		repo.Create(mealB)
+		repo.Create(mealC)
+		searchString := "Onio"
+		ingredients, err := repo.FindIngredients(searchString, 1)
+
+		if err != nil {
+			t.Errorf("List ingredients: Unexpected error: %v", err)
+		}
+
+		if len(ingredients) != 2 {
+			t.Errorf("Expected 2 results, got %d", len(ingredients))
+		}
+
+	})
 }
 
 func TestDatabaseRepository(t *testing.T) {
