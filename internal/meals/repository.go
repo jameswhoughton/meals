@@ -34,6 +34,8 @@ type Meal struct {
 	Attributes  MealAttributes
 	Ingredients []MealIngredient
 	LastEatenOn time.Time
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 	Errors      map[string]string
 }
 

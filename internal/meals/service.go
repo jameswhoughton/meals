@@ -2,6 +2,7 @@ package meals
 
 import (
 	"fmt"
+	"time"
 )
 
 type Service struct {
@@ -14,10 +15,17 @@ func (e ErrorFormInvalid) Error() string {
 	return "Meal form invalid"
 }
 
+func NewService(s Repository) Service {
+	return Service{s}
+}
+
 func (s *Service) CreateMeal(meal *Meal) (Meal, error) {
 	if isValid := meal.Validate(); !isValid {
 		return Meal{}, ErrorFormInvalid{}
 	}
+
+	meal.CreatedAt = time.Now()
+	meal.UpdatedAt = time.Now()
 
 	createdMeal, err := s.repo.Create(*meal)
 

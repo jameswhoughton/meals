@@ -268,7 +268,7 @@ func (mr *MealRepository) Create(meal meals.Meal) (meals.Meal, error) {
 			meal.Ingredients[i].Id = id
 		}
 
-		err = associateIngredientToMeal(tx, meal.Id, ingredient)
+		err = associateIngredientToMeal(tx, meal.Id, meal.Ingredients[i])
 
 		if err != nil {
 			return meal, fmt.Errorf("MealRepository.Create: Error associating ingredient: %v", err)

@@ -112,6 +112,12 @@ func (i RepositoryContract) Test(t *testing.T) {
 			t.Errorf("Expected Name %s, got %s", fetchedMeal.Name, updatedMeal.Name)
 		}
 
+		for _, ingredient := range fetchedMeal.Ingredients {
+			if ingredient.Id == 0 {
+				t.Errorf("Ingredient %s has an ID of 0", ingredient.Name)
+			}
+		}
+
 		err = repo.Destroy(fetchedMeal.Id)
 
 		if err != nil {
