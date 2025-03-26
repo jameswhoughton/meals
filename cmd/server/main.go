@@ -6,6 +6,7 @@ import (
 
 	"github.com/jameswhoughton/meals/database"
 	"github.com/jameswhoughton/meals/internal/auth"
+	"github.com/jameswhoughton/meals/internal/meals"
 	"github.com/jameswhoughton/meals/web"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -25,10 +26,12 @@ func main() {
 
 	userRepository := database.NewUserRespository(conn)
 	sessionRepsoitory := database.NewSessionRepository(conn)
+	mealRepository := database.NewMealRepository(conn)
 
 	userService := auth.NewUserService(userRepository, sessionRepsoitory, 3600)
+	mealService := meals.NewService(mealRepository)
 
-	server := web.NewServer("8000", &userService)
+	server := web.NewServer("8000", &userService, &mealService)
 
 	log.Fatal(server.Start())
 }

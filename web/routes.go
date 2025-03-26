@@ -21,6 +21,7 @@ var publicFiles embed.FS
 func AddRoutes(
 	mux *http.ServeMux,
 	userService auth.UserService,
+	mealService meals.Service,
 ) {
 	// Middleware
 	isAuthed := auth.NewIsAuthenticatedMiddleware(userService)
@@ -59,5 +60,6 @@ func AddRoutes(
 	mux.Handle("POST /account", isAuthed(auth.PutAccountHandler(userService)))
 
 	// Meals
-	mux.Handle("GET /meals/create", meals.GetCreateMealHandler(templateFiles))
+	mux.Handle("GET /meals/create", isAuthed(meals.GetCreateMealHandler(templateFiles)))
+	mux.Handle("POST /meals/create", isAuthed(meals.PostMealHandler(mealService)))
 }
