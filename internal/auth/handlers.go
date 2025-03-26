@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"html/template"
@@ -356,7 +357,7 @@ func NewIsAuthenticatedMiddleware(userService UserService) middleware {
 				return
 			}
 
-			_, err = userService.GetUserFromSession(session.Value)
+			user, err := userService.GetUserFromSession(session.Value)
 
 			if err != nil {
 				if errors.Is(err, ErrorSessionNotFound{}) {
@@ -371,6 +372,10 @@ func NewIsAuthenticatedMiddleware(userService UserService) middleware {
 
 				return
 			}
+
+			ctx := context.WithValue(r.Context(), "userId", user.Id)
+
+			r = r.WithContext(ctx)
 
 			next.ServeHTTP(w, r)
 		})
