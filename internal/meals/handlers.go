@@ -63,11 +63,16 @@ func mealFromRequest(r http.Request) Meal {
 	r.ParseForm()
 
 	var (
+		id          int
 		quick       bool
 		family      bool
 		easy        bool
 		ingredients []MealIngredient
 	)
+
+	if r.Form.Has("id") {
+		id, _ = strconv.Atoi(r.FormValue("id"))
+	}
 
 	if r.FormValue("quick") == "1" {
 		quick = true
@@ -104,6 +109,7 @@ func mealFromRequest(r http.Request) Meal {
 	}
 
 	return Meal{
+		Id:    id,
 		Name:  r.FormValue("name"),
 		Notes: r.FormValue("notes"),
 		Attributes: MealAttributes{
