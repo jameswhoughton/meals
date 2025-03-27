@@ -101,6 +101,9 @@ func mealFromRequest(r http.Request) Meal {
 			isMain = true
 		}
 
+		id, _ := strconv.Atoi(r.Form["ingredientId"][i])
+
+		ingredient.Id = id
 		ingredient.Name = r.Form["ingredientName"][i]
 		ingredient.Quantity = quantity
 		ingredient.Unit = r.Form["ingredientUnit"][i]
@@ -156,3 +159,67 @@ func PostMealHandler(service Service) http.Handler {
 // DeleteMealHandler
 
 // GetPlannerHandler
+
+func GetIngredientsHandler(templateFiles fs.FS, service Service) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tmpl, err := template.ParseFS(
+			templateFiles,
+			"templates/layout.gohtml",
+			"templates/navigation.gohtml",
+			"templates/pages/ingredients/list.gohtml",
+		)
+
+		if err != nil {
+			w.Write([]byte("Template error: " + err.Error()))
+
+			return
+		}
+
+		userId := r.Context().Value("userId").(int)
+		queryString := r.URL.Query().Get("query")
+
+		ingredients, err := service.repo.FindIngredients(queryString, userId)
+
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "server error", http.StatusInternalServerError)
+		}
+
+		type templateData struct {
+			Title       string
+			SearchQuery string
+			Ingredients []Ingredient
+		}
+
+		tmpl.ExecuteTemplate(w, "layout", templateData{
+			Title:       "Ingredients",
+			SearchQuery: queryString,
+			Ingredients: ingredients,
+		})
+	})
+}
+
+func GetSearchIngredientsHandler(service Service) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userId := r.Context().Value("userId").(int)
+
+		queryString := r.URL.Query().Get("query")
+
+		ingredients, err := service.ListIngredients(queryString, userId)
+
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "server error", http.StatusInternalServerError)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+
+		json.NewEncoder(w).Encode(ingredients)
+	})
+}
+
+func GetIngredientHandler(templateFiles fs.FS, serivce Service) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+	})
+}

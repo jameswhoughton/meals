@@ -61,3 +61,7 @@ func (s *Service) ListMeals(filter MealFilter) ([]Meal, error) {
 // Assign a meal to a date
 
 // Return 1 or more random meals restricted by parameters/rules
+
+func (s *Service) ListIngredients(query string, userId int) ([]Ingredient, error) {
+	return s.repo.FindIngredients(query, userId)
+}
