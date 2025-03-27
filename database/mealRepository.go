@@ -430,3 +430,13 @@ func (mr *MealRepository) FindIngredients(search string, userId int) ([]meals.In
 
 	return ingredients, nil
 }
+
+func (mr *MealRepository) UpdateIngredient(ingredient meals.Ingredient) error {
+	_, err := mr.db.Exec("UPDATE ingredients SET name = ? WHERE id = ? AND user_id = ?", ingredient.Name, ingredient.Id, ingredient.UserId)
+
+	if err != nil {
+		return fmt.Errorf("MealRepository.UpdateIngredient: Error updating ingredient: %v", err)
+	}
+
+	return nil
+}

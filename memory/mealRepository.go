@@ -178,3 +178,20 @@ func (mr *MealRepository) FindIngredients(search string, userId int) ([]meals.In
 
 	return ingredients, nil
 }
+
+func (mr *MealRepository) UpdateIngredient(ingredient meals.Ingredient) error {
+	for i, meal := range mr.Store {
+		if meal.UserId != ingredient.UserId {
+			continue
+		}
+
+		for j, existingingredient := range meal.Ingredients {
+			if ingredient.Id == existingingredient.Id {
+				mr.Store[i].Ingredients[j].Name = ingredient.Name
+				break
+			}
+		}
+	}
+
+	return nil
+}

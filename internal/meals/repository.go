@@ -13,9 +13,9 @@ type MealAttributes struct {
 }
 
 type Ingredient struct {
-	Id     int
-	UserId int
-	Name   string
+	Id     int    `json:"id"`
+	UserId int    `json:"-"`
+	Name   string `json:"name"`
 }
 
 type MealIngredient struct {
@@ -134,4 +134,5 @@ type Repository interface {
 	Destroy(id int) error
 	AssignToDate(id int, date time.Time) error
 	FindIngredients(search string, userId int) ([]Ingredient, error)
+	UpdateIngredient(ingredient Ingredient) error
 }

@@ -478,6 +478,45 @@ func (i RepositoryContract) Test(t *testing.T) {
 		}
 
 	})
+
+	t.Run("Can update the name of an ingredient", func(t *testing.T) {
+		repo, closeDown := i.repo()
+		defer closeDown()
+
+		meal := meals.Meal{
+			Name:   "Stir fry",
+			UserId: 1,
+			Ingredients: []meals.MealIngredient{
+				{
+					Name: "Spring onin",
+				},
+			},
+		}
+
+		createdMeal, err := repo.Create(meal)
+
+		if err != nil {
+			t.Errorf("Unexpected error: %v", err)
+		}
+
+		newName := "Spring onion"
+
+		err = repo.UpdateIngredient(meals.Ingredient{Id: createdMeal.Ingredients[0].Id, UserId: 1, Name: newName})
+
+		if err != nil {
+			t.Errorf("Unexpected error: %v", err)
+		}
+
+		fetchedMeal, err := repo.Get(createdMeal.Id)
+
+		if err != nil {
+			t.Errorf("Unexpected error: %v", err)
+		}
+
+		if fetchedMeal.Ingredients[0].Name != newName {
+			t.Errorf("Expected ingredient name to be updated to %s, found %s", newName, fetchedMeal.Ingredients[0].Name)
+		}
+	})
 }
 
 func TestDatabaseRepository(t *testing.T) {
