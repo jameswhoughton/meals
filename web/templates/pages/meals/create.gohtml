@@ -36,6 +36,7 @@
             {{range $i, $ingredient := .Form.Ingredients}}
             <meal-ingredient
                 data-index="{{$i}}"
+                data-id="{{$ingredient.Id}}"
                 data-name="{{$ingredient.Name}}"
                 data-quantity="{{$ingredient.Quantity}}"
                 data-unit="{{$ingredient.Unit}}"
@@ -48,6 +49,7 @@
 </div>
 <template id="ingredient-template">
     <div class="flex items-center gap-4 wrap">
+        <div class="id | self-end"></div>
         <div class="flex flex-col gap-2">
             <label class="text-sm text-slate-300" for="notes">name</label>
             <input name="ingredientName" class="name | py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" />
@@ -98,6 +100,11 @@ customElements.define(
             template.querySelector('.quantity').value = this.getAttribute('data-quantity')
             template.querySelector('.unit').value = this.getAttribute('data-unit')
             template.querySelector('[name="isMain"]').value = index
+
+            const id = this.getAttribute('data-id')
+
+            template.querySelector('.id').innerText = id === null ? 'New' : id
+
             template.querySelector('.remove-ingredient').onclick = () => {
                 document.querySelector('meal-ingredient[data-index="' + index + '"]').remove()
             }
