@@ -6,17 +6,18 @@ import (
 )
 
 type Service struct {
-	repo Repository
+	meals       MealRepository
+	ingredients IngredientRepository
 }
 
 type ErrorFormInvalid struct{}
 
 func (e ErrorFormInvalid) Error() string {
-	return "Meal form invalid"
+	return "Form invalid"
 }
 
-func NewService(s Repository) Service {
-	return Service{s}
+func NewService(m MealRepository, i IngredientRepository) Service {
+	return Service{m, i}
 }
 
 func (s *Service) CreateMeal(meal *Meal) (Meal, error) {
@@ -27,7 +28,7 @@ func (s *Service) CreateMeal(meal *Meal) (Meal, error) {
 	meal.CreatedAt = time.Now()
 	meal.UpdatedAt = time.Now()
 
-	createdMeal, err := s.repo.Create(*meal)
+	createdMeal, err := s.meals.Create(*meal)
 
 	if err != nil {
 		return Meal{}, fmt.Errorf("Error creating meal: %v", err)
@@ -41,7 +42,7 @@ func (s *Service) UpdateMeal(meal *Meal) error {
 		return ErrorFormInvalid{}
 	}
 
-	err := s.repo.Update(*meal)
+	err := s.meals.Update(*meal)
 
 	if err != nil {
 		return fmt.Errorf("Error updating meal: %v", err)
@@ -50,18 +51,18 @@ func (s *Service) UpdateMeal(meal *Meal) error {
 	return nil
 }
 
-func (s *Service) DestroyMeal(id int) error {
-	return s.repo.Destroy(id)
-}
+func (s *Service) UpdateIngredient(ingredient *Ingredient) error {
+	if isValid := ingredient.Validate(); !isValid {
+		return ErrorFormInvalid{}
+	}
 
-func (s *Service) ListMeals(filter MealFilter) ([]Meal, error) {
-	return s.repo.List(filter)
-}
+	err := s.ingredients.Update(*ingredient)
 
-// Assign a meal to a date
+	if err != nil {
+		return fmt.Errorf("Error updating ingredient: %v", err)
+	}
+
+	return nil
+}
 
 // Return 1 or more random meals restricted by parameters/rules
-
-func (s *Service) ListIngredients(query string, userId int) ([]Ingredient, error) {
-	return s.repo.FindIngredients(query, userId)
-}

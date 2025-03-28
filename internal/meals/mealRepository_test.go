@@ -21,7 +21,7 @@ type toPtrValue interface {
 func toPtr[T toPtrValue](v T) *T { return &v }
 
 type RepositoryContract struct {
-	repo func() (meals.Repository, func())
+	repo func() (meals.MealRepository, func())
 }
 
 func (i RepositoryContract) Test(t *testing.T) {
@@ -414,113 +414,10 @@ func (i RepositoryContract) Test(t *testing.T) {
 			t.Errorf("Expected Id %d, got %d (%s)", chickenPie.Id, meals[0].Id, meals[0].Name)
 		}
 	})
-
-	t.Run("Can filter a list of ingredients by name", func(t *testing.T) {
-		repo, closeDown := i.repo()
-		defer closeDown()
-
-		mealA := meals.Meal{
-			Name:   "Bolognese",
-			UserId: 1,
-			Ingredients: []meals.MealIngredient{
-				{
-					Name: "Beef mince",
-				},
-				{
-					Name: "Tinned tomatoes",
-				},
-				{
-					Name: "Garlic",
-				},
-				{
-					Name: "Onion",
-				},
-			},
-		}
-
-		mealB := meals.Meal{
-			Name:   "Stir fry",
-			UserId: 1,
-			Ingredients: []meals.MealIngredient{
-				{
-					Name: "Spring onion",
-				},
-				{
-					Name: "Chicken",
-				},
-			},
-		}
-
-		mealC := meals.Meal{
-			Name:   "Fajitas",
-			UserId: 2,
-			Ingredients: []meals.MealIngredient{
-				{
-					Name: "Chicken",
-				},
-				{
-					Name: "Red Onion",
-				},
-			},
-		}
-		repo.Create(mealA)
-		repo.Create(mealB)
-		repo.Create(mealC)
-		searchString := "Onio"
-		ingredients, err := repo.FindIngredients(searchString, 1)
-
-		if err != nil {
-			t.Errorf("List ingredients: Unexpected error: %v", err)
-		}
-
-		if len(ingredients) != 2 {
-			t.Errorf("Expected 2 results, got %d", len(ingredients))
-		}
-
-	})
-
-	t.Run("Can update the name of an ingredient", func(t *testing.T) {
-		repo, closeDown := i.repo()
-		defer closeDown()
-
-		meal := meals.Meal{
-			Name:   "Stir fry",
-			UserId: 1,
-			Ingredients: []meals.MealIngredient{
-				{
-					Name: "Spring onin",
-				},
-			},
-		}
-
-		createdMeal, err := repo.Create(meal)
-
-		if err != nil {
-			t.Errorf("Unexpected error: %v", err)
-		}
-
-		newName := "Spring onion"
-
-		err = repo.UpdateIngredient(meals.Ingredient{Id: createdMeal.Ingredients[0].Id, UserId: 1, Name: newName})
-
-		if err != nil {
-			t.Errorf("Unexpected error: %v", err)
-		}
-
-		fetchedMeal, err := repo.Get(createdMeal.Id)
-
-		if err != nil {
-			t.Errorf("Unexpected error: %v", err)
-		}
-
-		if fetchedMeal.Ingredients[0].Name != newName {
-			t.Errorf("Expected ingredient name to be updated to %s, found %s", newName, fetchedMeal.Ingredients[0].Name)
-		}
-	})
 }
 
 func TestDatabaseRepository(t *testing.T) {
-	init := func() (meals.Repository, func()) {
+	init := func() (meals.MealRepository, func()) {
 		conn, err := sql.Open("sqlite3", "meals.db")
 
 		if err != nil {
@@ -548,7 +445,7 @@ func TestDatabaseRepository(t *testing.T) {
 }
 
 func TestMemoryRepository(t *testing.T) {
-	init := func() (meals.Repository, func()) {
+	init := func() (meals.MealRepository, func()) {
 		return &memory.MealRepository{
 			Store:    []meals.Meal{},
 			Calendar: make(map[int][]time.Time),

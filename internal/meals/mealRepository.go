@@ -12,12 +12,6 @@ type MealAttributes struct {
 	Easy   bool
 }
 
-type Ingredient struct {
-	Id     int    `json:"id"`
-	UserId int    `json:"-"`
-	Name   string `json:"name"`
-}
-
 type MealIngredient struct {
 	Id       int
 	Name     string
@@ -44,10 +38,6 @@ func (m *Meal) Validate() bool {
 
 	if m.Name == "" {
 		m.Errors["Name"] = "Name cannot be blank"
-	}
-
-	if len(m.Ingredients) == 0 {
-		m.Errors["Ingredients"] = "Meal must have at least one ingredient"
 	}
 
 	var mainIngredientCount int
@@ -126,13 +116,11 @@ func (e ErrorMealNotFound) Error() string {
 	return fmt.Sprintf("Meal with the id: %d does not exist.", e.Id)
 }
 
-type Repository interface {
+type MealRepository interface {
 	Get(id int) (Meal, error)
 	List(filter MealFilter) ([]Meal, error)
 	Create(meal Meal) (Meal, error)
 	Update(meal Meal) error
 	Destroy(id int) error
 	AssignToDate(id int, date time.Time) error
-	FindIngredients(search string, userId int) ([]Ingredient, error)
-	UpdateIngredient(ingredient Ingredient) error
 }

@@ -3,6 +3,7 @@ package meals
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/fs"
 	"log"
 	"net/http"
@@ -160,7 +161,7 @@ func PostMealHandler(service Service) http.Handler {
 
 // GetPlannerHandler
 
-func GetIngredientsHandler(templateFiles fs.FS, service Service) http.Handler {
+func GetIngredientsHandler(templateFiles fs.FS, ingredients IngredientRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
 			templateFiles,
@@ -178,7 +179,7 @@ func GetIngredientsHandler(templateFiles fs.FS, service Service) http.Handler {
 		userId := r.Context().Value("userId").(int)
 		queryString := r.URL.Query().Get("query")
 
-		ingredients, err := service.repo.FindIngredients(queryString, userId)
+		ingredients, err := ingredients.Find(queryString, userId)
 
 		if err != nil {
 			log.Println(err)
@@ -199,13 +200,13 @@ func GetIngredientsHandler(templateFiles fs.FS, service Service) http.Handler {
 	})
 }
 
-func GetSearchIngredientsHandler(service Service) http.Handler {
+func GetSearchIngredientsHandler(ingredients IngredientRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userId := r.Context().Value("userId").(int)
 
 		queryString := r.URL.Query().Get("query")
 
-		ingredients, err := service.ListIngredients(queryString, userId)
+		ingredients, err := ingredients.Find(queryString, userId)
 
 		if err != nil {
 			log.Println(err)
@@ -218,8 +219,99 @@ func GetSearchIngredientsHandler(service Service) http.Handler {
 	})
 }
 
-func GetIngredientHandler(templateFiles fs.FS, serivce Service) http.Handler {
+func GetIngredientHandler(templateFiles fs.FS, ingredients IngredientRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tmpl, err := template.ParseFS(
+			templateFiles,
+			"templates/layout.gohtml",
+			"templates/navigation.gohtml",
+			"templates/pages/ingredients/edit.gohtml",
+		)
 
+		if err != nil {
+			w.Write([]byte("Template error: " + err.Error()))
+
+			return
+		}
+
+		userId := r.Context().Value("userId").(int)
+		ingredientId, _ := strconv.Atoi(r.PathValue("id"))
+
+		ingredient, err := ingredients.GetById(ingredientId)
+
+		if err != nil {
+			if errors.Is(err, ErrorIngredientNotFound{}) {
+				w.WriteHeader(http.StatusNotFound)
+
+				fmt.Fprintf(w, "Ingredient with the id: %d not found", ingredientId)
+				return
+			}
+		}
+
+		if ingredient.UserId != userId {
+			w.WriteHeader(http.StatusForbidden)
+
+			fmt.Fprint(w, "You do not have permission to access this page")
+			return
+		}
+
+		formJson, err := helpers.GetMessage(w, r, "formData")
+
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "server error", http.StatusInternalServerError)
+
+			return
+		}
+
+		if formJson != "" {
+			json.Unmarshal([]byte(formJson), &ingredient)
+		}
+
+		type templateData struct {
+			Title string
+			Form  Ingredient
+		}
+
+		tmpl.ExecuteTemplate(w, "layout", templateData{
+			Title: "Edit Ingredients",
+			Form:  ingredient,
+		})
+	})
+}
+
+func PutIngredientHandler(service Service) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.ParseForm()
+
+		userId := r.Context().Value("userId").(int)
+
+		ingredientId, _ := strconv.Atoi(r.PathValue("id"))
+
+		ingredient := Ingredient{
+			Id:     ingredientId,
+			UserId: userId,
+			Name:   r.FormValue("name"),
+		}
+
+		err := service.UpdateIngredient(&ingredient)
+
+		if err != nil && errors.Is(err, ErrorFormInvalid{}) {
+			formJson, _ := json.Marshal(ingredient)
+			helpers.SetMessage(w, "formData", string(formJson))
+
+			http.Redirect(w, r, "/ingredients/"+r.PathValue("id"), http.StatusFound)
+
+			return
+		}
+
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "server error", http.StatusInternalServerError)
+
+			return
+		}
+
+		http.Redirect(w, r, "/ingredients", http.StatusFound)
 	})
 }

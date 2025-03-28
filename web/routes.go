@@ -22,6 +22,8 @@ func AddRoutes(
 	mux *http.ServeMux,
 	userService auth.UserService,
 	mealService meals.Service,
+	mealRepository meals.MealRepository,
+	ingredientRepository meals.IngredientRepository,
 ) {
 	// Middleware
 	isAuthed := auth.NewIsAuthenticatedMiddleware(userService)
@@ -64,10 +66,10 @@ func AddRoutes(
 	mux.Handle("POST /meals/create", isAuthed(meals.PostMealHandler(mealService)))
 
 	// Ingredients
-	mux.Handle("GET /ingredients", isAuthed(meals.GetIngredientsHandler(templateFiles, mealService)))
-	mux.Handle("GET /ingredients/{id}", isAuthed(meals.GetIngredientHandler(templateFiles, mealService)))
-	//mux.Handle("PUT /ingredients/{id}", isAuthed(meals.PutIngredientHandler(mealService)))
+	mux.Handle("GET /ingredients", isAuthed(meals.GetIngredientsHandler(templateFiles, ingredientRepository)))
+	mux.Handle("GET /ingredients/{id}", isAuthed(meals.GetIngredientHandler(templateFiles, ingredientRepository)))
+	mux.Handle("POST /ingredients/{id}", isAuthed(meals.PutIngredientHandler(mealService)))
 
 	// API
-	mux.Handle("GET /api/ingredients", isAuthed(meals.GetSearchIngredientsHandler(mealService)))
+	mux.Handle("GET /api/ingredients", isAuthed(meals.GetSearchIngredientsHandler(ingredientRepository)))
 }
