@@ -38,7 +38,7 @@ func (ir *IngredientRepository) GetById(id int) (meals.Ingredient, error) {
 }
 
 func (ir *IngredientRepository) Find(search string, userId int) ([]meals.Ingredient, error) {
-	var ingredients []meals.Ingredient
+	ingredients := []meals.Ingredient{}
 
 	rows, err := ir.db.Query(
 		"SELECT id, user_id, name FROM ingredients WHERE name LIKE ? AND user_id = ?",

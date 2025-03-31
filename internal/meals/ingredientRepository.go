@@ -5,10 +5,10 @@ import (
 )
 
 type Ingredient struct {
-	Id     int    `json:"id"`
-	UserId int    `json:"-"`
-	Name   string `json:"name"`
-	Errors map[string]string
+	Id     int               `json:"id"`
+	UserId int               `json:"-"`
+	Name   string            `json:"name"`
+	Errors map[string]string `json:"-"`
 }
 
 func (m *Ingredient) Validate() bool {
