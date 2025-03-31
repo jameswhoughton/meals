@@ -373,6 +373,19 @@ func NewIsAuthenticatedMiddleware(userService UserService) middleware {
 				return
 			}
 
+			// Refresh the token cookie
+			userSession := http.Cookie{
+				Name:     "session",
+				Value:    session.Value,
+				Path:     "/",
+				MaxAge:   3600,
+				HttpOnly: true,
+				Secure:   true,
+				SameSite: http.SameSiteStrictMode,
+			}
+
+			http.SetCookie(w, &userSession)
+
 			ctx := context.WithValue(r.Context(), "userId", user.Id)
 
 			r = r.WithContext(ctx)
