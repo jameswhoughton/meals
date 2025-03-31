@@ -57,16 +57,78 @@ func GetMealsHandler(templateFiles fs.FS, meals MealRepository) http.Handler {
 	})
 }
 
-// GetMealHandler
+func GetMealHandler(templateFiles fs.FS, meals MealRepository) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tmpl, err := template.ParseFS(
+			templateFiles,
+			"templates/layout.gohtml",
+			"templates/navigation.gohtml",
+			"templates/pages/meals/create_update.gohtml",
+		)
 
-// GetCreateMealHandler
+		if err != nil {
+			w.Write([]byte("Template error: " + err.Error()))
+
+			return
+		}
+
+		userId := r.Context().Value("userId").(int)
+		mealId, _ := strconv.Atoi(r.PathValue("id"))
+
+		meal, err := meals.Get(mealId)
+
+		if err != nil {
+			if errors.Is(err, ErrorMealNotFound{}) {
+				w.WriteHeader(http.StatusNotFound)
+
+				fmt.Fprintf(w, "Meal with the id: %d not found", mealId)
+				return
+			}
+		}
+
+		if meal.UserId != userId {
+			w.WriteHeader(http.StatusForbidden)
+
+			fmt.Fprint(w, "You do not have permission to access this page")
+			return
+		}
+
+		formJson, err := helpers.GetMessage(w, r, "formData")
+
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "server error", http.StatusInternalServerError)
+
+			return
+		}
+
+		formData := meal
+
+		if formJson != "" {
+			json.Unmarshal([]byte(formJson), &formData)
+		}
+
+		type templateData struct {
+			Title  string
+			Form   Meal
+			Action string
+		}
+
+		tmpl.ExecuteTemplate(w, "layout", templateData{
+			Title:  meal.Name,
+			Form:   formData,
+			Action: "/meals/" + r.PathValue("id"),
+		})
+	})
+}
+
 func GetCreateMealHandler(templateFiles fs.FS) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
 			templateFiles,
 			"templates/layout.gohtml",
 			"templates/navigation.gohtml",
-			"templates/pages/meals/create.gohtml",
+			"templates/pages/meals/create_update.gohtml",
 		)
 
 		if err != nil {
@@ -91,13 +153,15 @@ func GetCreateMealHandler(templateFiles fs.FS) http.Handler {
 		}
 
 		type templateData struct {
-			Title string
-			Form  Meal
+			Title  string
+			Form   Meal
+			Action string
 		}
 
 		tmpl.ExecuteTemplate(w, "layout", templateData{
-			Title: "Create Meal",
-			Form:  formData,
+			Title:  "Create a Meal",
+			Form:   formData,
+			Action: "/meals/create",
 		})
 	})
 }
@@ -197,7 +261,36 @@ func PostMealHandler(service Service) http.Handler {
 	})
 }
 
-// PutMealHandler
+func PutMealHandler(service Service) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userId := r.Context().Value("userId").(int)
+
+		meal := mealFromRequest(*r)
+
+		meal.UserId = userId
+
+		err := service.UpdateMeal(&meal)
+
+		if err != nil && errors.Is(err, ErrorFormInvalid{}) {
+			formJson, _ := json.Marshal(meal)
+			helpers.SetMessage(w, "formData", string(formJson))
+
+			http.Redirect(w, r, "/meals/"+r.PathValue("id"), http.StatusFound)
+
+			return
+		}
+
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "server error", http.StatusInternalServerError)
+		}
+
+		helpers.SetMessage(w, "success", "Meal "+meal.Name+" has been updated")
+
+		http.Redirect(w, r, "/meals", http.StatusFound)
+
+	})
+}
 
 // DeleteMealHandler
 

@@ -280,7 +280,9 @@ func (mr *MealRepository) Create(meal meals.Meal) (meals.Meal, error) {
 		}
 	}
 
-	tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return meal, fmt.Errorf("MealRepository.Create: Error committing transaction: %v", err)
+	}
 
 	return meal, nil
 
@@ -357,6 +359,10 @@ func (mr *MealRepository) Update(meal meals.Meal) error {
 
 	if err != nil {
 		return fmt.Errorf("MealRepository.Update: Error removing orphaned ingredients: %v", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("MealRepository.Update: Error committing transaction: %v", err)
 	}
 
 	return nil

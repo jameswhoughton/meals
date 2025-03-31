@@ -42,6 +42,8 @@ func (s *Service) UpdateMeal(meal *Meal) error {
 		return ErrorFormInvalid{}
 	}
 
+	meal.UpdatedAt = time.Now()
+
 	err := s.meals.Update(*meal)
 
 	if err != nil {
