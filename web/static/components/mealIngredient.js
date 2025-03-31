@@ -47,7 +47,7 @@ customElements.define(
 
             const id = this.getAttribute('data-id')
 
-            if (id !== null) {
+            if (id !== null && id > 0) {
                 template.querySelector('[name="ingredientId"]').value = id
                 nameEl.disabled = true
             }
