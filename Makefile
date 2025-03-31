@@ -8,7 +8,7 @@ test:
 
 .PHONY: watch
 watch:
-	wgo run --file .gohtml --file .css ./$(main_package_path)/main.go
+	wgo run --file .gohtml --file .css --file .js ./$(main_package_path)/main.go
 
 .PHONY: watch-tw
 watch-tw:
