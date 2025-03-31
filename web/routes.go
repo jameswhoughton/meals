@@ -64,6 +64,7 @@ func AddRoutes(
 	// Meals
 	mux.Handle("GET /meals/create", isAuthed(meals.GetCreateMealHandler(templateFiles)))
 	mux.Handle("POST /meals/create", isAuthed(meals.PostMealHandler(mealService)))
+	mux.Handle("GET /meals", isAuthed(meals.GetMealsHandler(templateFiles, mealRepository)))
 
 	// Ingredients
 	mux.Handle("GET /ingredients", isAuthed(meals.GetIngredientsHandler(templateFiles, ingredientRepository)))

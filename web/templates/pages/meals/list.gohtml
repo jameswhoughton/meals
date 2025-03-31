@@ -1,0 +1,31 @@
+{{define "body"}}
+<div class="bg-zinc-800 p-6 rounded-md shadow-md w-full h-full">
+    	<h1 class="text-xl mb-6">Meals</h1>
+	<div class="flex justify-end mb-4">
+		<form action="/meals" method="get" class="mb-0 flex gap-2">
+			<input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" name="query" placeholder="Search" value="{{.SearchQuery}}" />
+			<button class="py-2 px-1.5 rounded-md bg-cyan-800 hover:bg-cyan-900 transition-colors w-auto">Search</button>
+		</form>
+	</div>
+	<table class="w-full text-sm text-left rtl:text-right">
+		<thead class="uppercase bg-zinc-500">
+			<tr>
+				<td class="px-6 py-3">Id</td>
+				<td class="px-6 py-3">Name</td>
+				<td class="px-6 py-3"></td>
+			</tr>
+		</thead>
+		<tbody>
+			{{range $meal := .Meals}}
+			<tr class="border-b bg-zinc-700 border-zinc-600">
+				<td class="px-6 py-4">{{$meal.Id}}</td>
+				<td class="px-6 py-4">{{$meal.Name}}</td>
+				<td class="px-6 py-4">
+					<a class="text-cyan-400 hover:text-cyan-500 transition-colors underline" href="/meals/{{$meal.Id}}">Edit</a>
+				</td>
+		    	</tr>
+			{{end}}
+		</tbody>
+	</table>
+</div>
+{{end}}

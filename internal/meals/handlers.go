@@ -13,7 +13,49 @@ import (
 	"github.com/jameswhoughton/meals/web/helpers"
 )
 
-// GetMealsHandler
+func GetMealsHandler(templateFiles fs.FS, meals MealRepository) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tmpl, err := template.ParseFS(
+			templateFiles,
+			"templates/layout.gohtml",
+			"templates/navigation.gohtml",
+			"templates/pages/meals/list.gohtml",
+		)
+
+		if err != nil {
+			w.Write([]byte("Template error: " + err.Error()))
+
+			return
+		}
+
+		userId := r.Context().Value("userId").(int)
+		queryString := r.URL.Query().Get("query")
+
+		filter := MealFilter{
+			UserId: userId,
+			Name:   &queryString,
+		}
+
+		meals, err := meals.Find(filter)
+
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "server error", http.StatusInternalServerError)
+		}
+
+		type templateData struct {
+			Title       string
+			SearchQuery string
+			Meals       []Meal
+		}
+
+		tmpl.ExecuteTemplate(w, "layout", templateData{
+			Title:       "Meals",
+			SearchQuery: queryString,
+			Meals:       meals,
+		})
+	})
+}
 
 // GetMealHandler
 

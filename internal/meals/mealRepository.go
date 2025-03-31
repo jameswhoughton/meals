@@ -70,6 +70,7 @@ type DateRange struct {
 
 type MealFilter struct {
 	UserId int
+	Name   *string
 	Quick  *bool
 	Family *bool
 	Easy   *bool
@@ -118,7 +119,7 @@ func (e ErrorMealNotFound) Error() string {
 
 type MealRepository interface {
 	Get(id int) (Meal, error)
-	List(filter MealFilter) ([]Meal, error)
+	Find(filter MealFilter) ([]Meal, error)
 	Create(meal Meal) (Meal, error)
 	Update(meal Meal) error
 	Destroy(id int) error

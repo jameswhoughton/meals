@@ -2,6 +2,7 @@ package memory
 
 import (
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/jameswhoughton/meals/internal/meals"
@@ -22,7 +23,7 @@ func (mr *MealRepository) Get(id int) (meals.Meal, error) {
 	return meals.Meal{}, meals.ErrorMealNotFound{Id: id}
 }
 
-func (mr *MealRepository) List(filter meals.MealFilter) ([]meals.Meal, error) {
+func (mr *MealRepository) Find(filter meals.MealFilter) ([]meals.Meal, error) {
 	var meals []meals.Meal
 	err := filter.Validate()
 
@@ -32,6 +33,10 @@ func (mr *MealRepository) List(filter meals.MealFilter) ([]meals.Meal, error) {
 
 	for _, meal := range mr.Store {
 		if meal.UserId != filter.UserId {
+			continue
+		}
+
+		if filter.Name != nil && !strings.Contains(strings.ToLower(meal.Name), strings.ToLower(*filter.Name)) {
 			continue
 		}
 

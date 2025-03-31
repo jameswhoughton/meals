@@ -237,6 +237,14 @@ func (i RepositoryContract) Test(t *testing.T) {
 				expectedMeals: []int{mealA.Id},
 			},
 			{
+				label: "By name",
+				filters: meals.MealFilter{
+					UserId: 1,
+					Name:   toPtr("eAl a"),
+				},
+				expectedMeals: []int{mealA.Id},
+			},
+			{
 				label: "Quick false",
 				filters: meals.MealFilter{
 					UserId: 1,
@@ -266,7 +274,7 @@ func (i RepositoryContract) Test(t *testing.T) {
 
 		for _, testCase := range testCases {
 			t.Run(testCase.label, func(t *testing.T) {
-				meals, err := repo.List(testCase.filters)
+				meals, err := repo.Find(testCase.filters)
 
 				if err != nil {
 					t.Errorf("Unexpected error %v", err)
@@ -289,7 +297,7 @@ func (i RepositoryContract) Test(t *testing.T) {
 		repo, closeDown := i.repo()
 		defer closeDown()
 
-		_, err := repo.List(meals.MealFilter{})
+		_, err := repo.Find(meals.MealFilter{})
 
 		if err == nil {
 			t.Errorf("Expected error, got nil")
@@ -308,7 +316,7 @@ func (i RepositoryContract) Test(t *testing.T) {
 		futureTime := time.Now().Add(time.Hour * 12)
 
 		// Start date should not be in the future
-		_, err := repo.List(meals.MealFilter{
+		_, err := repo.Find(meals.MealFilter{
 			UserId: 1,
 			DateRange: &meals.DateRange{
 				Start: &futureTime,
@@ -324,7 +332,7 @@ func (i RepositoryContract) Test(t *testing.T) {
 		}
 
 		// End date should not be in the future
-		_, err = repo.List(meals.MealFilter{
+		_, err = repo.Find(meals.MealFilter{
 			UserId: 1,
 			DateRange: &meals.DateRange{
 				End: &futureTime,
@@ -340,7 +348,7 @@ func (i RepositoryContract) Test(t *testing.T) {
 		}
 
 		// End date can't be before start date
-		_, err = repo.List(meals.MealFilter{
+		_, err = repo.Find(meals.MealFilter{
 			UserId: 1,
 			DateRange: &meals.DateRange{
 				Start: toPtr(time.Date(2025, time.March, 10, 0, 0, 0, 0, time.UTC)),
@@ -397,7 +405,7 @@ func (i RepositoryContract) Test(t *testing.T) {
 			End:   toPtr(time.Date(2025, time.March, 9, 0, 0, 0, 0, time.UTC)),
 		}
 
-		meals, err := repo.List(meals.MealFilter{
+		meals, err := repo.Find(meals.MealFilter{
 			UserId:    1,
 			DateRange: &dateRange,
 		})

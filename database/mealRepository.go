@@ -70,7 +70,7 @@ func (mr *MealRepository) Get(id int) (meals.Meal, error) {
 
 	return meal, nil
 }
-func (mr *MealRepository) List(filter meals.MealFilter) ([]meals.Meal, error) {
+func (mr *MealRepository) Find(filter meals.MealFilter) ([]meals.Meal, error) {
 	err := filter.Validate()
 
 	if err != nil {
@@ -89,6 +89,11 @@ func (mr *MealRepository) List(filter meals.MealFilter) ([]meals.Meal, error) {
 	SELECT DISTINCT m.id, m.name, m.user_id
 	FROM meals m
 	`
+
+	if filter.Name != nil {
+		wheres = append(wheres, "AND name LIKE ?")
+		values = append(values, "%"+*filter.Name+"%")
+	}
 
 	if filter.Quick != nil {
 		wheres = append(wheres, "AND quick = ?")
