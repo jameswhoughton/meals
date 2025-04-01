@@ -1,6 +1,9 @@
 # TODO
 
+## Features
+
 - [ ] debounce request-typeahead
+- [ ] Make typeahead accessible
 - [x] Update navigation
 - [x] Create meals list page
 - [ ] Add delete button and route for meals page (and edit meal page)
@@ -16,5 +19,13 @@
 - [ ] Create planner page
 - [x] Ensure session cookie refreshes on request
 - [ ] Background pattern
-- [ ] Remove requirement to provide a unit
+- [x] Remove requirement to provide a unit
 - [ ] Show success messages when creating/updating meals
+- [ ] Meal/ingredient/tag pagination
+- [ ] Add handler tests
+- [ ] Add service tests
+
+## Bugs
+
+- [x] Main ingredient bug
+- [x] Checkboxes not checked when viewing a meal
