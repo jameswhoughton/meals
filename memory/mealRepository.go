@@ -40,16 +40,18 @@ func (mr *MealRepository) Find(filter meals.MealFilter) ([]meals.Meal, error) {
 			continue
 		}
 
-		if filter.Easy != nil && *filter.Easy != meal.Attributes.Easy {
-			continue
-		}
+		if len(filter.HasTags) > 0 {
+			foundTags := make(map[int]bool, 0)
 
-		if filter.Family != nil && *filter.Family != meal.Attributes.Family {
-			continue
-		}
+			for _, tag := range meal.Tags {
+				if slices.Contains(filter.HasTags, tag.Id) {
+					foundTags[tag.Id] = true
+				}
+			}
 
-		if filter.Quick != nil && *filter.Quick != meal.Attributes.Quick {
-			continue
+			if len(foundTags) != len(filter.HasTags) {
+				continue
+			}
 		}
 
 		if filter.ExcludeMainIngredient != nil {
@@ -94,13 +96,27 @@ func (mr *MealRepository) Find(filter meals.MealFilter) ([]meals.Meal, error) {
 
 // Loop over all ingredients across all meals to compute the next ID
 func (mr *MealRepository) getNextIngredientId() int {
-	var id int
+	count := make(map[int]bool, 0)
 
 	for _, meal := range mr.Store {
-		id += len(meal.Ingredients)
+		for _, ingredient := range meal.Ingredients {
+			count[ingredient.Id] = true
+		}
 	}
 
-	return id + 1
+	return len(count) + 1
+}
+
+func (mr *MealRepository) getNextTagId() int {
+	count := make(map[int]bool, 0)
+
+	for _, meal := range mr.Store {
+		for _, tag := range meal.Tags {
+			count[tag.Id] = true
+		}
+	}
+
+	return len(count) + 1
 }
 
 func (mr *MealRepository) Create(meal meals.Meal) (meals.Meal, error) {
@@ -111,6 +127,14 @@ func (mr *MealRepository) Create(meal meals.Meal) (meals.Meal, error) {
 			ingredient.Id = mr.getNextIngredientId()
 
 			meal.Ingredients[i] = ingredient
+		}
+	}
+
+	for i, tag := range meal.Tags {
+		if tag.Id == 0 {
+			tag.Id = mr.getNextTagId()
+
+			meal.Tags[i] = tag
 		}
 	}
 

@@ -32,10 +32,15 @@ func (i RepositoryContract) Test(t *testing.T) {
 		newMeal := meals.Meal{
 			Name:   "Bolognese",
 			UserId: 1,
-			Attributes: meals.MealAttributes{
-				Easy:   true,
-				Quick:  false,
-				Family: true,
+			Tags: []meals.Tag{
+				{
+					Id:   1,
+					Name: "Easy",
+				},
+				{
+					// New tag
+					Name: "Family",
+				},
 			},
 			Ingredients: []meals.MealIngredient{
 				{
@@ -84,8 +89,10 @@ func (i RepositoryContract) Test(t *testing.T) {
 
 		updatedMeal := createdMeal
 
-		updatedMeal.Attributes.Easy = false
-
+		updatedMeal.Tags = append(updatedMeal.Tags, meals.Tag{
+			Id:   3,
+			Name: "Quick",
+		})
 		updatedMeal.Ingredients = append(updatedMeal.Ingredients, meals.MealIngredient{
 			Id:       4,
 			Name:     "Onion",
@@ -118,6 +125,12 @@ func (i RepositoryContract) Test(t *testing.T) {
 			}
 		}
 
+		for _, tag := range fetchedMeal.Tags {
+			if tag.Id == 0 {
+				t.Errorf("Tag %s has an ID of 0", tag.Name)
+			}
+		}
+
 		err = repo.Destroy(fetchedMeal.Id)
 
 		if err != nil {
@@ -142,10 +155,19 @@ func (i RepositoryContract) Test(t *testing.T) {
 		mealA, _ := repo.Create(meals.Meal{
 			UserId: 1,
 			Name:   "Meal A",
-			Attributes: meals.MealAttributes{
-				Quick:  true,
-				Family: true,
-				Easy:   true,
+			Tags: []meals.Tag{
+				{
+					Id:   1,
+					Name: "Quick",
+				},
+				{
+					Id:   2,
+					Name: "Family",
+				},
+				{
+					Id:   3,
+					Name: "Easy",
+				},
 			},
 			Ingredients: []meals.MealIngredient{
 				{
@@ -158,11 +180,7 @@ func (i RepositoryContract) Test(t *testing.T) {
 		mealB, _ := repo.Create(meals.Meal{
 			UserId: 1,
 			Name:   "Meal B",
-			Attributes: meals.MealAttributes{
-				Quick:  false,
-				Family: false,
-				Easy:   false,
-			},
+			Tags:   []meals.Tag{},
 			Ingredients: []meals.MealIngredient{
 				{
 					Id:     4,
@@ -174,10 +192,15 @@ func (i RepositoryContract) Test(t *testing.T) {
 		mealC, _ := repo.Create(meals.Meal{
 			UserId: 1,
 			Name:   "Meal C",
-			Attributes: meals.MealAttributes{
-				Quick:  false,
-				Family: true,
-				Easy:   true,
+			Tags: []meals.Tag{
+				{
+					Id:   2,
+					Name: "Family",
+				},
+				{
+					Id:   3,
+					Name: "Easy",
+				},
 			},
 			Ingredients: []meals.MealIngredient{
 				{
@@ -194,10 +217,19 @@ func (i RepositoryContract) Test(t *testing.T) {
 		repo.Create(meals.Meal{
 			UserId: 2,
 			Name:   "Meal D",
-			Attributes: meals.MealAttributes{
-				Quick:  true,
-				Family: true,
-				Easy:   true,
+			Tags: []meals.Tag{
+				{
+					Id:   1,
+					Name: "Quick",
+				},
+				{
+					Id:   2,
+					Name: "Family",
+				},
+				{
+					Id:   3,
+					Name: "Easy",
+				},
 			},
 			Ingredients: []meals.MealIngredient{
 				{
@@ -229,12 +261,10 @@ func (i RepositoryContract) Test(t *testing.T) {
 			{
 				label: "All attributes true",
 				filters: meals.MealFilter{
-					UserId: 1,
-					Quick:  toPtr(true),
-					Family: toPtr(true),
-					Easy:   toPtr(true),
+					UserId:  1,
+					HasTags: []int{1, 2, 3},
 				},
-				expectedMeals: []int{mealA.Id},
+				expectedMeals: []int{mealA.Id, mealC.Id},
 			},
 			{
 				label: "By name",
@@ -243,14 +273,6 @@ func (i RepositoryContract) Test(t *testing.T) {
 					Name:   toPtr("eAl a"),
 				},
 				expectedMeals: []int{mealA.Id},
-			},
-			{
-				label: "Quick false",
-				filters: meals.MealFilter{
-					UserId: 1,
-					Quick:  toPtr(false),
-				},
-				expectedMeals: []int{mealB.Id, mealC.Id},
 			},
 			{
 				label: "Exclude ingredient",

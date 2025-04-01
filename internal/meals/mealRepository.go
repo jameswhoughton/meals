@@ -20,12 +20,17 @@ type MealIngredient struct {
 	IsMain   bool
 }
 
+type Tag struct {
+	Id   int
+	Name string
+}
+
 type Meal struct {
 	Id          int
 	UserId      int
 	Name        string
 	Notes       string
-	Attributes  MealAttributes
+	Tags        []Tag
 	Ingredients []MealIngredient
 	LastEatenOn time.Time
 	CreatedAt   time.Time
@@ -50,10 +55,6 @@ func (m *Meal) Validate() bool {
 		if ingredient.Quantity == 0 {
 			m.Errors["Ingredients."+strconv.Itoa(i)] = "Ingredient quantity must be greater than zero"
 		}
-
-		if ingredient.Unit == "" {
-			m.Errors["Ingredients."+strconv.Itoa(i)] = "Ingredient unit cannot be blank"
-		}
 	}
 
 	if mainIngredientCount != 1 {
@@ -69,11 +70,9 @@ type DateRange struct {
 }
 
 type MealFilter struct {
-	UserId int
-	Name   *string
-	Quick  *bool
-	Family *bool
-	Easy   *bool
+	UserId  int
+	Name    *string
+	HasTags []int
 	// Only include meals eaten before the given date
 	ExcludeMainIngredient []int
 	DateRange             *DateRange

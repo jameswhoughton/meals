@@ -19,11 +19,71 @@ type MealRepository struct {
 	db *sql.DB
 }
 
+func (mr *MealRepository) getIngredientsForMeal(id int) ([]meals.MealIngredient, error) {
+	query := `
+	SELECT ingredient_id, i.name, quantity, unit, is_main
+	FROM ingredients_meals im
+	LEFT JOIN ingredients i
+	ON im.ingredient_id = i.id
+	WHERE im.meal_id = ?
+	`
+
+	var ingredients []meals.MealIngredient
+
+	rows, err := mr.db.Query(query, id)
+
+	if err != nil {
+		return ingredients, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var ingredient meals.MealIngredient
+
+		rows.Scan(&ingredient.Id, &ingredient.Name, &ingredient.Quantity, &ingredient.Unit, &ingredient.IsMain)
+
+		ingredients = append(ingredients, ingredient)
+	}
+
+	return ingredients, nil
+}
+
+func (mr *MealRepository) getTagsForMeal(id int) ([]meals.Tag, error) {
+	query := `
+	SELECT tag_id, t.name
+	FROM meals_tags mt
+	LEFT JOIN tags t
+	ON mt.tag_id = t.id
+	WHERE mt.meal_id = ?
+	`
+
+	var tags []meals.Tag
+
+	rows, err := mr.db.Query(query, id)
+
+	if err != nil {
+		return tags, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var tag meals.Tag
+
+		rows.Scan(&tag.Id, &tag.Name)
+
+		tags = append(tags, tag)
+	}
+
+	return tags, nil
+}
+
 func (mr *MealRepository) Get(id int) (meals.Meal, error) {
 	var meal meals.Meal
 
 	mealQuery := `
-	SELECT id, name, notes, user_id, quick, family, easy FROM meals WHERE id = ?
+	SELECT id, name, notes, user_id FROM meals WHERE id = ?
 	`
 
 	err := mr.db.QueryRow(mealQuery, id).Scan(
@@ -31,9 +91,6 @@ func (mr *MealRepository) Get(id int) (meals.Meal, error) {
 		&meal.Name,
 		&meal.Notes,
 		&meal.UserId,
-		&meal.Attributes.Quick,
-		&meal.Attributes.Family,
-		&meal.Attributes.Easy,
 	)
 
 	if err != nil {
@@ -44,29 +101,21 @@ func (mr *MealRepository) Get(id int) (meals.Meal, error) {
 		return meals.Meal{}, fmt.Errorf("MealRepository.Get: query error: %v", err)
 	}
 
-	ingredientQuery := `
-	SELECT ingredient_id, i.name, quantity, unit, is_main
-	FROM ingredients_meals im
-	LEFT JOIN ingredients i
-	ON im.ingredient_id = i.id
-	WHERE im.meal_id = ?
-	`
-
-	rows, err := mr.db.Query(ingredientQuery, meal.Id)
+	ingredients, err := mr.getIngredientsForMeal(id)
 
 	if err != nil {
-		return meal, fmt.Errorf("MealRepository.Get: Error retrieving ingredients for meal %d", meal.Id)
+		return meal, fmt.Errorf("MealRepository.Get: Error retrieving ingredients for meal %d: %v", meal.Id, err)
 	}
 
-	defer rows.Close()
+	meal.Ingredients = ingredients
 
-	for rows.Next() {
-		var ingredient meals.MealIngredient
+	tags, err := mr.getTagsForMeal(id)
 
-		rows.Scan(&ingredient.Id, &ingredient.Name, &ingredient.Quantity, &ingredient.Unit, &ingredient.IsMain)
-
-		meal.Ingredients = append(meal.Ingredients, ingredient)
+	if err != nil {
+		return meal, fmt.Errorf("MealRepository.Get: Error retrieving tags for meal %d: %v", meal.Id, err)
 	}
+
+	meal.Tags = tags
 
 	return meal, nil
 }
@@ -95,22 +144,23 @@ func (mr *MealRepository) Find(filter meals.MealFilter) ([]meals.Meal, error) {
 		values = append(values, "%"+*filter.Name+"%")
 	}
 
-	if filter.Quick != nil {
-		wheres = append(wheres, "AND quick = ?")
-		values = append(values, *filter.Quick)
+	if len(filter.HasTags) > 0 {
+		var params []string
+
+		for _, v := range filter.HasTags {
+			params = append(params, "?")
+			values = append(values, v)
+		}
+
+		wheres = append(wheres, "AND tag_id IN ("+strings.Join(params, ", ")+")")
+
+		query += `
+		LEFT JOIN meals_tags t
+		ON m.id = t.meal_id
+		`
 	}
 
-	if filter.Easy != nil {
-		wheres = append(wheres, "AND easy = ?")
-		values = append(values, *filter.Easy)
-	}
-
-	if filter.Family != nil {
-		wheres = append(wheres, "AND family = ?")
-		values = append(values, *filter.Family)
-	}
-
-	if len(filter.ExcludeMainIngredient) != 0 {
+	if len(filter.ExcludeMainIngredient) > 0 {
 		var params []string
 
 		for _, v := range filter.ExcludeMainIngredient {
@@ -124,7 +174,6 @@ func (mr *MealRepository) Find(filter meals.MealFilter) ([]meals.Meal, error) {
 		LEFT JOIN ingredients_meals i
 		ON m.id = i.meal_id
 		`
-
 	}
 
 	if filter.DateRange != nil {
@@ -225,6 +274,60 @@ func removeOrphanedIngredients(tx *sql.Tx) error {
 	return nil
 }
 
+func createTag(tx *sql.Tx, userId int, name string) (int, error) {
+	result, err := tx.Exec("INSERT INTO tags (user_id, name) VALUES (?, ?)", userId, name)
+
+	if err != nil {
+		return 0, err
+	}
+
+	id, err := result.LastInsertId()
+
+	if err != nil {
+		return 0, err
+	}
+
+	return int(id), nil
+}
+
+func associateTagToMeal(tx *sql.Tx, mealId int, tagId int) error {
+	insertUpdateQuery := `
+	REPLACE INTO meals_tags
+	(tag_id, meal_id)
+	VALUES (?, ?)
+	`
+
+	_, err := tx.Exec(
+		insertUpdateQuery,
+		tagId,
+		mealId,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func removeOrphanedTags(tx *sql.Tx) error {
+	_, err := tx.Exec(`
+	DELETE FROM tags
+	WHERE id IN (
+		SELECT t.id
+		FROM tags t
+		LEFT JOIN meals_tags mt
+		WHERE mt.meal_id IS NULL
+	)
+	`)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (mr *MealRepository) Create(meal meals.Meal) (meals.Meal, error) {
 	tx, err := mr.db.Begin()
 
@@ -236,8 +339,8 @@ func (mr *MealRepository) Create(meal meals.Meal) (meals.Meal, error) {
 
 	insertQuery := `
 	INSERT INTO meals
-	(user_id, name, notes, quick, family, easy)
-	VALUES (?, ?, ?, ?, ?, ?)
+	(user_id, name, notes)
+	VALUES (?, ?, ?)
 	`
 
 	result, err := tx.Exec(
@@ -245,9 +348,6 @@ func (mr *MealRepository) Create(meal meals.Meal) (meals.Meal, error) {
 		meal.UserId,
 		meal.Name,
 		meal.Notes,
-		meal.Attributes.Quick,
-		meal.Attributes.Family,
-		meal.Attributes.Easy,
 	)
 
 	if err != nil {
@@ -280,6 +380,24 @@ func (mr *MealRepository) Create(meal meals.Meal) (meals.Meal, error) {
 		}
 	}
 
+	for i, tag := range meal.Tags {
+		if tag.Id == 0 {
+			id, err := createTag(tx, meal.UserId, tag.Name)
+
+			if err != nil {
+				return meal, fmt.Errorf("MealRepository.Create: Error inserting new tag: %v", err)
+			}
+
+			meal.Tags[i].Id = id
+		}
+
+		err = associateTagToMeal(tx, meal.Id, meal.Tags[i].Id)
+
+		if err != nil {
+			return meal, fmt.Errorf("MealRepository.Create: Error associating tag: %v", err)
+		}
+	}
+
 	if err := tx.Commit(); err != nil {
 		return meal, fmt.Errorf("MealRepository.Create: Error committing transaction: %v", err)
 	}
@@ -300,10 +418,7 @@ func (mr *MealRepository) Update(meal meals.Meal) error {
 	updateQuery := `
 	UPDATE meals
 	SET name = ?,
-	notes = ?,
-	quick = ?,
-	family = ?,
-	easy = ?
+	notes = ?
 	WHERE id = ?
 	`
 
@@ -311,9 +426,6 @@ func (mr *MealRepository) Update(meal meals.Meal) error {
 		updateQuery,
 		meal.Name,
 		meal.Notes,
-		meal.Attributes.Quick,
-		meal.Attributes.Family,
-		meal.Attributes.Easy,
 		meal.Id,
 	)
 
@@ -334,7 +446,7 @@ func (mr *MealRepository) Update(meal meals.Meal) error {
 			meal.Ingredients[i].Id = id
 		}
 
-		err = associateIngredientToMeal(tx, meal.Id, ingredient)
+		err = associateIngredientToMeal(tx, meal.Id, meal.Ingredients[i])
 
 		if err != nil {
 			return fmt.Errorf("MealRepository.Update: Error associating ingredient: %v", err)
@@ -357,8 +469,44 @@ func (mr *MealRepository) Update(meal meals.Meal) error {
 	// Remove any ingredients that are no longer associated with any meal
 	err = removeOrphanedIngredients(tx)
 
+	deleteParams = []any{meal.Id}
+
+	for i, tag := range meal.Tags {
+		if tag.Id == 0 {
+			id, err := createTag(tx, meal.UserId, tag.Name)
+
+			if err != nil {
+				return fmt.Errorf("MealRepository.Update: Error inserting new tag: %v", err)
+			}
+
+			meal.Tags[i].Id = id
+		}
+
+		err = associateTagToMeal(tx, meal.Id, meal.Tags[i].Id)
+
+		if err != nil {
+			return fmt.Errorf("MealRepository.Update: Error associating tag: %v", err)
+		}
+
+		deleteParams = append(deleteParams, tag.Id)
+	}
+
+	// Remove any tags no longer associated with the meal
+	_, err = tx.Exec(`
+	DELETE FROM meals_tags
+	WHERE meal_id = ?
+	AND tag_id NOT IN (?`+strings.Repeat(",?", len(deleteParams)-2)+`)
+	`, deleteParams...)
+
 	if err != nil {
-		return fmt.Errorf("MealRepository.Update: Error removing orphaned ingredients: %v", err)
+		return fmt.Errorf("MealRepository.Update: Error disassociating tag: %v", err)
+	}
+
+	// Remove any tags that are no longer associated with any meal
+	err = removeOrphanedTags(tx)
+
+	if err != nil {
+		return fmt.Errorf("MealRepository.Update: Error removing orphaned tags: %v", err)
 	}
 
 	if err := tx.Commit(); err != nil {

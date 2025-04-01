@@ -2,12 +2,13 @@
 <div class="bg-zinc-800 p-6 rounded-md shadow-md w-full h-full">
     	<h1 class="text-xl mb-6">Meals</h1>
 	<div class="flex justify-between mb-4">
-                <a class="py-2 px-1.5 rounded-md bg-cyan-800 hover:bg-cyan-900 transition-colors w-auto" href="/meals/create">Create meal</a>
+                <a class="py-2 px-1.5 rounded-md bg-cyan-800 hover:bg-cyan-900 transition-colors w-auto" href="/meals/create">Create a meal</a>
 		<form action="/meals" method="get" class="mb-0 flex gap-2">
 			<input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" name="query" placeholder="Search" value="{{.SearchQuery}}" />
 			<button class="py-2 px-1.5 rounded-md bg-cyan-800 hover:bg-cyan-900 transition-colors w-auto">Search</button>
 		</form>
 	</div>
+	{{if gt (len .Meals) 0}}
 	<table class="w-full text-sm text-left rtl:text-right">
 		<thead class="uppercase bg-zinc-700">
 			<tr>
@@ -28,5 +29,20 @@
 			{{end}}
 		</tbody>
 	</table>
+	{{else}}
+	<div class="bg-zinc-700 h-[400px] rounded flex items-center justify-center">
+		<div class="flex flex-col gap-8 items-center">
+			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-24">
+			  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+			</svg>
+			<h2 class="text-2xl">No Meals</h2>
+			{{if eq .SearchQuery ""}}
+			<p>There are no meals in the system, Use the 'create a meal' button to get started.
+			{{else}}
+			<p>Try a different search.</p>
+			{{end}}
+		</div>
+	</div>
+	{{end}}
 </div>
 {{end}}

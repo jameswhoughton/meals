@@ -171,9 +171,6 @@ func mealFromRequest(r http.Request) Meal {
 
 	var (
 		id          int
-		quick       bool
-		family      bool
-		easy        bool
 		ingredients []MealIngredient
 	)
 
@@ -181,22 +178,12 @@ func mealFromRequest(r http.Request) Meal {
 		id, _ = strconv.Atoi(r.FormValue("id"))
 	}
 
-	if r.FormValue("quick") == "1" {
-		quick = true
-	}
-
-	if r.FormValue("easy") == "1" {
-		easy = true
-	}
-
-	if r.FormValue("family") == "1" {
-		family = true
-	}
 	mainIngredientIndex, err := strconv.Atoi(r.FormValue("isMain"))
 
 	if err != nil {
 		mainIngredientIndex = -1
 	}
+	fmt.Println(mainIngredientIndex)
 
 	for i := range len(r.Form["ingredientName"]) {
 		var ingredient MealIngredient
@@ -204,9 +191,7 @@ func mealFromRequest(r http.Request) Meal {
 		quantity, _ := strconv.Atoi(r.Form["ingredientQuantity"][i])
 		var isMain bool
 
-		if mainIngredientIndex == i {
-			isMain = true
-		}
+		isMain = mainIngredientIndex == i
 
 		id, _ := strconv.Atoi(r.Form["ingredientId"][i])
 
@@ -219,14 +204,9 @@ func mealFromRequest(r http.Request) Meal {
 	}
 
 	return Meal{
-		Id:    id,
-		Name:  r.FormValue("name"),
-		Notes: r.FormValue("notes"),
-		Attributes: MealAttributes{
-			Quick:  quick,
-			Family: family,
-			Easy:   easy,
-		},
+		Id:          id,
+		Name:        r.FormValue("name"),
+		Notes:       r.FormValue("notes"),
 		Ingredients: ingredients,
 	}
 }

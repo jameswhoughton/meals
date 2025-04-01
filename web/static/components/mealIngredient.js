@@ -16,7 +16,7 @@ customElements.define(
                 body = `
                 <div class="flex flex-col gap-2">
                     <label class="text-sm text-slate-300" for="ingredientName">name</label>
-                    <span class="name"></span>
+                    <span class="name | w-[250px] text-ellipsis overflow-hidden"></span>
                     <input name="ingredientName" value="" type="hidden" />
                 </div>`
             } else {
@@ -69,7 +69,7 @@ customElements.define(
                 template.querySelector('.name').innerText = this.getAttribute('data-name')
             }
 
-            if (this.getAttribute('data-isMain')) {
+            if (this.getAttribute('data-isMain') === 'true') {
                 template.querySelector('[name="isMain"]').checked = true
             }
 
