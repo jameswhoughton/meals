@@ -41,15 +41,15 @@ func (mr *MealRepository) Find(filter meals.MealFilter) ([]meals.Meal, error) {
 		}
 
 		if len(filter.HasTags) > 0 {
-			foundTags := make(map[int]bool, 0)
+			var found bool
 
 			for _, tag := range meal.Tags {
 				if slices.Contains(filter.HasTags, tag.Id) {
-					foundTags[tag.Id] = true
+					found = true
 				}
 			}
 
-			if len(foundTags) != len(filter.HasTags) {
+			if !found {
 				continue
 			}
 		}
