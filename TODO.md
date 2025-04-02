@@ -24,6 +24,8 @@
 - [ ] Meal/ingredient/tag pagination
 - [ ] Add handler tests
 - [ ] Add service tests
+- [ ] Remove id from update meal form (and others)
+- [ ] Add required labels
 
 ## Bugs
 

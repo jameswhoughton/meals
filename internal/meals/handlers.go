@@ -3,7 +3,6 @@ package meals
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/fs"
 	"log"
 	"net/http"
@@ -78,18 +77,16 @@ func GetMealHandler(templateFiles fs.FS, meals MealRepository) http.Handler {
 		meal, err := meals.Get(mealId)
 
 		if err != nil {
-			if errors.Is(err, ErrorMealNotFound{}) {
-				w.WriteHeader(http.StatusNotFound)
+			if errors.As(err, &ErrorMealNotFound{Id: mealId}) {
+				http.Error(w, err.Error(), http.StatusNotFound)
 
-				fmt.Fprintf(w, "Meal with the id: %d not found", mealId)
 				return
 			}
 		}
 
 		if meal.UserId != userId {
-			w.WriteHeader(http.StatusForbidden)
+			http.Error(w, "You do not have permission to access this page", http.StatusForbidden)
 
-			fmt.Fprint(w, "You do not have permission to access this page")
 			return
 		}
 
@@ -183,7 +180,6 @@ func mealFromRequest(r http.Request) Meal {
 	if err != nil {
 		mainIngredientIndex = -1
 	}
-	fmt.Println(mainIngredientIndex)
 
 	for i := range len(r.Form["ingredientName"]) {
 		var ingredient MealIngredient
@@ -247,9 +243,27 @@ func PutMealHandler(service Service) http.Handler {
 
 		meal := mealFromRequest(*r)
 
+		meal.Id, _ = strconv.Atoi(r.PathValue("id"))
+
+		existingMeal, err := service.meals.Get(meal.Id)
+
+		if err != nil {
+			if errors.As(err, &ErrorMealNotFound{Id: meal.Id}) {
+				http.Error(w, err.Error(), http.StatusNotFound)
+
+				return
+			}
+		}
+
+		if existingMeal.UserId != userId {
+			http.Error(w, "You do not have permission to access this page", http.StatusForbidden)
+
+			return
+		}
+
 		meal.UserId = userId
 
-		err := service.UpdateMeal(&meal)
+		err = service.UpdateMeal(&meal)
 
 		if err != nil && errors.Is(err, ErrorFormInvalid{}) {
 			formJson, _ := json.Marshal(meal)
@@ -355,18 +369,16 @@ func GetIngredientHandler(templateFiles fs.FS, ingredients IngredientRepository)
 		ingredient, err := ingredients.GetById(ingredientId)
 
 		if err != nil {
-			if errors.Is(err, ErrorIngredientNotFound{}) {
-				w.WriteHeader(http.StatusNotFound)
+			if errors.As(err, &ErrorIngredientNotFound{Id: ingredientId}) {
+				http.Error(w, err.Error(), http.StatusNotFound)
 
-				fmt.Fprintf(w, "Ingredient with the id: %d not found", ingredientId)
 				return
 			}
 		}
 
 		if ingredient.UserId != userId {
-			w.WriteHeader(http.StatusForbidden)
+			http.Error(w, "You do not have permission to access this page", http.StatusForbidden)
 
-			fmt.Fprint(w, "You do not have permission to access this page")
 			return
 		}
 
