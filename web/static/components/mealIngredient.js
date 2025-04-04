@@ -1,33 +1,33 @@
 customElements.define(
-    'meal-ingredient',
-    class extends HTMLElement {
-        constructor() {
-            super()
-        }
+        'meal-ingredient',
+        class extends HTMLElement {
+                constructor() {
+                        super()
+                }
 
-        template(existingIngredient) {
-            const node = document.createElement('div')
+                template(existingIngredient) {
+                        const node = document.createElement('div')
 
-            node.classList.add('flex', 'items-center', 'gap-4', 'wrap')
+                        node.classList.add('flex', 'items-center', 'gap-4', 'wrap')
 
-            let body = ''
+                        let body = ''
 
-            if (existingIngredient) {
-                body = `
+                        if (existingIngredient) {
+                                body = `
                 <div class="flex flex-col gap-2">
                     <label class="text-sm text-slate-300" for="ingredientName">name</label>
                     <span class="name | w-[250px] text-ellipsis overflow-hidden"></span>
                     <input name="ingredientName" value="" type="hidden" />
                 </div>`
-            } else {
-                body = `
+                        } else {
+                                body = `
                 <div class="flex flex-col gap-2">
                     <label class="text-sm text-slate-300" for="ingredientName">name</label>
                     <input name="ingredientName" class="name | py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px] disabled:bg-zinc-500" />
                 </div>`
-            }
+                        }
 
-            body += `
+                        body += `
             <input name="ingredientId" value="0" type="hidden" />
             <div class="flex flex-col gap-2">
                 <label class="text-sm text-slate-300" for="ingredientQuantity">quantity</label>
@@ -44,40 +44,38 @@ customElements.define(
             <button class="remove-ingredient | py-2 px-1.5 rounded-md bg-cyan-800 hover:bg-cyan-900 transition-colors w-auto self-end">remove</button>
             `
 
-            node.innerHTML = body
+                        node.innerHTML = body
 
-            return node
+                        return node
+                }
+
+                connectedCallback() {
+                        const id = this.getAttribute('data-id')
+
+                        const existingIngredient = id !== null && id > 0
+                        const template = this.template(existingIngredient)
+
+                        const index = this.getAttribute('data-index')
+
+                        template.querySelector('[name="ingredientName"]').value = this.getAttribute('data-name')
+                        template.querySelector('.quantity').value = this.getAttribute('data-quantity')
+                        template.querySelector('.unit').value = this.getAttribute('data-unit')
+                        template.querySelector('[name="isMain"]').value = index
+
+                        if (existingIngredient) {
+                                template.querySelector('[name="ingredientId"]').value = id
+                                template.querySelector('.name').innerText = this.getAttribute('data-name')
+                        }
+
+                        if (this.getAttribute('data-isMain') === 'true') {
+                                template.querySelector('[name="isMain"]').checked = true
+                        }
+
+                        template.querySelector('.remove-ingredient').onclick = () => {
+                                document.querySelector('meal-ingredient[data-index="' + index + '"]').remove()
+                        }
+
+                        this.appendChild(template)
+                }
         }
-
-        connectedCallback() {
-            const id = this.getAttribute('data-id')
-
-            const existingIngredient = id !== null && id > 0
-            const template = this.template(existingIngredient)
-
-            const index = this.getAttribute('data-index')
-
-            const nameEl = template.querySelector('.name')
-
-            template.querySelector('[name="ingredientName"]').value = this.getAttribute('data-name')
-            template.querySelector('.quantity').value = this.getAttribute('data-quantity')
-            template.querySelector('.unit').value = this.getAttribute('data-unit')
-            template.querySelector('[name="isMain"]').value = index
-
-            if (existingIngredient) {
-                template.querySelector('[name="ingredientId"]').value = id
-                template.querySelector('.name').innerText = this.getAttribute('data-name')
-            }
-
-            if (this.getAttribute('data-isMain') === 'true') {
-                template.querySelector('[name="isMain"]').checked = true
-            }
-
-            template.querySelector('.remove-ingredient').onclick = () => {
-                document.querySelector('meal-ingredient[data-index="' + index + '"]').remove()
-            }
-
-            this.appendChild(template)
-        }
-    }
 )

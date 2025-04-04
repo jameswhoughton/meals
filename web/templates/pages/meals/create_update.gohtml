@@ -15,20 +15,29 @@
             <label class="text-sm text-slate-300" for="notes">notes</label>
             <textarea class="rounded bg-zinc-700 ring-1 ring-zinc-400 w-[400px] min-h-[100px]" name="notes">{{.Form.Notes}}</textarea>
         </div>
-        <div class="flex flex-col gap-3">
-            <h2 class="border-b text-lg py-3">Attributes</h2>
-            <label class="flex gap-2">
-                <input type="checkbox" name="quick" value="1" {{if .Form.Attributes.Quick}}checked{{end}} />
-                <span>quick</span>
-            </label>
-            <label class="flex gap-2">
-                <input type="checkbox" name="easy" value="1" {{if .Form.Attributes.Easy}}checked{{end}} />
-                <span>easy</span>
-            </label>
-            <label class="flex gap-2">
-                <input type="checkbox" name="family" value="1" {{if .Form.Attributes.Family}}checked{{end}} />
-                <span>family</span>
-            </label>
+        <div id="tags" class="flex flex-col gap-3 mb-4">
+            <div class="border-b flex items-center justify-between">
+                <h2 class="text-lg py-3">Tags</h2>
+                <div class="flex gap-4 items-center mb-2">
+                    <div class="flex flex-col">
+                        <request-typeahead
+                            id="input-ingredient-search"
+                            data-placeholder="Find an existing tag"
+                            data-url="http://localhost:8000/api/tags"
+                        />
+                    </div>
+                    <span>&mdash; or &mdash;</span>
+                    <button 
+                        class="py-2 px-1.5 rounded-md bg-cyan-800 hover:bg-cyan-900 transition-colors w-auto"
+                        type="button"
+                        onclick="addTag()"
+                    >Add new tag</button>
+                </div>
+            </div>
+            {{if .Form.Errors.Tags}}<div class="text-sm text-red-400">{{.Form.Errors.Tags}}</div>{{end}}
+            {{range $i, $tag := .Form.Tags}}
+            <meal-tag data-index="{{$i}}" data-id="{{$tag.Id}}" data-name="{{$tag.Name}}"></meal-tag>
+            {{end}}
         </div>
         <div id="ingredients" class="flex flex-col gap-3 mb-4">
             <div class="border-b flex items-center justify-between">
@@ -67,8 +76,22 @@
 </div>
 
 <script src="/static/components/mealIngredient.js"></script>
+<script src="/static/components/mealTag.js"></script>
 <script src="/static/components/requestTypeahead.js"></script>
 <script>
+function addTag(tag) {
+    const node = document.createElement('meal-tag')
+    const tagCount = document.querySelectorAll('meal-tag').length
+
+    node.dataset.index = tagCount
+
+    if (tag !== undefined) {
+        node.dataset.id = tag.id
+        node.dataset.name = tag.label
+    }
+
+    document.getElementById('tags').append(node)
+}
 function addIngredient(ingredient) {
     const node = document.createElement('meal-ingredient')
     const ingredientCount = document.querySelectorAll('meal-ingredient').length
