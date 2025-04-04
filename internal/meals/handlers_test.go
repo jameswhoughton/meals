@@ -2,7 +2,6 @@ package meals_test
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -107,8 +106,6 @@ func TestPutMealHandlerReturns404IfMealDoesNotExist(t *testing.T) {
 
 	req.ParseForm()
 
-	fmt.Println(req.Form)
-
 	req.SetPathValue("id", "1")
 
 	w := httptest.NewRecorder()
@@ -167,7 +164,7 @@ func TestPutMealHandlerReturns403IfMealDoesNotBelongToTheUser(t *testing.T) {
 	}
 }
 
-func PostMealHandlerCraetesAMeal(t *testing.T) {
+func TestPostMealHandlerCraetesAMeal(t *testing.T) {
 	mealRepository := memory.MealRepository{}
 	ingredientRepository := memory.IngredientRepository{}
 	service := meals.NewService(&mealRepository, &ingredientRepository)
@@ -227,7 +224,7 @@ func PostMealHandlerCraetesAMeal(t *testing.T) {
 		form.Add("ingredientUnit", ingredient.Unit)
 
 		if ingredient.IsMain {
-			form.Add("mainIngredient", strconv.Itoa(i))
+			form.Add("isMain", strconv.Itoa(i))
 		}
 	}
 
@@ -244,8 +241,8 @@ func PostMealHandlerCraetesAMeal(t *testing.T) {
 	result := w.Result()
 	defer result.Body.Close()
 
-	if result.StatusCode != http.StatusOK {
-		t.Errorf("Expected status code: %d, got %d", http.StatusOK, result.StatusCode)
+	if result.StatusCode != http.StatusFound {
+		t.Errorf("Expected status code: %d, got %d", http.StatusFound, result.StatusCode)
 	}
 
 	storedMeal, err := mealRepository.Get(1)
@@ -307,17 +304,290 @@ func compareMeals(t *testing.T, a, b meals.Meal) {
 	}
 }
 
-// PutMealHandler with the correct form updates the correct meal
+func TestPutMealHandlerWithCorrectFormUpdatesAMeal(t *testing.T) {
+	mealRepository := memory.MealRepository{
+		Store: []meals.Meal{
+			{
+				Id:     14,
+				UserId: 1,
+				Name:   "Old name",
+				Notes:  "Old notes",
+				Tags: []meals.Tag{
+					{
+						Id:   3,
+						Name: "Old tag",
+					},
+				},
+				Ingredients: []meals.MealIngredient{
+					{
+						Id:       12,
+						Name:     "Old ingredient",
+						Quantity: 24,
+						Unit:     "G",
+					},
+				},
+			},
+		},
+	}
+	ingredientRepository := memory.IngredientRepository{}
+	service := meals.NewService(&mealRepository, &ingredientRepository)
 
-// GetIngredientHandler returns 404 if the ingredient does not exist
+	handler := meals.PutMealHandler(service)
 
-// GetIngredientHandler returns 403 if the ingredient does belong to the user
+	ctx := context.WithValue(context.Background(), "userId", 1)
 
-// PutIngredientHandler returns 404 if ingredient does not exist
+	mealToUpdate := meals.Meal{
+		Name:  "New name",
+		Notes: "Yummy!",
+		Tags: []meals.Tag{
+			{
+				Id:   1,
+				Name: "Easy",
+			},
+		},
+		Ingredients: []meals.MealIngredient{
+			{
+				Id:       1,
+				Name:     "Chicken breast",
+				Quantity: 2,
+				IsMain:   true,
+			},
+		},
+	}
 
-// PutIngredientHandler returns 403 if ingredient does not belong to the user
+	form := url.Values{}
 
-// PutIngredientHandler with the correct form, updates the correct ingredient
+	form.Add("name", mealToUpdate.Name)
+	form.Add("notes", mealToUpdate.Notes)
+
+	for _, tag := range mealToUpdate.Tags {
+		form.Add("tagId", strconv.Itoa(tag.Id))
+		form.Add("tagName", tag.Name)
+	}
+
+	for i, ingredient := range mealToUpdate.Ingredients {
+		form.Add("ingredientId", strconv.Itoa(ingredient.Id))
+		form.Add("ingredientName", ingredient.Name)
+		form.Add("ingredientQuantity", strconv.Itoa(ingredient.Quantity))
+		form.Add("ingredientUnit", ingredient.Unit)
+
+		if ingredient.IsMain {
+			form.Add("isMain", strconv.Itoa(i))
+		}
+	}
+
+	postData := strings.NewReader(form.Encode())
+
+	req := httptest.NewRequestWithContext(ctx, http.MethodPost, "/meals/14", postData)
+
+	req.SetPathValue("id", "14")
+
+	req.Header.Set("Content-type", "application/x-www-form-urlencoded")
+
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	result := w.Result()
+	defer result.Body.Close()
+
+	if result.StatusCode != http.StatusFound {
+		t.Errorf("Expected status code: %d, got %d", http.StatusFound, result.StatusCode)
+	}
+
+	storedMeal, err := mealRepository.Get(14)
+
+	if err != nil {
+		t.Errorf("Unexpected error fetching updated meal: %v", err)
+	}
+
+	compareMeals(t, mealToUpdate, storedMeal)
+}
+
+func TestGetIngredientHandlerReturns404IfTheIngredientDoesNotExist(t *testing.T) {
+	templateFiles := fstest.MapFS{
+		"templates/layout.gohtml":                 {Data: []byte{}},
+		"templates/navigation.gohtml":             {Data: []byte{}},
+		"templates/pages/ingredients/edit.gohtml": {Data: []byte{}},
+	}
+
+	repository := memory.IngredientRepository{}
+
+	handler := meals.GetIngredientHandler(templateFiles, &repository)
+
+	ctx := context.WithValue(context.Background(), "userId", 1)
+
+	req := httptest.NewRequestWithContext(ctx, http.MethodGet, "/ingredient/1", nil)
+
+	req.SetPathValue("id", "1")
+
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	result := w.Result()
+	defer result.Body.Close()
+
+	if result.StatusCode != http.StatusNotFound {
+		t.Errorf("Expected status code: %d, got %d", http.StatusNotFound, result.StatusCode)
+	}
+}
+
+func TestGetIngredientHandlerReturns403IfIngredientDoesNotBelongToTheUser(t *testing.T) {
+	templateFiles := fstest.MapFS{
+		"templates/layout.gohtml":                 {Data: []byte{}},
+		"templates/navigation.gohtml":             {Data: []byte{}},
+		"templates/pages/ingredients/edit.gohtml": {Data: []byte{}},
+	}
+
+	repository := memory.IngredientRepository{
+		Store: []meals.Ingredient{
+			{
+				Id:     1,
+				UserId: 2,
+			},
+		},
+	}
+
+	handler := meals.GetIngredientHandler(templateFiles, &repository)
+
+	ctx := context.WithValue(context.Background(), "userId", 1)
+
+	req := httptest.NewRequestWithContext(ctx, http.MethodGet, "/ingredients/1", nil)
+
+	req.SetPathValue("id", "1")
+
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	result := w.Result()
+	defer result.Body.Close()
+
+	if result.StatusCode != http.StatusForbidden {
+		t.Errorf("Expected status code: %d, got %d", http.StatusForbidden, result.StatusCode)
+	}
+}
+
+func TestPutIngredientHandlerReturns404IfIngredientDoesNotExist(t *testing.T) {
+	ingredientRepository := memory.IngredientRepository{}
+	mealRepository := memory.MealRepository{}
+
+	service := meals.NewService(&mealRepository, &ingredientRepository)
+
+	handler := meals.PutIngredientHandler(service)
+
+	ctx := context.WithValue(context.Background(), "userId", 1)
+
+	form := url.Values{}
+	form.Add("name", "updated name")
+
+	postData := strings.NewReader(form.Encode())
+
+	req := httptest.NewRequestWithContext(ctx, http.MethodGet, "/ingredient/1", postData)
+
+	req.SetPathValue("id", "1")
+
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	result := w.Result()
+	defer result.Body.Close()
+
+	if result.StatusCode != http.StatusNotFound {
+		t.Errorf("Expected status code: %d, got %d", http.StatusNotFound, result.StatusCode)
+	}
+}
+
+func TestPutIngredientHandlerReturns403IfIngredientDoesNotBelongToUser(t *testing.T) {
+	mealRepository := memory.MealRepository{}
+	ingredientRepository := memory.IngredientRepository{
+		Store: []meals.Ingredient{
+			{
+				Id:   12,
+				Name: "Old name",
+			},
+		},
+	}
+	service := meals.NewService(&mealRepository, &ingredientRepository)
+
+	handler := meals.PutIngredientHandler(service)
+
+	ctx := context.WithValue(context.Background(), "userId", 1)
+
+	form := url.Values{}
+	form.Add("name", "updated name")
+
+	postData := strings.NewReader(form.Encode())
+
+	req := httptest.NewRequestWithContext(ctx, http.MethodPost, "/ingredients/12", postData)
+
+	req.Header.Set("Content-type", "application/x-www-form-urlencoded")
+
+	req.SetPathValue("id", "12")
+
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	result := w.Result()
+	defer result.Body.Close()
+
+	if result.StatusCode != http.StatusForbidden {
+		t.Errorf("Expected status code: %d, got %d", http.StatusForbidden, result.StatusCode)
+	}
+}
+
+func TestPutIngredientHandlerWithCorrectFormUpdatesIngredient(t *testing.T) {
+	mealRepository := memory.MealRepository{}
+	ingredientRepository := memory.IngredientRepository{
+		Store: []meals.Ingredient{
+			{
+				Id:     12,
+				UserId: 2,
+				Name:   "Old name",
+			},
+		},
+	}
+	service := meals.NewService(&mealRepository, &ingredientRepository)
+
+	handler := meals.PutIngredientHandler(service)
+
+	ctx := context.WithValue(context.Background(), "userId", 2)
+
+	form := url.Values{}
+	form.Add("name", "updated name")
+
+	postData := strings.NewReader(form.Encode())
+
+	req := httptest.NewRequestWithContext(ctx, http.MethodPost, "/ingredients/12", postData)
+
+	req.Header.Set("Content-type", "application/x-www-form-urlencoded")
+
+	req.SetPathValue("id", "12")
+
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	result := w.Result()
+	defer result.Body.Close()
+
+	if result.StatusCode != http.StatusFound {
+		t.Errorf("Expected status code: %d, got %d", http.StatusFound, result.StatusCode)
+	}
+
+	fetchedIngredient, err := ingredientRepository.GetById(12)
+
+	if err != nil {
+		t.Errorf("Unexpected error fetching ingredient: %v", err)
+	}
+
+	if fetchedIngredient.Name != form.Get("name") {
+		t.Errorf("Expected name to be %s, found %s", form.Get("name"), fetchedIngredient.Name)
+	}
+}
 
 // GetTagHandler returns 404 if the tag does not exist
 

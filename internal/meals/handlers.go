@@ -169,6 +169,7 @@ func mealFromRequest(r http.Request) Meal {
 	var (
 		id          int
 		ingredients []MealIngredient
+		tags        []Tag
 	)
 
 	if r.Form.Has("id") {
@@ -199,11 +200,23 @@ func mealFromRequest(r http.Request) Meal {
 		ingredients = append(ingredients, ingredient)
 	}
 
+	for i := range len(r.Form["tagName"]) {
+		var tag Tag
+
+		id, _ := strconv.Atoi(r.Form["tagId"][i])
+
+		tag.Id = id
+		tag.Name = r.Form["tagName"][i]
+
+		tags = append(tags, tag)
+	}
+
 	return Meal{
 		Id:          id,
 		Name:        r.FormValue("name"),
 		Notes:       r.FormValue("notes"),
 		Ingredients: ingredients,
+		Tags:        tags,
 	}
 }
 
@@ -415,13 +428,29 @@ func PutIngredientHandler(service Service) http.Handler {
 
 		ingredientId, _ := strconv.Atoi(r.PathValue("id"))
 
+		existingIngredient, err := service.ingredients.GetById(ingredientId)
+
+		if err != nil {
+			if errors.As(err, &ErrorIngredientNotFound{Id: ingredientId}) {
+				http.Error(w, err.Error(), http.StatusNotFound)
+
+				return
+			}
+		}
+
+		if existingIngredient.UserId != userId {
+			http.Error(w, "You do not have permission to access this page", http.StatusForbidden)
+
+			return
+		}
+
 		ingredient := Ingredient{
 			Id:     ingredientId,
 			UserId: userId,
 			Name:   r.FormValue("name"),
 		}
 
-		err := service.UpdateIngredient(&ingredient)
+		err = service.UpdateIngredient(&ingredient)
 
 		if err != nil && errors.Is(err, ErrorFormInvalid{}) {
 			formJson, _ := json.Marshal(ingredient)
