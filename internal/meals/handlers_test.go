@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -247,7 +248,63 @@ func PostMealHandlerCraetesAMeal(t *testing.T) {
 		t.Errorf("Expected status code: %d, got %d", http.StatusOK, result.StatusCode)
 	}
 
-	// TODO check the meal exists correctly in the store
+	storedMeal, err := mealRepository.Get(1)
+
+	if err != nil {
+		t.Errorf("Unexpected error fetching created meal: %v", err)
+	}
+
+	compareMeals(t, mealToCreate, storedMeal)
+}
+
+func compareMeals(t *testing.T, a, b meals.Meal) {
+	if a.Name != b.Name {
+		t.Errorf("Names do not match (%s - %s)", a.Name, b.Name)
+	}
+
+	if a.Notes != b.Notes {
+		t.Errorf("Notes do not match (%s - %s)", a.Notes, b.Notes)
+	}
+
+	if len(a.Ingredients) == len(b.Ingredients) {
+		sort := func(x, y meals.MealIngredient) int {
+			if x.Id > y.Id {
+				return 1
+			}
+
+			return -1
+		}
+		slices.SortFunc(a.Ingredients, sort)
+		slices.SortFunc(b.Ingredients, sort)
+
+		for i, aIngredient := range a.Ingredients {
+			if aIngredient.Name != b.Ingredients[i].Name {
+				t.Errorf("Ingredient names do not match (%s - %s)", aIngredient.Name, b.Ingredients[0].Name)
+			}
+		}
+	} else {
+		t.Errorf("Meals have a differing number of ingredients")
+	}
+
+	if len(a.Tags) == len(b.Tags) {
+		sort := func(x, y meals.Tag) int {
+			if x.Id > y.Id {
+				return 1
+			}
+
+			return -1
+		}
+		slices.SortFunc(a.Tags, sort)
+		slices.SortFunc(b.Tags, sort)
+
+		for i, aTag := range a.Tags {
+			if aTag.Name != b.Tags[i].Name {
+				t.Errorf("Tag names do not match (%s - %s)", aTag.Name, b.Tags[0].Name)
+			}
+		}
+	} else {
+		t.Errorf("Meals have a differing number of tags")
+	}
 }
 
 // PutMealHandler with the correct form updates the correct meal
