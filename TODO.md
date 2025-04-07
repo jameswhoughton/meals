@@ -10,20 +10,20 @@
 - [x] Create page to edit meal
 - [ ] Add note to edit ingredient page 'This will affect all meals with this ingredient'
 - [ ] Convert attributes to 'tags'
-    - [ ] Tags are created when a meal is created
-    - [ ] Tags are removed if all associated meals no longer exist
+    - [x] Tags are created when a meal is created
+    - [x] Tags are removed if all associated meals no longer exist
     - [ ] Add tags page
     - [ ] Add edit tag page
-    - [ ] Add new TagRepository
-    - [ ] Update existing tests
+    - [x] Add new TagRepository
+    - [x] Update existing tests
 - [ ] Create planner page
 - [x] Ensure session cookie refreshes on request
 - [ ] Background pattern
 - [x] Remove requirement to provide a unit
 - [ ] Show success messages when creating/updating meals
 - [ ] Meal/ingredient/tag pagination
-- [ ] Add handler tests
-- [ ] Add service tests
+- [x] Add handler tests
+- [x] Add service tests
 - [ ] Remove id from update meal form (and others)
 - [ ] Add required labels
 
