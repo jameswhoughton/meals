@@ -301,3 +301,120 @@ func TestServiceCanUpdateAnIngredient(t *testing.T) {
 	}
 
 }
+func TestIngredientNameShouldBeUniquePerUser(t *testing.T) {
+	mealRepository := memory.MealRepository{
+		Store: []meals.Meal{
+			{
+				Id:     2,
+				Name:   "A",
+				UserId: 1,
+				Ingredients: []meals.MealIngredient{
+					{
+						Id:       23,
+						Name:     "Eggs",
+						Quantity: 3,
+						IsMain:   true,
+					},
+				},
+			},
+			{
+				Id:     12,
+				Name:   "B",
+				UserId: 2,
+				Ingredients: []meals.MealIngredient{
+					{
+						Id:       2,
+						Name:     "Eggs",
+						Quantity: 1,
+						IsMain:   true,
+					},
+				},
+			},
+			{
+				Id:     13,
+				Name:   "C",
+				UserId: 2,
+				Ingredients: []meals.MealIngredient{
+					{
+						Id:       24,
+						Name:     "Ham",
+						Quantity: 1,
+						IsMain:   true,
+					},
+				},
+			},
+		},
+	}
+	ingredientRepository := memory.IngredientRepository{
+		Store: []meals.Ingredient{
+			{
+				Id:     2,
+				UserId: 2,
+				Name:   "Eggs",
+			},
+			{
+				Id:     23,
+				UserId: 1,
+				Name:   "Eggs",
+			},
+			{
+				Id:     24,
+				UserId: 2,
+				Name:   "Ham",
+			},
+		},
+	}
+
+	existingMeal := mealRepository.Store[0]
+	mealToUpdate := mealRepository.Store[2]
+
+	service := meals.NewService(&mealRepository, &ingredientRepository)
+
+	newMeal := meals.Meal{
+		Name:   "D",
+		UserId: 1,
+		Ingredients: []meals.MealIngredient{
+			{
+				Name:     "Eggs",
+				Quantity: 1,
+				IsMain:   true,
+			},
+		},
+	}
+
+	createdMeal, err := service.CreateMeal(&newMeal)
+
+	if err != nil {
+		t.Errorf("Unexpected error creating meal: %v", err)
+	}
+
+	if createdMeal.Ingredients[0].Id != existingMeal.Ingredients[0].Id {
+		t.Errorf("Ingredient Ids should match but they don't (%d - %d)", newMeal.Ingredients[0].Id, existingMeal.Ingredients[0].Id)
+	}
+
+	updateMeal := meals.Meal{
+		Id:     13,
+		Name:   "C",
+		UserId: 2,
+		Ingredients: []meals.MealIngredient{
+			{
+				Name:     "Eggs",
+				Quantity: 1,
+				IsMain:   true,
+			},
+		},
+	}
+
+	err = service.UpdateMeal(&updateMeal)
+
+	if err != nil {
+		t.Errorf("Unexpected error creating meal: %v", err)
+	}
+
+	updatedMeal, _ := mealRepository.Get(13)
+
+	if updatedMeal.Ingredients[0].Id != mealToUpdate.Ingredients[0].Id {
+		t.Errorf("Ingredient Ids should match but they don't (%d - %d)", updatedMeal.Ingredients[0].Id, mealToUpdate.Ingredients[0].Id)
+	}
+
+}
