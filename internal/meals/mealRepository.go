@@ -20,11 +20,6 @@ type MealIngredient struct {
 	IsMain   bool
 }
 
-type Tag struct {
-	Id   int
-	Name string
-}
-
 type Meal struct {
 	Id          int
 	UserId      int

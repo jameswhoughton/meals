@@ -3,6 +3,7 @@ package meals_test
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"slices"
@@ -34,31 +35,26 @@ func (i RepositoryContract) Test(t *testing.T) {
 			UserId: 1,
 			Tags: []meals.Tag{
 				{
-					Id:   1,
 					Name: "Easy",
 				},
 				{
-					// New tag
 					Name: "Family",
 				},
 			},
 			Ingredients: []meals.MealIngredient{
 				{
-					Id:       1,
 					Name:     "Beef mince",
 					Quantity: 500,
 					Unit:     "gram",
 					IsMain:   true,
 				},
 				{
-					Id:       2,
 					Name:     "Tinned tomatoes",
 					Quantity: 2,
 					Unit:     "can",
 					IsMain:   false,
 				},
 				{
-					// New ingredient
 					Name:     "Garlic",
 					Quantity: 3,
 					Unit:     "clove",
@@ -81,20 +77,37 @@ func (i RepositoryContract) Test(t *testing.T) {
 			t.Errorf("Expected Name %s, got %s", newMeal.Name, createdMeal.Name)
 		}
 
+		if len(newMeal.Ingredients) != len(createdMeal.Ingredients) {
+			t.Errorf("Expected created meal to have %d ingredients, found: %d", len(newMeal.Ingredients), len(createdMeal.Ingredients))
+		}
+
+		if len(newMeal.Tags) != len(createdMeal.Tags) {
+			t.Errorf("Expected created meal to have %d tags, found: %d", len(newMeal.Tags), len(createdMeal.Tags))
+		}
+
 		for _, ingredient := range newMeal.Ingredients {
 			if ingredient.Id == 0 {
 				t.Errorf("Ingredient %s has an ID of 0", ingredient.Name)
 			}
 		}
 
-		updatedMeal := createdMeal
+		for _, tag := range newMeal.Tags {
+			if tag.Id == 0 {
+				t.Errorf("Tag %s has an ID of 0", tag.Name)
+			}
+		}
+
+		updatedMeal, err := repo.Get(createdMeal.Id)
+
+		if err != nil {
+			t.Errorf("Fetching meal: unexpected error: %v", err)
+		}
 
 		updatedMeal.Tags = append(updatedMeal.Tags, meals.Tag{
-			Id:   3,
 			Name: "Quick",
 		})
+
 		updatedMeal.Ingredients = append(updatedMeal.Ingredients, meals.MealIngredient{
-			Id:       4,
 			Name:     "Onion",
 			Quantity: 2,
 		})
@@ -117,6 +130,15 @@ func (i RepositoryContract) Test(t *testing.T) {
 
 		if fetchedMeal.Name != updatedMeal.Name {
 			t.Errorf("Expected Name %s, got %s", fetchedMeal.Name, updatedMeal.Name)
+		}
+		fmt.Printf("%+v -- %+v\n", updatedMeal.Tags, fetchedMeal.Tags)
+
+		if len(updatedMeal.Ingredients) != len(fetchedMeal.Ingredients) {
+			t.Errorf("Expected updated meal to have %d ingredients, found: %d", len(updatedMeal.Ingredients), len(fetchedMeal.Ingredients))
+		}
+
+		if len(updatedMeal.Tags) != len(fetchedMeal.Tags) {
+			t.Errorf("Expected updated meal to have %d tags, found: %d", len(updatedMeal.Tags), len(fetchedMeal.Tags))
 		}
 
 		for _, ingredient := range fetchedMeal.Ingredients {

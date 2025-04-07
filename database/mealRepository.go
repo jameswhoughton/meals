@@ -51,7 +51,7 @@ func (mr *MealRepository) getIngredientsForMeal(id int) ([]meals.MealIngredient,
 
 func (mr *MealRepository) getTagsForMeal(id int) ([]meals.Tag, error) {
 	query := `
-	SELECT tag_id, t.name
+	SELECT tag_id, t.user_id, t.name
 	FROM meals_tags mt
 	LEFT JOIN tags t
 	ON mt.tag_id = t.id
@@ -71,7 +71,7 @@ func (mr *MealRepository) getTagsForMeal(id int) ([]meals.Tag, error) {
 	for rows.Next() {
 		var tag meals.Tag
 
-		rows.Scan(&tag.Id, &tag.Name)
+		rows.Scan(&tag.Id, &tag.UserId, &tag.Name)
 
 		tags = append(tags, tag)
 	}
@@ -239,7 +239,6 @@ func associateIngredientToMeal(tx *sql.Tx, mealId int, ingredient meals.MealIngr
 	(ingredient_id, meal_id, quantity, unit, is_main)
 	VALUES (?, ?, ?, ?, ?)
 	`
-
 	_, err := tx.Exec(
 		insertUpdateQuery,
 		ingredient.Id,
@@ -452,15 +451,20 @@ func (mr *MealRepository) Update(meal meals.Meal) error {
 			return fmt.Errorf("MealRepository.Update: Error associating ingredient: %v", err)
 		}
 
-		deleteParams = append(deleteParams, ingredient.Id)
+		deleteParams = append(deleteParams, meal.Ingredients[i].Id)
 	}
 
 	// Remove any ingredients no longer associated with the meal
-	_, err = tx.Exec(`
+	deleteIngredientsQuery := `
 	DELETE FROM ingredients_meals
 	WHERE meal_id = ?
-	AND ingredient_id NOT IN (?`+strings.Repeat(",?", len(deleteParams)-2)+`)
-	`, deleteParams...)
+	`
+
+	if len(deleteParams) > 1 {
+		deleteIngredientsQuery += `AND ingredient_id NOT IN (?` + strings.Repeat(",?", len(deleteParams)-2) + `)`
+	}
+
+	_, err = tx.Exec(deleteIngredientsQuery, deleteParams...)
 
 	if err != nil {
 		return fmt.Errorf("MealRepository.Update: Error disassociating ingredient: %v", err)
@@ -488,15 +492,21 @@ func (mr *MealRepository) Update(meal meals.Meal) error {
 			return fmt.Errorf("MealRepository.Update: Error associating tag: %v", err)
 		}
 
-		deleteParams = append(deleteParams, tag.Id)
+		deleteParams = append(deleteParams, meal.Tags[i].Id)
 	}
 
 	// Remove any tags no longer associated with the meal
-	_, err = tx.Exec(`
+	deleteTagQuery := `
 	DELETE FROM meals_tags
 	WHERE meal_id = ?
-	AND tag_id NOT IN (?`+strings.Repeat(",?", len(deleteParams)-2)+`)
-	`, deleteParams...)
+	`
+
+	if len(deleteParams) > 1 {
+		deleteTagQuery += `AND tag_id NOT IN (?` + strings.Repeat(",?", len(deleteParams)-2) + `)`
+
+	}
+
+	_, err = tx.Exec(deleteTagQuery, deleteParams...)
 
 	if err != nil {
 		return fmt.Errorf("MealRepository.Update: Error disassociating tag: %v", err)

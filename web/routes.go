@@ -24,6 +24,7 @@ func AddRoutes(
 	mealService meals.Service,
 	mealRepository meals.MealRepository,
 	ingredientRepository meals.IngredientRepository,
+	tagRepository meals.TagRepository,
 ) {
 	// Middleware
 	isAuthed := auth.NewIsAuthenticatedMiddleware(userService)
@@ -75,4 +76,5 @@ func AddRoutes(
 
 	// API
 	mux.Handle("GET /api/ingredients", isAuthed(meals.GetSearchIngredientsHandler(ingredientRepository)))
+	mux.Handle("GET /api/tags", isAuthed(meals.GetSearchTagHandler(tagRepository)))
 }

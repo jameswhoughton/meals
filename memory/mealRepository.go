@@ -96,11 +96,11 @@ func (mr *MealRepository) Find(filter meals.MealFilter) ([]meals.Meal, error) {
 
 // Loop over all ingredients across all meals to compute the next ID
 func (mr *MealRepository) getNextIngredientId() int {
-	count := make(map[int]bool, 0)
+	count := make(map[string]bool, 0)
 
 	for _, meal := range mr.Store {
 		for _, ingredient := range meal.Ingredients {
-			count[ingredient.Id] = true
+			count[ingredient.Name] = true
 		}
 	}
 
@@ -108,11 +108,11 @@ func (mr *MealRepository) getNextIngredientId() int {
 }
 
 func (mr *MealRepository) getNextTagId() int {
-	count := make(map[int]bool, 0)
+	count := make(map[string]bool, 0)
 
 	for _, meal := range mr.Store {
 		for _, tag := range meal.Tags {
-			count[tag.Id] = true
+			count[tag.Name] = true
 		}
 	}
 
@@ -122,17 +122,23 @@ func (mr *MealRepository) getNextTagId() int {
 func (mr *MealRepository) Create(meal meals.Meal) (meals.Meal, error) {
 	meal.Id = len(mr.Store) + 1
 
+	ingredientId := mr.getNextIngredientId()
+
 	for i, ingredient := range meal.Ingredients {
 		if ingredient.Id == 0 {
-			ingredient.Id = mr.getNextIngredientId()
+			ingredient.Id = ingredientId
+			ingredientId++
 
 			meal.Ingredients[i] = ingredient
 		}
 	}
 
+	tagId := mr.getNextTagId()
+
 	for i, tag := range meal.Tags {
 		if tag.Id == 0 {
-			tag.Id = mr.getNextTagId()
+			tag.Id = tagId
+			tagId++
 
 			meal.Tags[i] = tag
 		}
@@ -146,6 +152,30 @@ func (mr *MealRepository) Create(meal meals.Meal) (meals.Meal, error) {
 func (mr *MealRepository) Update(meal meals.Meal) error {
 	for i, existingMeal := range mr.Store {
 		if existingMeal.Id == meal.Id {
+			ingredientId := mr.getNextIngredientId()
+
+			// Check for any new ingredients and add Ids where required
+			for i, ingredient := range meal.Ingredients {
+				if ingredient.Id == 0 {
+					ingredient.Id = ingredientId
+					ingredientId++
+
+					meal.Ingredients[i] = ingredient
+				}
+			}
+
+			tagId := mr.getNextTagId()
+
+			// Check for any new tags and add Ids where required
+			for i, tag := range meal.Tags {
+				if tag.Id == 0 {
+					tag.Id = tagId
+					tagId++
+
+					meal.Tags[i] = tag
+				}
+			}
+
 			mr.Store[i] = meal
 		}
 	}

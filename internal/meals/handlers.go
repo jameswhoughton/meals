@@ -290,6 +290,8 @@ func PutMealHandler(service Service) http.Handler {
 		if err != nil {
 			log.Println(err)
 			http.Error(w, "server error", http.StatusInternalServerError)
+
+			return
 		}
 
 		helpers.SetMessage(w, "success", "Meal "+meal.Name+" has been updated")
@@ -348,7 +350,7 @@ func GetSearchIngredientsHandler(ingredients IngredientRepository) http.Handler 
 
 		queryString := r.URL.Query().Get("query")
 
-		ingredients, err := ingredients.Find(queryString, userId)
+		results, err := ingredients.Find(queryString, userId)
 
 		if err != nil {
 			log.Println(err)
@@ -357,7 +359,7 @@ func GetSearchIngredientsHandler(ingredients IngredientRepository) http.Handler 
 
 		w.Header().Set("Content-Type", "application/json")
 
-		json.NewEncoder(w).Encode(ingredients)
+		json.NewEncoder(w).Encode(results)
 	})
 }
 
@@ -469,5 +471,24 @@ func PutIngredientHandler(service Service) http.Handler {
 		}
 
 		http.Redirect(w, r, "/ingredients", http.StatusFound)
+	})
+}
+
+func GetSearchTagHandler(tags TagRepository) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userId := r.Context().Value("userId").(int)
+
+		queryString := r.URL.Query().Get("query")
+
+		results, err := tags.Find(queryString, userId)
+
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "server error", http.StatusInternalServerError)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+
+		json.NewEncoder(w).Encode(results)
 	})
 }

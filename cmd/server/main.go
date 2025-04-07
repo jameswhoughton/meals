@@ -28,6 +28,7 @@ func main() {
 	sessionRepsoitory := database.NewSessionRepository(conn)
 	mealRepository := database.NewMealRepository(conn)
 	ingredientRepository := database.NewIngredientRepository(conn)
+	tagRepository := database.NewTagRepository(conn)
 
 	userService := auth.NewUserService(userRepository, sessionRepsoitory, 3600)
 	mealService := meals.NewService(mealRepository, ingredientRepository)
@@ -38,6 +39,7 @@ func main() {
 		&mealService,
 		mealRepository,
 		ingredientRepository,
+		tagRepository,
 	)
 
 	log.Fatal(server.Start())

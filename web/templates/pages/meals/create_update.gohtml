@@ -21,7 +21,7 @@
                 <div class="flex gap-4 items-center mb-2">
                     <div class="flex flex-col">
                         <request-typeahead
-                            id="input-ingredient-search"
+                            id="input-tag-search"
                             data-placeholder="Find an existing tag"
                             data-url="http://localhost:8000/api/tags"
                         />
@@ -92,6 +92,11 @@ function addTag(tag) {
 
     document.getElementById('tags').append(node)
 }
+
+const tagTypeahead = document.getElementById('input-tag-search')
+
+tagTypeahead.addEventListener('selected', (e) => addTag(e.detail))
+
 function addIngredient(ingredient) {
     const node = document.createElement('meal-ingredient')
     const ingredientCount = document.querySelectorAll('meal-ingredient').length
