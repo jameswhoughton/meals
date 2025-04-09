@@ -492,3 +492,153 @@ func GetSearchTagHandler(tags TagRepository) http.Handler {
 		json.NewEncoder(w).Encode(results)
 	})
 }
+
+func GetTagsHandler(templateFiles fs.FS, tags TagRepository) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tmpl, err := template.ParseFS(
+			templateFiles,
+			"templates/layout.gohtml",
+			"templates/navigation.gohtml",
+			"templates/pages/tags/list.gohtml",
+		)
+
+		if err != nil {
+			w.Write([]byte("Template error: " + err.Error()))
+
+			return
+		}
+
+		userId := r.Context().Value("userId").(int)
+		queryString := r.URL.Query().Get("query")
+
+		tags, err := tags.Find(queryString, userId)
+
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "server error", http.StatusInternalServerError)
+		}
+
+		type templateData struct {
+			Title       string
+			SearchQuery string
+			Tags        []Tag
+		}
+
+		tmpl.ExecuteTemplate(w, "layout", templateData{
+			Title:       "Tags",
+			SearchQuery: queryString,
+			Tags:        tags,
+		})
+	})
+}
+
+func GetTagHandler(templateFiles fs.FS, tags TagRepository) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tmpl, err := template.ParseFS(
+			templateFiles,
+			"templates/layout.gohtml",
+			"templates/navigation.gohtml",
+			"templates/pages/tags/edit.gohtml",
+		)
+
+		if err != nil {
+			w.Write([]byte("Template error: " + err.Error()))
+
+			return
+		}
+
+		userId := r.Context().Value("userId").(int)
+		tagId, _ := strconv.Atoi(r.PathValue("id"))
+
+		tag, err := tags.GetById(tagId)
+
+		if err != nil {
+			if errors.As(err, &ErrorTagNotFound{Id: tagId}) {
+				http.Error(w, err.Error(), http.StatusNotFound)
+
+				return
+			}
+		}
+
+		if tag.UserId != userId {
+			http.Error(w, "You do not have permission to access this page", http.StatusForbidden)
+
+			return
+		}
+
+		formJson, err := helpers.GetMessage(w, r, "formData")
+
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "server error", http.StatusInternalServerError)
+
+			return
+		}
+
+		if formJson != "" {
+			json.Unmarshal([]byte(formJson), &tag)
+		}
+
+		type templateData struct {
+			Title string
+			Form  Tag
+		}
+
+		tmpl.ExecuteTemplate(w, "layout", templateData{
+			Title: "Edit Tag",
+			Form:  tag,
+		})
+	})
+}
+
+func PutTagHandler(service Service) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.ParseForm()
+
+		userId := r.Context().Value("userId").(int)
+
+		tagId, _ := strconv.Atoi(r.PathValue("id"))
+
+		existingTag, err := service.tags.GetById(tagId)
+
+		if err != nil {
+			if errors.As(err, &ErrorTagNotFound{Id: tagId}) {
+				http.Error(w, err.Error(), http.StatusNotFound)
+
+				return
+			}
+		}
+
+		if existingTag.UserId != userId {
+			http.Error(w, "You do not have permission to access this page", http.StatusForbidden)
+
+			return
+		}
+
+		tag := Tag{
+			Id:     tagId,
+			UserId: userId,
+			Name:   r.FormValue("name"),
+		}
+
+		err = service.UpdateTag(&tag)
+
+		if err != nil && errors.Is(err, ErrorFormInvalid{}) {
+			formJson, _ := json.Marshal(tag)
+			helpers.SetMessage(w, "formData", string(formJson))
+
+			http.Redirect(w, r, "/tags/"+r.PathValue("id"), http.StatusFound)
+
+			return
+		}
+
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "server error", http.StatusInternalServerError)
+
+			return
+		}
+
+		http.Redirect(w, r, "/tags", http.StatusFound)
+	})
+}

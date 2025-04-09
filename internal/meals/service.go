@@ -8,6 +8,7 @@ import (
 type Service struct {
 	meals       MealRepository
 	ingredients IngredientRepository
+	tags        TagRepository
 }
 
 type ErrorFormInvalid struct{}
@@ -16,8 +17,8 @@ func (e ErrorFormInvalid) Error() string {
 	return "Form invalid"
 }
 
-func NewService(m MealRepository, i IngredientRepository) Service {
-	return Service{m, i}
+func NewService(m MealRepository, i IngredientRepository, t TagRepository) Service {
+	return Service{m, i, t}
 }
 
 func (s *Service) CreateMeal(meal *Meal) (Meal, error) {
@@ -62,6 +63,20 @@ func (s *Service) UpdateIngredient(ingredient *Ingredient) error {
 
 	if err != nil {
 		return fmt.Errorf("Error updating ingredient: %v", err)
+	}
+
+	return nil
+}
+
+func (s *Service) UpdateTag(tag *Tag) error {
+	if isValid := tag.Validate(); !isValid {
+		return ErrorFormInvalid{}
+	}
+
+	err := s.tags.Update(*tag)
+
+	if err != nil {
+		return fmt.Errorf("Error updating tag: %v", err)
 	}
 
 	return nil

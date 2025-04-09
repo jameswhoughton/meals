@@ -84,7 +84,8 @@ func TestGetMealHandlerReturns403IfMealDoesNotBelongToUser(t *testing.T) {
 func TestPutMealHandlerReturns404IfMealDoesNotExist(t *testing.T) {
 	mealRepository := memory.MealRepository{}
 	ingredientRepository := memory.IngredientRepository{}
-	service := meals.NewService(&mealRepository, &ingredientRepository)
+	tagRepository := memory.TagRepository{}
+	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
 
 	handler := meals.PutMealHandler(service)
 
@@ -130,7 +131,8 @@ func TestPutMealHandlerReturns403IfMealDoesNotBelongToTheUser(t *testing.T) {
 		},
 	}
 	ingredientRepository := memory.IngredientRepository{}
-	service := meals.NewService(&mealRepository, &ingredientRepository)
+	tagRepository := memory.TagRepository{}
+	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
 
 	handler := meals.PutMealHandler(service)
 
@@ -167,7 +169,8 @@ func TestPutMealHandlerReturns403IfMealDoesNotBelongToTheUser(t *testing.T) {
 func TestPostMealHandlerCraetesAMeal(t *testing.T) {
 	mealRepository := memory.MealRepository{}
 	ingredientRepository := memory.IngredientRepository{}
-	service := meals.NewService(&mealRepository, &ingredientRepository)
+	tagRepository := memory.TagRepository{}
+	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
 
 	handler := meals.PostMealHandler(service)
 
@@ -330,7 +333,8 @@ func TestPutMealHandlerWithCorrectFormUpdatesAMeal(t *testing.T) {
 		},
 	}
 	ingredientRepository := memory.IngredientRepository{}
-	service := meals.NewService(&mealRepository, &ingredientRepository)
+	tagRepository := memory.TagRepository{}
+	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
 
 	handler := meals.PutMealHandler(service)
 
@@ -472,8 +476,8 @@ func TestGetIngredientHandlerReturns403IfIngredientDoesNotBelongToTheUser(t *tes
 func TestPutIngredientHandlerReturns404IfIngredientDoesNotExist(t *testing.T) {
 	ingredientRepository := memory.IngredientRepository{}
 	mealRepository := memory.MealRepository{}
-
-	service := meals.NewService(&mealRepository, &ingredientRepository)
+	tagRepository := memory.TagRepository{}
+	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
 
 	handler := meals.PutIngredientHandler(service)
 
@@ -510,7 +514,8 @@ func TestPutIngredientHandlerReturns403IfIngredientDoesNotBelongToUser(t *testin
 			},
 		},
 	}
-	service := meals.NewService(&mealRepository, &ingredientRepository)
+	tagRepository := memory.TagRepository{}
+	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
 
 	handler := meals.PutIngredientHandler(service)
 
@@ -550,7 +555,8 @@ func TestPutIngredientHandlerWithCorrectFormUpdatesIngredient(t *testing.T) {
 			},
 		},
 	}
-	service := meals.NewService(&mealRepository, &ingredientRepository)
+	tagRepository := memory.TagRepository{}
+	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
 
 	handler := meals.PutIngredientHandler(service)
 
