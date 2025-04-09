@@ -22,7 +22,7 @@
 - [x] Remove requirement to provide a unit
 - [ ] Show success messages when creating/updating meals
 - [ ] Meal/ingredient/tag pagination
-- [x] Add handler tests
+- [ ] Add handler tests
 - [x] Add service tests
 - [ ] Remove id from update meal form (and others)
 - [ ] Add required labels
