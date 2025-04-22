@@ -21,6 +21,34 @@ func NewService(m MealRepository, i IngredientRepository, t TagRepository) Servi
 	return Service{m, i, t}
 }
 
+func (s *Service) populateIngredientIds(meal *Meal) error {
+	ingredientNames := make([]string, len(meal.Ingredients))
+
+	for i, ingredient := range meal.Ingredients {
+		if ingredient.Id > 0 {
+			continue
+		}
+
+		ingredientNames[i] = ingredient.Name
+	}
+
+	ingredientIds, err := s.ingredients.FromNames(ingredientNames, meal.UserId)
+
+	if err != nil {
+		return err
+	}
+
+	for i, name := range ingredientNames {
+		if ingredientIds[name] == 0 {
+			continue
+		}
+
+		meal.Ingredients[i].Id = ingredientIds[name]
+	}
+
+	return nil
+}
+
 func (s *Service) CreateMeal(meal *Meal) (Meal, error) {
 	if isValid := meal.Validate(); !isValid {
 		return Meal{}, ErrorFormInvalid{}
@@ -28,6 +56,8 @@ func (s *Service) CreateMeal(meal *Meal) (Meal, error) {
 
 	meal.CreatedAt = time.Now()
 	meal.UpdatedAt = time.Now()
+
+	//s.populateIngredientIds(meal)
 
 	createdMeal, err := s.meals.Create(*meal)
 
@@ -44,6 +74,8 @@ func (s *Service) UpdateMeal(meal *Meal) error {
 	}
 
 	meal.UpdatedAt = time.Now()
+
+	s.populateIngredientIds(meal)
 
 	err := s.meals.Update(*meal)
 

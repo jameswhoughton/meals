@@ -48,3 +48,17 @@ func (ir *IngredientRepository) Update(ingredient meals.Ingredient) error {
 
 	return nil
 }
+
+func (ir *IngredientRepository) FromNames(names []string, userId int) (map[string]int, error) {
+	ingredientMap := make(map[string]int, len(names))
+
+	for _, ingredient := range ir.Store {
+		if ingredient.UserId != userId {
+			continue
+		}
+
+		ingredientMap[ingredient.Name] = ingredient.Id
+	}
+
+	return ingredientMap, nil
+}

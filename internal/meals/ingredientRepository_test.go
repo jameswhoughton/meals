@@ -120,6 +120,48 @@ func (i IngredientRepositoryContract) Test(t *testing.T) {
 		}
 
 	})
+
+	t.Run("Can fetch ingredient IDs by name", func(t *testing.T) {
+
+		ingredients := []meals.Ingredient{
+			{
+				Id:     1,
+				UserId: 1,
+				Name:   "Apple",
+			},
+			{
+				Id:     2,
+				UserId: 1,
+				Name:   "Cheese",
+			},
+			{
+				Id:     3,
+				UserId: 2,
+				Name:   "Ham",
+			},
+		}
+
+		repo, closeDown := i.repo(ingredients)
+		defer closeDown()
+
+		ingredientMap, err := repo.FromNames([]string{"Apple", "Cheese", "Ham"}, 1)
+
+		if err != nil {
+			t.Errorf("Unexpected error fetching ingredient map: %v", err)
+		}
+
+		if ingredientMap["Apple"] != 1 {
+			t.Errorf("Incorrect Id for 'Apple', should be 1, found %d", ingredientMap["Apple"])
+		}
+
+		if ingredientMap["Cheese"] != 2 {
+			t.Errorf("Incorrect Id for 'Cheese', should be 2, found %d", ingredientMap["Cheese"])
+		}
+
+		if ingredientMap["Ham"] != 0 {
+			t.Errorf("Incorrect Id for 'Ham', should be 0, found %d", ingredientMap["Ham"])
+		}
+	})
 }
 
 func TestDatabaseIngredientRepository(t *testing.T) {

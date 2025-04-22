@@ -33,4 +33,5 @@ type IngredientRepository interface {
 	Find(search string, userId int) ([]Ingredient, error)
 	GetById(id int) (Ingredient, error)
 	Update(ingredient Ingredient) error
+	FromNames(names []string, userId int) (map[string]int, error)
 }

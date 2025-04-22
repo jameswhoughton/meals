@@ -3,6 +3,8 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"slices"
+	"strings"
 
 	"github.com/jameswhoughton/meals/internal/meals"
 )
@@ -69,4 +71,40 @@ func (ir *IngredientRepository) Update(ingredient meals.Ingredient) error {
 	ir.db.Exec("UPDATE ingredients SET name = ? WHERE id = ? AND user_id = ?", ingredient.Name, ingredient.Id, ingredient.UserId)
 
 	return nil
+}
+
+func (ir *IngredientRepository) FromNames(names []string, userId int) (map[string]int, error) {
+	ingredientMap := make(map[string]int, len(names))
+	var values []any
+
+	for _, name := range names {
+		values = append(values, name)
+	}
+
+	values = append(values, userId)
+	params := slices.Repeat([]string{"?"}, len(names))
+
+	rows, err := ir.db.Query(
+		"SELECT id, name FROM ingredients WHERE name IN ("+strings.Join(params, ", ")+") AND user_id = ?",
+		values...,
+	)
+
+	if err != nil {
+		return ingredientMap, fmt.Errorf("IngredientRepository.FromNames: query error: %v", err)
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var id int
+		var name string
+
+		if err = rows.Scan(&id, &name); err != nil {
+			return ingredientMap, fmt.Errorf("IngredientRepository.FromNames: row parse error: %v", err)
+		}
+
+		ingredientMap[name] = id
+	}
+
+	return ingredientMap, nil
 }
