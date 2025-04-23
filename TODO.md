@@ -22,10 +22,12 @@
 - [x] Remove requirement to provide a unit
 - [ ] Show success messages when creating/updating meals
 - [ ] Meal/ingredient/tag pagination
-- [ ] Add handler tests
-- [x] Add service tests
+- [x] Add meal handler tests
+- [x] Add meal service tests
 - [ ] Remove id from update meal form (and others)
 - [ ] Add required labels
+- [x] Ensure ingredients are unique per user
+- [x] Ensure tags are unique per user
 
 ## Bugs
 
