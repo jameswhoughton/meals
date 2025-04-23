@@ -3,7 +3,6 @@ package meals_test
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"log"
 	"os"
 	"slices"
@@ -131,7 +130,6 @@ func (i RepositoryContract) Test(t *testing.T) {
 		if fetchedMeal.Name != updatedMeal.Name {
 			t.Errorf("Expected Name %s, got %s", fetchedMeal.Name, updatedMeal.Name)
 		}
-		fmt.Printf("%+v -- %+v\n", updatedMeal.Tags, fetchedMeal.Tags)
 
 		if len(updatedMeal.Ingredients) != len(fetchedMeal.Ingredients) {
 			t.Errorf("Expected updated meal to have %d ingredients, found: %d", len(updatedMeal.Ingredients), len(fetchedMeal.Ingredients))
