@@ -365,8 +365,8 @@ func TestIngredientNameShouldBeUniquePerUser(t *testing.T) {
 		},
 	}
 
-	existingMeal := mealRepository.Store[0]
-	mealToUpdate := mealRepository.Store[2]
+	mealA := mealRepository.Store[0]
+	mealB := mealRepository.Store[1]
 	tagRepository := memory.TagRepository{}
 	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
 
@@ -388,8 +388,9 @@ func TestIngredientNameShouldBeUniquePerUser(t *testing.T) {
 		t.Errorf("Unexpected error creating meal: %v", err)
 	}
 
-	if createdMeal.Ingredients[0].Id != existingMeal.Ingredients[0].Id {
-		t.Errorf("Ingredient Ids should match but they don't (%d - %d)", newMeal.Ingredients[0].Id, existingMeal.Ingredients[0].Id)
+	// The id for eggs in the new meal should match the id for eggs in mealA as it is owned by the same user
+	if createdMeal.Ingredients[0].Id != mealA.Ingredients[0].Id {
+		t.Errorf("Ingredient Ids should match but they don't (%d - %d)", newMeal.Ingredients[0].Id, mealA.Ingredients[0].Id)
 	}
 
 	updateMeal := meals.Meal{
@@ -413,8 +414,9 @@ func TestIngredientNameShouldBeUniquePerUser(t *testing.T) {
 
 	updatedMeal, _ := mealRepository.Get(13)
 
-	if updatedMeal.Ingredients[0].Id != mealToUpdate.Ingredients[0].Id {
-		t.Errorf("Ingredient Ids should match but they don't (%d - %d)", updatedMeal.Ingredients[0].Id, mealToUpdate.Ingredients[0].Id)
+	// The id for eggs in the updated meal should match the id for eggs in mealC as it is owned by the same user
+	if updatedMeal.Ingredients[0].Id != mealB.Ingredients[0].Id {
+		t.Errorf("Ingredient Ids should match but they don't (%d - %d)", updatedMeal.Ingredients[0].Id, mealB.Ingredients[0].Id)
 	}
 
 }
@@ -515,14 +517,21 @@ func TestTagNameShouldBeUniquePerUser(t *testing.T) {
 		},
 	}
 
-	existingMeal := mealRepository.Store[0]
-	mealToUpdate := mealRepository.Store[2]
+	mealA := mealRepository.Store[0]
+	mealB := mealRepository.Store[1]
 	ingredientRepository := memory.IngredientRepository{}
 	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
 
 	newMeal := meals.Meal{
 		Name:   "D",
 		UserId: 1,
+		Ingredients: []meals.MealIngredient{
+			{
+				Name:     "Potato",
+				Quantity: 1,
+				IsMain:   true,
+			},
+		},
 		Tags: []meals.Tag{
 			{
 				Name: "Quick",
@@ -536,14 +545,21 @@ func TestTagNameShouldBeUniquePerUser(t *testing.T) {
 		t.Errorf("Unexpected error creating meal: %v", err)
 	}
 
-	if createdMeal.Tags[0].Id != existingMeal.Tags[0].Id {
-		t.Errorf("Tag Ids should match but they don't (%d - %d)", newMeal.Tags[0].Id, existingMeal.Tags[0].Id)
+	if createdMeal.Tags[0].Id != mealA.Tags[0].Id {
+		t.Errorf("Tag Ids should match but they don't (%d - %d)", newMeal.Tags[0].Id, mealA.Tags[0].Id)
 	}
 
 	updateMeal := meals.Meal{
 		Id:     13,
 		Name:   "C",
 		UserId: 2,
+		Ingredients: []meals.MealIngredient{
+			{
+				Name:     "Potato",
+				Quantity: 1,
+				IsMain:   true,
+			},
+		},
 		Tags: []meals.Tag{
 			{
 				Name: "Quick",
@@ -559,8 +575,8 @@ func TestTagNameShouldBeUniquePerUser(t *testing.T) {
 
 	updatedMeal, _ := mealRepository.Get(13)
 
-	if updatedMeal.Tags[0].Id != mealToUpdate.Tags[0].Id {
-		t.Errorf("Tag Ids should match but they don't (%d - %d)", updatedMeal.Tags[0].Id, mealToUpdate.Tags[0].Id)
+	if updatedMeal.Tags[0].Id != mealB.Tags[0].Id {
+		t.Errorf("Tag Ids should match but they don't (%d - %d)", updatedMeal.Tags[0].Id, mealB.Tags[0].Id)
 	}
 
 }
