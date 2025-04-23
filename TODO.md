@@ -8,7 +8,7 @@
 - [x] Create meals list page
 - [ ] Add delete button and route for meals page (and edit meal page)
 - [x] Create page to edit meal
-- [ ] Add note to edit ingredient page 'This will affect all meals with this ingredient'
+- [x] Add note to edit ingredient page 'This will affect all meals with this ingredient'
 - [ ] Convert attributes to 'tags'
     - [x] Tags are created when a meal is created
     - [x] Tags are removed if all associated meals no longer exist
@@ -28,6 +28,7 @@
 - [ ] Add required labels
 - [x] Ensure ingredients are unique per user
 - [x] Ensure tags are unique per user
+- [ ] Method to seed the DB for dev/testing
 
 ## Bugs
 
