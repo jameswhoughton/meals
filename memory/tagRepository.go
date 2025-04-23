@@ -48,3 +48,17 @@ func (ir *TagRepository) Update(tag meals.Tag) error {
 
 	return nil
 }
+
+func (ir *TagRepository) FromNames(names []string, userId int) (map[string]int, error) {
+	tagMap := make(map[string]int, len(names))
+
+	for _, tag := range ir.Store {
+		if tag.UserId != userId {
+			continue
+		}
+
+		tagMap[tag.Name] = tag.Id
+	}
+
+	return tagMap, nil
+}

@@ -33,4 +33,5 @@ type TagRepository interface {
 	Find(search string, userId int) ([]Tag, error)
 	GetById(id int) (Tag, error)
 	Update(tag Tag) error
+	FromNames(names []string, userId int) (map[string]int, error)
 }
