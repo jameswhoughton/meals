@@ -12,6 +12,10 @@ import (
 	"github.com/jameswhoughton/meals/web/helpers"
 )
 
+// Render the meals list page.
+//
+// Only the authenticated user's meals are visible
+// Results can be filtered
 func GetMealsHandler(templateFiles fs.FS, meals MealRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
@@ -56,6 +60,11 @@ func GetMealsHandler(templateFiles fs.FS, meals MealRepository) http.Handler {
 	})
 }
 
+// Render the edit meal page
+//
+// Only the owner of a meal can access this page.
+// If a meal does not exist a 404 is returned.
+// Expects the meal Id as a url path value with the name 'id'.
 func GetMealHandler(templateFiles fs.FS, meals MealRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
@@ -119,6 +128,7 @@ func GetMealHandler(templateFiles fs.FS, meals MealRepository) http.Handler {
 	})
 }
 
+// Render the create a meal page
 func GetCreateMealHandler(templateFiles fs.FS) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
@@ -163,6 +173,7 @@ func GetCreateMealHandler(templateFiles fs.FS) http.Handler {
 	})
 }
 
+// Helper to convert a form request into a Meal struct
 func mealFromRequest(r http.Request) Meal {
 	r.ParseForm()
 
@@ -220,6 +231,10 @@ func mealFromRequest(r http.Request) Meal {
 	}
 }
 
+// Handler to create a meal
+//
+// If the form is invalid, redirects back to the create a meal page.
+// Redirects to the meal list page on success.
 func PostMealHandler(service Service) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userId := r.Context().Value("userId").(int)
@@ -250,6 +265,13 @@ func PostMealHandler(service Service) http.Handler {
 	})
 }
 
+// Handler to update a meal
+//
+// Only the owner of a meal can access this page.
+// If a meal does not exist a 404 is returned.
+// Expects the meal Id as a url path value with the name 'id'.
+// If the form is invalid, redirects back to the edit a meal page.
+// Redirects to the meal list page on success.
 func PutMealHandler(service Service) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userId := r.Context().Value("userId").(int)
@@ -305,6 +327,10 @@ func PutMealHandler(service Service) http.Handler {
 
 // GetPlannerHandler
 
+// Render the ingredients list page
+//
+// Ingredients can be filtered by name.
+// Only ingredients owned by the authed user are visible.
 func GetIngredientsHandler(templateFiles fs.FS, ingredients IngredientRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
@@ -344,6 +370,10 @@ func GetIngredientsHandler(templateFiles fs.FS, ingredients IngredientRepository
 	})
 }
 
+// API endpoint to search for ingredient by name
+
+// Results are limited to the authenticated user.
+// Returns JSON.
 func GetSearchIngredientsHandler(ingredients IngredientRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userId := r.Context().Value("userId").(int)
@@ -363,6 +393,11 @@ func GetSearchIngredientsHandler(ingredients IngredientRepository) http.Handler 
 	})
 }
 
+// Render the edit ingredient page
+//
+// Redirects to a 404 page if the ingredient does not exist.
+// Only the owner of an ingredient can access the page.
+// Expects the ingredient id to be provided as a path value with the name 'id'.
 func GetIngredientHandler(templateFiles fs.FS, ingredients IngredientRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
@@ -422,6 +457,12 @@ func GetIngredientHandler(templateFiles fs.FS, ingredients IngredientRepository)
 	})
 }
 
+// Handler to update an ingredient
+//
+// An ingredient can only be updated by it's owner.
+// Returns a 404 if the ingredient does not exist.
+// Redirects back to the ingredients list page on success.
+// If the form is invalid, redirect back to the edit ingredient page.
 func PutIngredientHandler(service Service) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
@@ -474,6 +515,10 @@ func PutIngredientHandler(service Service) http.Handler {
 	})
 }
 
+// API handler to search for tags by name
+//
+// Limited to tags belonging to the authed user.
+// Returns JSON.
 func GetSearchTagHandler(tags TagRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userId := r.Context().Value("userId").(int)
@@ -493,6 +538,9 @@ func GetSearchTagHandler(tags TagRepository) http.Handler {
 	})
 }
 
+// Render the tags list page
+//
+// Only lists tags owned by the authed user.
 func GetTagsHandler(templateFiles fs.FS, tags TagRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
@@ -532,6 +580,11 @@ func GetTagsHandler(templateFiles fs.FS, tags TagRepository) http.Handler {
 	})
 }
 
+// Render the edit tag page
+//
+// Returns 404 if the tag does not exist
+// Only the owner of the tag can access the page
+// Expects the tag id to be set as a path value with the name 'id'
 func GetTagHandler(templateFiles fs.FS, tags TagRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
@@ -591,6 +644,11 @@ func GetTagHandler(templateFiles fs.FS, tags TagRepository) http.Handler {
 	})
 }
 
+// Handler to update tag
+//
+// Only the owner of a tag can edit it
+// On success redirects to the tag list page
+// If there are validation errors, redirects to the edit tag page
 func PutTagHandler(service Service) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
