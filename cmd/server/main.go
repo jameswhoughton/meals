@@ -31,7 +31,7 @@ func main() {
 	tagRepository := database.NewTagRepository(conn)
 
 	userService := auth.NewUserService(userRepository, sessionRepsoitory, 3600)
-	mealService := meals.NewService(mealRepository, ingredientRepository)
+	mealService := meals.NewService(mealRepository, ingredientRepository, tagRepository)
 
 	server := web.NewServer(
 		"8000",
