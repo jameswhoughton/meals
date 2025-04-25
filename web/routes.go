@@ -74,6 +74,11 @@ func AddRoutes(
 	mux.Handle("GET /ingredients/{id}", isAuthed(meals.GetIngredientHandler(templateFiles, ingredientRepository)))
 	mux.Handle("POST /ingredients/{id}", isAuthed(meals.PutIngredientHandler(mealService)))
 
+	// Tags
+	mux.Handle("GET /tags", isAuthed(meals.GetTagsHandler(templateFiles, tagRepository)))
+	mux.Handle("GET /tags/{id}", isAuthed(meals.GetTagHandler(templateFiles, tagRepository)))
+	mux.Handle("POST /tags/{id}", isAuthed(meals.PutTagHandler(mealService)))
+
 	// API
 	mux.Handle("GET /api/ingredients", isAuthed(meals.GetSearchIngredientsHandler(ingredientRepository)))
 	mux.Handle("GET /api/tags", isAuthed(meals.GetSearchTagHandler(tagRepository)))
