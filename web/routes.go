@@ -11,6 +11,7 @@ import (
 )
 
 //go:embed templates/*.gohtml
+//go:embed templates/**/*.gohtml
 //go:embed templates/**/**/*.gohtml
 //go:embed templates/**/**/**/*.gohtml
 var templateFiles embed.FS
@@ -22,6 +23,7 @@ func AddRoutes(
 	mux *http.ServeMux,
 	userService auth.UserService,
 	mealService meals.Service,
+	userRepository auth.UserRepository,
 	mealRepository meals.MealRepository,
 	ingredientRepository meals.IngredientRepository,
 	tagRepository meals.TagRepository,
@@ -63,23 +65,27 @@ func AddRoutes(
 	mux.Handle("POST /account", isAuthed(auth.PutAccountHandler(userService)))
 
 	// Meals
-	mux.Handle("GET /meals/create", isAuthed(meals.GetCreateMealHandler(templateFiles)))
-	mux.Handle("POST /meals/create", isAuthed(meals.PostMealHandler(mealService)))
-	mux.Handle("GET /meals", isAuthed(meals.GetMealsHandler(templateFiles, mealRepository)))
-	mux.Handle("GET /meals/{id}", isAuthed(meals.GetMealHandler(templateFiles, mealRepository)))
-	mux.Handle("POST /meals/{id}", isAuthed(meals.PutMealHandler(mealService)))
+	mux.Handle("GET /meals/create", isAuthed(GetCreateMealHandler(templateFiles)))
+	mux.Handle("POST /meals/create", isAuthed(PostMealHandler(mealService)))
+	mux.Handle("GET /meals", isAuthed(GetMealsHandler(templateFiles, mealRepository)))
+	mux.Handle("GET /meals/{id}", isAuthed(GetMealHandler(templateFiles, mealRepository)))
+	mux.Handle("POST /meals/{id}", isAuthed(PutMealHandler(mealService, mealRepository)))
 
 	// Ingredients
-	mux.Handle("GET /ingredients", isAuthed(meals.GetIngredientsHandler(templateFiles, ingredientRepository)))
-	mux.Handle("GET /ingredients/{id}", isAuthed(meals.GetIngredientHandler(templateFiles, ingredientRepository)))
-	mux.Handle("POST /ingredients/{id}", isAuthed(meals.PutIngredientHandler(mealService)))
+	mux.Handle("GET /ingredients", isAuthed(GetIngredientsHandler(templateFiles, ingredientRepository)))
+	mux.Handle("GET /ingredients/{id}", isAuthed(GetIngredientHandler(templateFiles, ingredientRepository)))
+	mux.Handle("POST /ingredients/{id}", isAuthed(PutIngredientHandler(mealService, ingredientRepository)))
 
 	// Tags
-	mux.Handle("GET /tags", isAuthed(meals.GetTagsHandler(templateFiles, tagRepository)))
-	mux.Handle("GET /tags/{id}", isAuthed(meals.GetTagHandler(templateFiles, tagRepository)))
-	mux.Handle("POST /tags/{id}", isAuthed(meals.PutTagHandler(mealService)))
+	mux.Handle("GET /tags", isAuthed(GetTagsHandler(templateFiles, tagRepository)))
+	mux.Handle("GET /tags/{id}", isAuthed(GetTagHandler(templateFiles, tagRepository)))
+	mux.Handle("POST /tags/{id}", isAuthed(PutTagHandler(mealService, tagRepository)))
+
+	// Planner
+	mux.Handle("GET /planner", isAuthed(GetPlannerHandler(templateFiles, mealService, userRepository)))
+	mux.Handle("GET /planner/{date}", isAuthed(GetPlannerHandler(templateFiles, mealService, userRepository)))
 
 	// API
-	mux.Handle("GET /api/ingredients", isAuthed(meals.GetSearchIngredientsHandler(ingredientRepository)))
-	mux.Handle("GET /api/tags", isAuthed(meals.GetSearchTagHandler(tagRepository)))
+	mux.Handle("GET /api/ingredients", isAuthed(GetSearchIngredientsHandler(ingredientRepository)))
+	mux.Handle("GET /api/tags", isAuthed(GetSearchTagHandler(tagRepository)))
 }

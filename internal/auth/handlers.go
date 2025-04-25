@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"html/template"
 	"io/fs"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/jameswhoughton/meals/web/helpers"
 )
@@ -151,7 +151,6 @@ func GetAccountHandler(templateFiles fs.FS, userService UserService) http.Handle
 		if formJson != "" {
 			json.Unmarshal([]byte(formJson), &formData)
 		}
-		fmt.Println(formData.MealStartDay)
 
 		err = tmpl.ExecuteTemplate(w, "layout", templateData{
 			Title:   "My Account",
@@ -190,11 +189,19 @@ func PutAccountHandler(userService UserService) http.Handler {
 		password := r.FormValue("password")
 		passwordConfirm := r.FormValue("passwordConfirm")
 
+		mealStartDay, err := strconv.Atoi(r.FormValue("mealStartDay"))
+
+		if err != nil {
+			http.Error(w, "mealStartDay must be an integer", http.StatusBadRequest)
+
+			return
+		}
+
 		form := UserFormUpdate{
 			Id:           user.Id,
 			Email:        r.FormValue("email"),
 			Name:         r.FormValue("name"),
-			MealStartDay: r.FormValue("mealStartDay"),
+			MealStartDay: mealStartDay,
 		}
 
 		if password != "" {

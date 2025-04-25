@@ -37,6 +37,7 @@ func main() {
 		"8000",
 		&userService,
 		&mealService,
+		userRepository,
 		mealRepository,
 		ingredientRepository,
 		tagRepository,

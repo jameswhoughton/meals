@@ -12,6 +12,7 @@ type Server struct {
 	port                 string
 	userService          *auth.UserService
 	mealService          *meals.Service
+	userRepository       auth.UserRepository
 	mealRepository       meals.MealRepository
 	ingredientRepository meals.IngredientRepository
 	tagRepository        meals.TagRepository
@@ -20,7 +21,7 @@ type Server struct {
 func (s *Server) Start() error {
 	mux := http.NewServeMux()
 
-	AddRoutes(mux, *s.userService, *s.mealService, s.mealRepository, s.ingredientRepository, s.tagRepository)
+	AddRoutes(mux, *s.userService, *s.mealService, s.userRepository, s.mealRepository, s.ingredientRepository, s.tagRepository)
 
 	fmt.Printf("listening on port :%s\n", s.port)
 
@@ -31,6 +32,7 @@ func NewServer(
 	port string,
 	userService *auth.UserService,
 	mealService *meals.Service,
+	userRepository auth.UserRepository,
 	mealRepository meals.MealRepository,
 	ingreidentRepository meals.IngredientRepository,
 	tagRepository meals.TagRepository,
@@ -39,6 +41,7 @@ func NewServer(
 		port:                 port,
 		userService:          userService,
 		mealService:          mealService,
+		userRepository:       userRepository,
 		mealRepository:       mealRepository,
 		ingredientRepository: ingreidentRepository,
 		tagRepository:        tagRepository,

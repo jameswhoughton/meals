@@ -1,4 +1,4 @@
-package meals
+package web
 
 import (
 	"encoding/json"
@@ -8,7 +8,10 @@ import (
 	"net/http"
 	"strconv"
 	"text/template"
+	"time"
 
+	"github.com/jameswhoughton/meals/internal/auth"
+	"github.com/jameswhoughton/meals/internal/meals"
 	"github.com/jameswhoughton/meals/web/helpers"
 )
 
@@ -16,7 +19,7 @@ import (
 //
 // Only the authenticated user's meals are visible
 // Results can be filtered
-func GetMealsHandler(templateFiles fs.FS, meals MealRepository) http.Handler {
+func GetMealsHandler(templateFiles fs.FS, repo meals.MealRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
 			templateFiles,
@@ -34,12 +37,12 @@ func GetMealsHandler(templateFiles fs.FS, meals MealRepository) http.Handler {
 		userId := r.Context().Value("userId").(int)
 		queryString := r.URL.Query().Get("query")
 
-		filter := MealFilter{
+		filter := meals.MealFilter{
 			UserId: userId,
 			Name:   &queryString,
 		}
 
-		meals, err := meals.Find(filter)
+		results, err := repo.Find(filter)
 
 		if err != nil {
 			log.Println(err)
@@ -49,13 +52,13 @@ func GetMealsHandler(templateFiles fs.FS, meals MealRepository) http.Handler {
 		type templateData struct {
 			Title       string
 			SearchQuery string
-			Meals       []Meal
+			Meals       []meals.Meal
 		}
 
 		tmpl.ExecuteTemplate(w, "layout", templateData{
 			Title:       "Meals",
 			SearchQuery: queryString,
-			Meals:       meals,
+			Meals:       results,
 		})
 	})
 }
@@ -65,7 +68,7 @@ func GetMealsHandler(templateFiles fs.FS, meals MealRepository) http.Handler {
 // Only the owner of a meal can access this page.
 // If a meal does not exist a 404 is returned.
 // Expects the meal Id as a url path value with the name 'id'.
-func GetMealHandler(templateFiles fs.FS, meals MealRepository) http.Handler {
+func GetMealHandler(templateFiles fs.FS, repo meals.MealRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
 			templateFiles,
@@ -83,10 +86,10 @@ func GetMealHandler(templateFiles fs.FS, meals MealRepository) http.Handler {
 		userId := r.Context().Value("userId").(int)
 		mealId, _ := strconv.Atoi(r.PathValue("id"))
 
-		meal, err := meals.Get(mealId)
+		meal, err := repo.Get(mealId)
 
 		if err != nil {
-			if errors.As(err, &ErrorMealNotFound{Id: mealId}) {
+			if errors.As(err, &meals.ErrorMealNotFound{Id: mealId}) {
 				http.Error(w, err.Error(), http.StatusNotFound)
 
 				return
@@ -116,7 +119,7 @@ func GetMealHandler(templateFiles fs.FS, meals MealRepository) http.Handler {
 
 		type templateData struct {
 			Title  string
-			Form   Meal
+			Form   meals.Meal
 			Action string
 		}
 
@@ -153,7 +156,7 @@ func GetCreateMealHandler(templateFiles fs.FS) http.Handler {
 			return
 		}
 
-		formData := Meal{}
+		formData := meals.Meal{}
 
 		if formJson != "" {
 			json.Unmarshal([]byte(formJson), &formData)
@@ -161,7 +164,7 @@ func GetCreateMealHandler(templateFiles fs.FS) http.Handler {
 
 		type templateData struct {
 			Title  string
-			Form   Meal
+			Form   meals.Meal
 			Action string
 		}
 
@@ -174,13 +177,13 @@ func GetCreateMealHandler(templateFiles fs.FS) http.Handler {
 }
 
 // Helper to convert a form request into a Meal struct
-func mealFromRequest(r http.Request) Meal {
+func mealFromRequest(r http.Request) meals.Meal {
 	r.ParseForm()
 
 	var (
 		id          int
-		ingredients []MealIngredient
-		tags        []Tag
+		ingredients []meals.MealIngredient
+		tags        []meals.Tag
 	)
 
 	if r.Form.Has("id") {
@@ -194,7 +197,7 @@ func mealFromRequest(r http.Request) Meal {
 	}
 
 	for i := range len(r.Form["ingredientName"]) {
-		var ingredient MealIngredient
+		var ingredient meals.MealIngredient
 
 		quantity, _ := strconv.Atoi(r.Form["ingredientQuantity"][i])
 		var isMain bool
@@ -212,7 +215,7 @@ func mealFromRequest(r http.Request) Meal {
 	}
 
 	for i := range len(r.Form["tagName"]) {
-		var tag Tag
+		var tag meals.Tag
 
 		id, _ := strconv.Atoi(r.Form["tagId"][i])
 
@@ -222,7 +225,7 @@ func mealFromRequest(r http.Request) Meal {
 		tags = append(tags, tag)
 	}
 
-	return Meal{
+	return meals.Meal{
 		Id:          id,
 		Name:        r.FormValue("name"),
 		Notes:       r.FormValue("notes"),
@@ -235,7 +238,7 @@ func mealFromRequest(r http.Request) Meal {
 //
 // If the form is invalid, redirects back to the create a meal page.
 // Redirects to the meal list page on success.
-func PostMealHandler(service Service) http.Handler {
+func PostMealHandler(service meals.Service) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userId := r.Context().Value("userId").(int)
 
@@ -245,7 +248,7 @@ func PostMealHandler(service Service) http.Handler {
 
 		_, err := service.CreateMeal(&meal)
 
-		if err != nil && errors.Is(err, ErrorFormInvalid{}) {
+		if err != nil && errors.Is(err, meals.ErrorFormInvalid{}) {
 			formJson, _ := json.Marshal(meal)
 			helpers.SetMessage(w, "formData", string(formJson))
 
@@ -272,7 +275,7 @@ func PostMealHandler(service Service) http.Handler {
 // Expects the meal Id as a url path value with the name 'id'.
 // If the form is invalid, redirects back to the edit a meal page.
 // Redirects to the meal list page on success.
-func PutMealHandler(service Service) http.Handler {
+func PutMealHandler(service meals.Service, repo meals.MealRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userId := r.Context().Value("userId").(int)
 
@@ -280,10 +283,10 @@ func PutMealHandler(service Service) http.Handler {
 
 		meal.Id, _ = strconv.Atoi(r.PathValue("id"))
 
-		existingMeal, err := service.meals.Get(meal.Id)
+		existingMeal, err := repo.Get(meal.Id)
 
 		if err != nil {
-			if errors.As(err, &ErrorMealNotFound{Id: meal.Id}) {
+			if errors.As(err, &meals.ErrorMealNotFound{Id: meal.Id}) {
 				http.Error(w, err.Error(), http.StatusNotFound)
 
 				return
@@ -300,7 +303,7 @@ func PutMealHandler(service Service) http.Handler {
 
 		err = service.UpdateMeal(&meal)
 
-		if err != nil && errors.Is(err, ErrorFormInvalid{}) {
+		if err != nil && errors.Is(err, meals.ErrorFormInvalid{}) {
 			formJson, _ := json.Marshal(meal)
 			helpers.SetMessage(w, "formData", string(formJson))
 
@@ -325,13 +328,67 @@ func PutMealHandler(service Service) http.Handler {
 
 // DeleteMealHandler
 
-// GetPlannerHandler
+// Render the Planner page
+
+func GetPlannerHandler(templateFiles fs.FS, mealService meals.Service, userRepo auth.UserRepository) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tmpl, err := template.ParseFS(
+			templateFiles,
+			"templates/layout.gohtml",
+			"templates/navigation.gohtml",
+			"templates/pages/planner.gohtml",
+		)
+
+		if err != nil {
+			w.Write([]byte("Template error: " + err.Error()))
+
+			return
+		}
+		userId := r.Context().Value("userId").(int)
+
+		user, err := userRepo.Get(auth.UserGet{Id: &userId})
+
+		if err != nil {
+
+		}
+
+		var startDate time.Time
+
+		if r.PathValue("date") == "" {
+			today := time.Now()
+			diffToPlannerStartDay := (today.Weekday() - time.Weekday(user.MealStartDay))
+			startDate = today.Add(-time.Duration(diffToPlannerStartDay) * 24 * time.Hour)
+		} else {
+			startDate, err = time.Parse("02-01-2006", r.PathValue("date"))
+
+			if err != nil {
+				http.Error(w, "Cannot parse date: "+r.PathValue("date"), http.StatusBadRequest)
+
+				return
+			}
+		}
+
+		var plannedMeals map[string]meals.Meal
+
+		type templateData struct {
+			Title     string
+			StartDate time.Time
+			Meals     map[string]meals.Meal
+		}
+
+		tmpl.ExecuteTemplate(w, "layout", templateData{
+			Title:     "Ingredients",
+			StartDate: startDate,
+			Meals:     plannedMeals,
+		})
+	})
+}
 
 // Render the ingredients list page
 //
 // Ingredients can be filtered by name.
 // Only ingredients owned by the authed user are visible.
-func GetIngredientsHandler(templateFiles fs.FS, ingredients IngredientRepository) http.Handler {
+func GetIngredientsHandler(templateFiles fs.FS, ingredients meals.IngredientRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
 			templateFiles,
@@ -354,12 +411,14 @@ func GetIngredientsHandler(templateFiles fs.FS, ingredients IngredientRepository
 		if err != nil {
 			log.Println(err)
 			http.Error(w, "server error", http.StatusInternalServerError)
+
+			return
 		}
 
 		type templateData struct {
 			Title       string
 			SearchQuery string
-			Ingredients []Ingredient
+			Ingredients []meals.Ingredient
 		}
 
 		tmpl.ExecuteTemplate(w, "layout", templateData{
@@ -374,7 +433,7 @@ func GetIngredientsHandler(templateFiles fs.FS, ingredients IngredientRepository
 
 // Results are limited to the authenticated user.
 // Returns JSON.
-func GetSearchIngredientsHandler(ingredients IngredientRepository) http.Handler {
+func GetSearchIngredientsHandler(ingredients meals.IngredientRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userId := r.Context().Value("userId").(int)
 
@@ -398,7 +457,7 @@ func GetSearchIngredientsHandler(ingredients IngredientRepository) http.Handler 
 // Redirects to a 404 page if the ingredient does not exist.
 // Only the owner of an ingredient can access the page.
 // Expects the ingredient id to be provided as a path value with the name 'id'.
-func GetIngredientHandler(templateFiles fs.FS, ingredients IngredientRepository) http.Handler {
+func GetIngredientHandler(templateFiles fs.FS, ingredients meals.IngredientRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
 			templateFiles,
@@ -419,7 +478,7 @@ func GetIngredientHandler(templateFiles fs.FS, ingredients IngredientRepository)
 		ingredient, err := ingredients.GetById(ingredientId)
 
 		if err != nil {
-			if errors.As(err, &ErrorIngredientNotFound{Id: ingredientId}) {
+			if errors.As(err, &meals.ErrorIngredientNotFound{Id: ingredientId}) {
 				http.Error(w, err.Error(), http.StatusNotFound)
 
 				return
@@ -447,7 +506,7 @@ func GetIngredientHandler(templateFiles fs.FS, ingredients IngredientRepository)
 
 		type templateData struct {
 			Title string
-			Form  Ingredient
+			Form  meals.Ingredient
 		}
 
 		tmpl.ExecuteTemplate(w, "layout", templateData{
@@ -463,7 +522,7 @@ func GetIngredientHandler(templateFiles fs.FS, ingredients IngredientRepository)
 // Returns a 404 if the ingredient does not exist.
 // Redirects back to the ingredients list page on success.
 // If the form is invalid, redirect back to the edit ingredient page.
-func PutIngredientHandler(service Service) http.Handler {
+func PutIngredientHandler(service meals.Service, repo meals.IngredientRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 
@@ -471,10 +530,10 @@ func PutIngredientHandler(service Service) http.Handler {
 
 		ingredientId, _ := strconv.Atoi(r.PathValue("id"))
 
-		existingIngredient, err := service.ingredients.GetById(ingredientId)
+		existingIngredient, err := repo.GetById(ingredientId)
 
 		if err != nil {
-			if errors.As(err, &ErrorIngredientNotFound{Id: ingredientId}) {
+			if errors.As(err, &meals.ErrorIngredientNotFound{Id: ingredientId}) {
 				http.Error(w, err.Error(), http.StatusNotFound)
 
 				return
@@ -487,7 +546,7 @@ func PutIngredientHandler(service Service) http.Handler {
 			return
 		}
 
-		ingredient := Ingredient{
+		ingredient := meals.Ingredient{
 			Id:     ingredientId,
 			UserId: userId,
 			Name:   r.FormValue("name"),
@@ -495,7 +554,7 @@ func PutIngredientHandler(service Service) http.Handler {
 
 		err = service.UpdateIngredient(&ingredient)
 
-		if err != nil && errors.Is(err, ErrorFormInvalid{}) {
+		if err != nil && errors.Is(err, meals.ErrorFormInvalid{}) {
 			formJson, _ := json.Marshal(ingredient)
 			helpers.SetMessage(w, "formData", string(formJson))
 
@@ -519,7 +578,7 @@ func PutIngredientHandler(service Service) http.Handler {
 //
 // Limited to tags belonging to the authed user.
 // Returns JSON.
-func GetSearchTagHandler(tags TagRepository) http.Handler {
+func GetSearchTagHandler(tags meals.TagRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userId := r.Context().Value("userId").(int)
 
@@ -541,7 +600,7 @@ func GetSearchTagHandler(tags TagRepository) http.Handler {
 // Render the tags list page
 //
 // Only lists tags owned by the authed user.
-func GetTagsHandler(templateFiles fs.FS, tags TagRepository) http.Handler {
+func GetTagsHandler(templateFiles fs.FS, tags meals.TagRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
 			templateFiles,
@@ -569,7 +628,7 @@ func GetTagsHandler(templateFiles fs.FS, tags TagRepository) http.Handler {
 		type templateData struct {
 			Title       string
 			SearchQuery string
-			Tags        []Tag
+			Tags        []meals.Tag
 		}
 
 		tmpl.ExecuteTemplate(w, "layout", templateData{
@@ -585,7 +644,7 @@ func GetTagsHandler(templateFiles fs.FS, tags TagRepository) http.Handler {
 // Returns 404 if the tag does not exist
 // Only the owner of the tag can access the page
 // Expects the tag id to be set as a path value with the name 'id'
-func GetTagHandler(templateFiles fs.FS, tags TagRepository) http.Handler {
+func GetTagHandler(templateFiles fs.FS, tags meals.TagRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
 			templateFiles,
@@ -606,7 +665,7 @@ func GetTagHandler(templateFiles fs.FS, tags TagRepository) http.Handler {
 		tag, err := tags.GetById(tagId)
 
 		if err != nil {
-			if errors.As(err, &ErrorTagNotFound{Id: tagId}) {
+			if errors.As(err, &meals.ErrorTagNotFound{Id: tagId}) {
 				http.Error(w, err.Error(), http.StatusNotFound)
 
 				return
@@ -634,7 +693,7 @@ func GetTagHandler(templateFiles fs.FS, tags TagRepository) http.Handler {
 
 		type templateData struct {
 			Title string
-			Form  Tag
+			Form  meals.Tag
 		}
 
 		tmpl.ExecuteTemplate(w, "layout", templateData{
@@ -649,7 +708,7 @@ func GetTagHandler(templateFiles fs.FS, tags TagRepository) http.Handler {
 // Only the owner of a tag can edit it
 // On success redirects to the tag list page
 // If there are validation errors, redirects to the edit tag page
-func PutTagHandler(service Service) http.Handler {
+func PutTagHandler(service meals.Service, repo meals.TagRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 
@@ -657,10 +716,10 @@ func PutTagHandler(service Service) http.Handler {
 
 		tagId, _ := strconv.Atoi(r.PathValue("id"))
 
-		existingTag, err := service.tags.GetById(tagId)
+		existingTag, err := repo.GetById(tagId)
 
 		if err != nil {
-			if errors.As(err, &ErrorTagNotFound{Id: tagId}) {
+			if errors.As(err, &meals.ErrorTagNotFound{Id: tagId}) {
 				http.Error(w, err.Error(), http.StatusNotFound)
 
 				return
@@ -673,7 +732,7 @@ func PutTagHandler(service Service) http.Handler {
 			return
 		}
 
-		tag := Tag{
+		tag := meals.Tag{
 			Id:     tagId,
 			UserId: userId,
 			Name:   r.FormValue("name"),
@@ -681,7 +740,7 @@ func PutTagHandler(service Service) http.Handler {
 
 		err = service.UpdateTag(&tag)
 
-		if err != nil && errors.Is(err, ErrorFormInvalid{}) {
+		if err != nil && errors.Is(err, meals.ErrorFormInvalid{}) {
 			formJson, _ := json.Marshal(tag)
 			helpers.SetMessage(w, "formData", string(formJson))
 

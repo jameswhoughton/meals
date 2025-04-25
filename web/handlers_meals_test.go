@@ -1,4 +1,4 @@
-package meals_test
+package web_test
 
 import (
 	"context"
@@ -13,6 +13,7 @@ import (
 
 	"github.com/jameswhoughton/meals/internal/meals"
 	"github.com/jameswhoughton/meals/memory"
+	"github.com/jameswhoughton/meals/web"
 )
 
 func TestGetMealHandlerReturns404IfMealDoesNotExist(t *testing.T) {
@@ -24,7 +25,7 @@ func TestGetMealHandlerReturns404IfMealDoesNotExist(t *testing.T) {
 
 	repository := memory.MealRepository{}
 
-	handler := meals.GetMealHandler(templateFiles, &repository)
+	handler := web.GetMealHandler(templateFiles, &repository)
 
 	ctx := context.WithValue(context.Background(), "userId", 1)
 
@@ -60,7 +61,7 @@ func TestGetMealHandlerReturns403IfMealDoesNotBelongToUser(t *testing.T) {
 		},
 	}
 
-	handler := meals.GetMealHandler(templateFiles, &repository)
+	handler := web.GetMealHandler(templateFiles, &repository)
 
 	ctx := context.WithValue(context.Background(), "userId", 1)
 
@@ -87,7 +88,7 @@ func TestPutMealHandlerReturns404IfMealDoesNotExist(t *testing.T) {
 	tagRepository := memory.TagRepository{}
 	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
 
-	handler := meals.PutMealHandler(service)
+	handler := web.PutMealHandler(service, &mealRepository)
 
 	ctx := context.WithValue(context.Background(), "userId", 1)
 
@@ -134,7 +135,7 @@ func TestPutMealHandlerReturns403IfMealDoesNotBelongToTheUser(t *testing.T) {
 	tagRepository := memory.TagRepository{}
 	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
 
-	handler := meals.PutMealHandler(service)
+	handler := web.PutMealHandler(service, &mealRepository)
 
 	ctx := context.WithValue(context.Background(), "userId", 1)
 
@@ -172,7 +173,7 @@ func TestPostMealHandlerCraetesAMeal(t *testing.T) {
 	tagRepository := memory.TagRepository{}
 	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
 
-	handler := meals.PostMealHandler(service)
+	handler := web.PostMealHandler(service)
 
 	ctx := context.WithValue(context.Background(), "userId", 1)
 
@@ -336,7 +337,7 @@ func TestPutMealHandlerWithCorrectFormUpdatesAMeal(t *testing.T) {
 	tagRepository := memory.TagRepository{}
 	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
 
-	handler := meals.PutMealHandler(service)
+	handler := web.PutMealHandler(service, &mealRepository)
 
 	ctx := context.WithValue(context.Background(), "userId", 1)
 
@@ -417,7 +418,7 @@ func TestGetIngredientHandlerReturns404IfTheIngredientDoesNotExist(t *testing.T)
 
 	repository := memory.IngredientRepository{}
 
-	handler := meals.GetIngredientHandler(templateFiles, &repository)
+	handler := web.GetIngredientHandler(templateFiles, &repository)
 
 	ctx := context.WithValue(context.Background(), "userId", 1)
 
@@ -453,7 +454,7 @@ func TestGetIngredientHandlerReturns403IfIngredientDoesNotBelongToTheUser(t *tes
 		},
 	}
 
-	handler := meals.GetIngredientHandler(templateFiles, &repository)
+	handler := web.GetIngredientHandler(templateFiles, &repository)
 
 	ctx := context.WithValue(context.Background(), "userId", 1)
 
@@ -479,7 +480,7 @@ func TestPutIngredientHandlerReturns404IfIngredientDoesNotExist(t *testing.T) {
 	tagRepository := memory.TagRepository{}
 	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
 
-	handler := meals.PutIngredientHandler(service)
+	handler := web.PutIngredientHandler(service, &ingredientRepository)
 
 	ctx := context.WithValue(context.Background(), "userId", 1)
 
@@ -517,7 +518,7 @@ func TestPutIngredientHandlerReturns403IfIngredientDoesNotBelongToUser(t *testin
 	tagRepository := memory.TagRepository{}
 	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
 
-	handler := meals.PutIngredientHandler(service)
+	handler := web.PutIngredientHandler(service, &ingredientRepository)
 
 	ctx := context.WithValue(context.Background(), "userId", 1)
 
@@ -558,7 +559,7 @@ func TestPutIngredientHandlerWithCorrectFormUpdatesIngredient(t *testing.T) {
 	tagRepository := memory.TagRepository{}
 	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
 
-	handler := meals.PutIngredientHandler(service)
+	handler := web.PutIngredientHandler(service, &ingredientRepository)
 
 	ctx := context.WithValue(context.Background(), "userId", 2)
 
