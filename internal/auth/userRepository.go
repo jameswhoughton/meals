@@ -24,10 +24,11 @@ func (ug UserGet) Validate() error {
 }
 
 type UserUpdate struct {
-	Email     *string
-	Name      *string
-	Password  *string
-	UpdatedAt time.Time
+	Email        string
+	Name         string
+	Password     *string
+	MealStartDay string
+	UpdatedAt    time.Time
 }
 
 type ErrorUserNotFound struct {

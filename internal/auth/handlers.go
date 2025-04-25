@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"html/template"
 	"io/fs"
 	"log"
@@ -142,13 +143,15 @@ func GetAccountHandler(templateFiles fs.FS, userService UserService) http.Handle
 		}
 
 		formData := UserFormUpdate{
-			Name:  &user.Name,
-			Email: &user.Email,
+			Name:         user.Name,
+			Email:        user.Email,
+			MealStartDay: user.MealStartDay,
 		}
 
 		if formJson != "" {
 			json.Unmarshal([]byte(formJson), &formData)
 		}
+		fmt.Println(formData.MealStartDay)
 
 		err = tmpl.ExecuteTemplate(w, "layout", templateData{
 			Title:   "My Account",
@@ -186,13 +189,12 @@ func PutAccountHandler(userService UserService) http.Handler {
 
 		password := r.FormValue("password")
 		passwordConfirm := r.FormValue("passwordConfirm")
-		email := r.FormValue("email")
-		name := r.FormValue("name")
 
 		form := UserFormUpdate{
-			Id:    user.Id,
-			Email: &email,
-			Name:  &name,
+			Id:           user.Id,
+			Email:        r.FormValue("email"),
+			Name:         r.FormValue("name"),
+			MealStartDay: r.FormValue("mealStartDay"),
 		}
 
 		if password != "" {

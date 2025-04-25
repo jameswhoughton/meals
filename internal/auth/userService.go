@@ -5,18 +5,20 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log"
+	"slices"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
-	Id        int
-	Name      string
-	Email     string
-	Password  string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	Id           int
+	Name         string
+	Email        string
+	Password     string
+	MealStartDay string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 func GenerateKey() string {
@@ -67,12 +69,35 @@ func validateEmail(email string) (bool, string) {
 
 }
 
+func validateMealStartDay(day string) (bool, string) {
+	if day == "" {
+		return true, ""
+	}
+
+	validDays := []string{
+		"MONDAY",
+		"TUESDAY",
+		"WEDNESDAY",
+		"THURSDAY",
+		"FRIDAY",
+		"SATURDAY",
+		"SUNDAY",
+	}
+
+	if !slices.Contains(validDays, day) {
+		return false, "meal start day is not valid day of the week"
+	}
+
+	return true, ""
+}
+
 type UserFormUpdate struct {
 	Id              int
 	Password        *string `json:"-"`
 	PasswordConfirm string  `json:"-"`
-	Email           *string
-	Name            *string
+	Email           string
+	Name            string
+	MealStartDay    string
 	Errors          map[string]string
 }
 
@@ -85,22 +110,24 @@ func (f *UserFormUpdate) Validate(currentUser User, userRepository UserRepositor
 		}
 	}
 
-	if f.Name != nil {
-		if passes, message := validateName(*f.Name); !passes {
-			f.Errors["Name"] = message
-		}
+	if passes, message := validateName(f.Name); !passes {
+		f.Errors["Name"] = message
 	}
 
-	if f.Email != nil && currentUser.Email != *f.Email {
-		if passes, message := validateEmail(*f.Email); !passes {
+	if currentUser.Email != f.Email {
+		if passes, message := validateEmail(f.Email); !passes {
 			f.Errors["Email"] = message
 		}
 
-		existingUser, err := userRepository.Get(UserGet{Email: f.Email})
+		existingUser, err := userRepository.Get(UserGet{Email: &f.Email})
 
 		if err == nil && existingUser.Id != currentUser.Id {
 			f.Errors["Email"] = "email already in use"
 		}
+	}
+
+	if passes, message := validateMealStartDay(f.MealStartDay); !passes {
+		f.Errors["MealStartDay"] = message
 	}
 
 	return len(f.Errors) == 0
@@ -219,13 +246,9 @@ func (us *UserService) UpdateUser(form *UserFormUpdate) error {
 
 	toUpdate := UserUpdate{}
 
-	if v := form.Email; v != nil {
-		toUpdate.Email = v
-	}
-
-	if v := form.Name; v != nil {
-		toUpdate.Name = v
-	}
+	toUpdate.Name = form.Name
+	toUpdate.Email = form.Email
+	toUpdate.MealStartDay = form.MealStartDay
 
 	if v := form.Password; v != nil {
 		hashedPassword := string(HashPassword(*form.Password))

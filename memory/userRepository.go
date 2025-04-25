@@ -64,13 +64,11 @@ func (us *UserRepository) Update(id int, form auth.UserUpdate) error {
 		return fmt.Errorf("Cannot find user to update: %w", auth.ErrorUserNotFound{})
 	}
 
-	if v := form.Email; v != nil {
-		us.Store[index].Email = *v
-	}
+	us.Store[index].Email = form.Email
 
-	if v := form.Name; v != nil {
-		us.Store[index].Name = *v
-	}
+	us.Store[index].Name = form.Name
+
+	us.Store[index].MealStartDay = form.MealStartDay
 
 	if v := form.Password; v != nil {
 		us.Store[index].Password = *v

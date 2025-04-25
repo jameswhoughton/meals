@@ -79,12 +79,14 @@ func (c *UserRepositoryContract) Test(t *testing.T) {
 
 		newName = "James Smith"
 		newEmail := "james.smith@example.com"
+		newStartDay := "WEDNESDAY"
 
 		// Update User
 		update := auth.UserUpdate{
-			Name:      &newName,
-			Email:     &newEmail,
-			UpdatedAt: time.Now(),
+			Name:         newName,
+			Email:        newEmail,
+			MealStartDay: newStartDay,
+			UpdatedAt:    time.Now(),
 		}
 
 		err = repo.Update(fetchedUser.Id, update)
@@ -104,11 +106,15 @@ func (c *UserRepositoryContract) Test(t *testing.T) {
 		}
 
 		if newEmail != updatedUser.Email {
-			t.Errorf("Expected email %s found %s", user.Email, updatedUser.Email)
+			t.Errorf("Expected email %s found %s", newEmail, updatedUser.Email)
 		}
 
 		if newName != updatedUser.Name {
-			t.Errorf("Expected name %s found %s", user.Name, updatedUser.Name)
+			t.Errorf("Expected name %s found %s", newName, updatedUser.Name)
+		}
+
+		if newStartDay != updatedUser.MealStartDay {
+			t.Errorf("Expected start day %s found %s", newStartDay, updatedUser.MealStartDay)
 		}
 	})
 

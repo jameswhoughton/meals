@@ -109,10 +109,10 @@ func TestUpdateUserFailsIfFormIsInvalid(t *testing.T) {
 			description: "Mismatched password",
 			form: auth.UserFormUpdate{
 				Id:              1,
-				Name:            strPtr("John Smith"),
+				Name:            "John Smith",
 				Password:        strPtr("password"),
 				PasswordConfirm: "pssword",
-				Email:           strPtr("john@example.com"),
+				Email:           "john@example.com",
 			},
 			expectedErrors: []string{"Password"},
 		},
@@ -120,10 +120,10 @@ func TestUpdateUserFailsIfFormIsInvalid(t *testing.T) {
 			description: "Fields too long",
 			form: auth.UserFormUpdate{
 				Id:              1,
-				Name:            strPtr(strings.Repeat("A", 256)),
+				Name:            strings.Repeat("A", 256),
 				Password:        strPtr(strings.Repeat("A", 256)),
 				PasswordConfirm: strings.Repeat("A", 256),
-				Email:           strPtr(strings.Repeat("A", 256)),
+				Email:           strings.Repeat("A", 256),
 			},
 			expectedErrors: []string{"Name", "Email", "Password"},
 		},
@@ -131,9 +131,20 @@ func TestUpdateUserFailsIfFormIsInvalid(t *testing.T) {
 			description: "Email in use",
 			form: auth.UserFormUpdate{
 				Id:    1,
-				Email: strPtr("paul@example.com"),
+				Email: "paul@example.com",
 			},
 			expectedErrors: []string{"Email"},
+		},
+		{
+			description: "Meal start day invalid",
+			form: auth.UserFormUpdate{
+				Name:            "Paul",
+				Password:        strPtr("aaabbbcccd"),
+				PasswordConfirm: "aaabbbcccd",
+				Email:           "paul123@example.com",
+				MealStartDay:    "AAA",
+			},
+			expectedErrors: []string{"MealStartDay"},
 		},
 	}
 
@@ -221,8 +232,9 @@ func TestCanCreateGetAndUpdateAUser(t *testing.T) {
 
 	updateForm := auth.UserFormUpdate{
 		Id:              user.Id,
-		Name:            strPtr("Steve Smith"),
-		Email:           strPtr("steve.smith@example.com"),
+		Name:            "Steve Smith",
+		Email:           "steve.smith@example.com",
+		MealStartDay:    "THURSDAY",
 		Password:        strPtr("PASSWORD456!"),
 		PasswordConfirm: "PASSWORD456!",
 	}
@@ -233,18 +245,22 @@ func TestCanCreateGetAndUpdateAUser(t *testing.T) {
 		t.Errorf("Unexpected error updating user: %v", err)
 	}
 
-	user, err = service.GetUserFromCredentials(*updateForm.Email, *updateForm.Password)
+	user, err = service.GetUserFromCredentials(updateForm.Email, *updateForm.Password)
 
 	if err != nil {
 		t.Errorf("Unexpected error updating user: %v", err)
 	}
 
-	if *updateForm.Name != user.Name {
-		t.Errorf("Expected name: %s, got %s", *updateForm.Name, user.Name)
+	if updateForm.Name != user.Name {
+		t.Errorf("Expected name: %s, got %s", updateForm.Name, user.Name)
 	}
 
-	if *updateForm.Email != user.Email {
-		t.Errorf("Expected email: %s, got %s", *updateForm.Email, user.Email)
+	if updateForm.Email != user.Email {
+		t.Errorf("Expected email: %s, got %s", updateForm.Email, user.Email)
+	}
+
+	if updateForm.MealStartDay != user.MealStartDay {
+		t.Errorf("Expected start day: %s, got %s", updateForm.MealStartDay, user.MealStartDay)
 	}
 
 	if *updateForm.Password == user.Password {

@@ -18,6 +18,19 @@
             {{if .Form.Errors.Email}}<div class="text-sm text-red-400">{{.Form.Errors.Email}}</div>{{end}}
         </div>
         <div class="flex flex-col gap-2 mb-4">
+            <label class="text-sm text-slate-300" for="email">start day for planner</label>
+            <select class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" name="mealStartDay">
+                <option value="MONDAY" {{if eq .Form.MealStartDay "MONDAY"}}selected{{end}}>Monday</option>
+                <option value="TUESDAY" {{if eq .Form.MealStartDay "TUESDAY"}}selected{{end}}>Tuesday</option>
+                <option value="WEDNESDAY" {{if eq .Form.MealStartDay "WEDNESDAY"}}selected{{end}}>Wednesday</option>
+                <option value="THURSDAY" {{if eq .Form.MealStartDay "THURSDAY"}}selected{{end}}>Thursday</option>
+                <option value="FRIDAY" {{if eq .Form.MealStartDay "FRIDAY"}}selected{{end}}>Friday</option>
+                <option value="SATURDAY" {{if eq .Form.MealStartDay "SATURDAY"}}selected{{end}}>Saturday</option>
+                <option value="SUNDAY" {{if eq .Form.MealStartDay "SUNDAY"}}selected{{end}}>Sunday</option>
+            </select>
+            {{if .Form.Errors.MealStartDay}}<div class="text-sm text-red-400">{{.Form.Errors.MealStartDay}}</div>{{end}}
+        </div>
+        <div class="flex flex-col gap-2 mb-4">
             <label class="text-sm text-slate-300" for="password">password</label>
             <input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" type="password"
                 name="password" />

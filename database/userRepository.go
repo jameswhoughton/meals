@@ -39,9 +39,9 @@ func (us *UserRepository) Get(filter auth.UserGet) (auth.User, error) {
 		values = append(values, *filter.Email)
 	}
 
-	query := "SELECT id, name, email, password FROM users WHERE 1 = 1 AND " + strings.Join(wheres, " AND ")
+	query := "SELECT id, name, email, meal_start_day, password FROM users WHERE 1 = 1 AND " + strings.Join(wheres, " AND ")
 
-	err = us.db.QueryRow(query, values...).Scan(&user.Id, &user.Name, &user.Email, &user.Password)
+	err = us.db.QueryRow(query, values...).Scan(&user.Id, &user.Name, &user.Email, &user.MealStartDay, &user.Password)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -85,20 +85,16 @@ func (us *UserRepository) Update(id int, user auth.UserUpdate) error {
 
 	updates := []string{
 		"updated_at = ?",
+		"email = ?",
+		"name = ?",
+		"meal_start_day = ?",
 	}
 
 	values := []any{
 		time.Now(),
-	}
-
-	if v := user.Email; v != nil {
-		updates = append(updates, "email = ?")
-		values = append(values, *v)
-	}
-
-	if v := user.Name; v != nil {
-		updates = append(updates, "name = ?")
-		values = append(values, *v)
+		user.Email,
+		user.Name,
+		user.MealStartDay,
 	}
 
 	if v := user.Password; v != nil {
