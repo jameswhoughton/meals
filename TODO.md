@@ -2,18 +2,18 @@
 
 ## Features
 
-- [ ] debounce request-typeahead
-- [ ] Make typeahead accessible
+- [x] debounce request-typeahead
+- [x] Make typeahead accessible
 - [x] Update navigation
 - [x] Create meals list page
 - [ ] Add delete button and route for meals page (and edit meal page)
 - [x] Create page to edit meal
 - [x] Add note to edit ingredient page 'This will affect all meals with this ingredient'
-- [ ] Convert attributes to 'tags'
+- [x] Convert attributes to 'tags'
     - [x] Tags are created when a meal is created
     - [x] Tags are removed if all associated meals no longer exist
-    - [ ] Add tags page
-    - [ ] Add edit tag page
+    - [x] Add tags page
+    - [x] Add edit tag page
     - [x] Add new TagRepository
     - [x] Update existing tests
 - [ ] Create planner page
@@ -29,6 +29,7 @@
 - [x] Ensure ingredients are unique per user
 - [x] Ensure tags are unique per user
 - [ ] Method to seed the DB for dev/testing
+- [ ] Replace old alerts with alert-message component
 
 ## Bugs
 
