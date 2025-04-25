@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log"
-	"slices"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -16,7 +15,7 @@ type User struct {
 	Name         string
 	Email        string
 	Password     string
-	MealStartDay string
+	MealStartDay int
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }
@@ -69,22 +68,8 @@ func validateEmail(email string) (bool, string) {
 
 }
 
-func validateMealStartDay(day string) (bool, string) {
-	if day == "" {
-		return true, ""
-	}
-
-	validDays := []string{
-		"MONDAY",
-		"TUESDAY",
-		"WEDNESDAY",
-		"THURSDAY",
-		"FRIDAY",
-		"SATURDAY",
-		"SUNDAY",
-	}
-
-	if !slices.Contains(validDays, day) {
+func validateMealStartDay(day int) (bool, string) {
+	if day < 0 || day > 6 {
 		return false, "meal start day is not valid day of the week"
 	}
 
@@ -97,7 +82,7 @@ type UserFormUpdate struct {
 	PasswordConfirm string  `json:"-"`
 	Email           string
 	Name            string
-	MealStartDay    string
+	MealStartDay    int
 	Errors          map[string]string
 }
 

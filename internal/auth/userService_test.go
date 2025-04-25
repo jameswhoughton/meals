@@ -142,7 +142,7 @@ func TestUpdateUserFailsIfFormIsInvalid(t *testing.T) {
 				Password:        strPtr("aaabbbcccd"),
 				PasswordConfirm: "aaabbbcccd",
 				Email:           "paul123@example.com",
-				MealStartDay:    "AAA",
+				MealStartDay:    10,
 			},
 			expectedErrors: []string{"MealStartDay"},
 		},
@@ -234,7 +234,7 @@ func TestCanCreateGetAndUpdateAUser(t *testing.T) {
 		Id:              user.Id,
 		Name:            "Steve Smith",
 		Email:           "steve.smith@example.com",
-		MealStartDay:    "THURSDAY",
+		MealStartDay:    4,
 		Password:        strPtr("PASSWORD456!"),
 		PasswordConfirm: "PASSWORD456!",
 	}
@@ -260,7 +260,7 @@ func TestCanCreateGetAndUpdateAUser(t *testing.T) {
 	}
 
 	if updateForm.MealStartDay != user.MealStartDay {
-		t.Errorf("Expected start day: %s, got %s", updateForm.MealStartDay, user.MealStartDay)
+		t.Errorf("Expected start day: %d, got %d", updateForm.MealStartDay, user.MealStartDay)
 	}
 
 	if *updateForm.Password == user.Password {

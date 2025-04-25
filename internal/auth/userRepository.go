@@ -27,7 +27,7 @@ type UserUpdate struct {
 	Email        string
 	Name         string
 	Password     *string
-	MealStartDay string
+	MealStartDay int
 	UpdatedAt    time.Time
 }
 

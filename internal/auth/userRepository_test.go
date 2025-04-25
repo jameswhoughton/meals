@@ -79,7 +79,7 @@ func (c *UserRepositoryContract) Test(t *testing.T) {
 
 		newName = "James Smith"
 		newEmail := "james.smith@example.com"
-		newStartDay := "WEDNESDAY"
+		newStartDay := 3
 
 		// Update User
 		update := auth.UserUpdate{
@@ -114,7 +114,7 @@ func (c *UserRepositoryContract) Test(t *testing.T) {
 		}
 
 		if newStartDay != updatedUser.MealStartDay {
-			t.Errorf("Expected start day %s found %s", newStartDay, updatedUser.MealStartDay)
+			t.Errorf("Expected start day %d found %d", newStartDay, updatedUser.MealStartDay)
 		}
 	})
 

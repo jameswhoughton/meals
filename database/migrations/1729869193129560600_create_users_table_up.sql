@@ -3,7 +3,7 @@ CREATE TABLE users (
 	email TEXT NOT NULL,
 	name TEXT NOT NULL,
         password TEXT NOT NULL,
-	meal_start_day TEXT NOT NULL DEFAULT 'MONDAY',
+	meal_start_day INTEGER NOT NULL DEFAULT 1, -- Monday
 	created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 	updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 )
