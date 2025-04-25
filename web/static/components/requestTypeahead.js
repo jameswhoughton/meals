@@ -7,8 +7,19 @@ customElements.define(
 
         template() {
             const node = document.createElement('li')
+            node.role = 'tab'
+            node.tabIndex = 0
 
-            node.classList.add('cursor-pointer', 'px-2', 'py-3', 'hover:bg-slate-600', 'transition-colors')
+            const classes = [
+                'cursor-pointer',
+                'px-2',
+                'py-3',
+                'hover:bg-slate-600',
+                'focus:bg-slate-600',
+                'transition-colors',
+            ]
+
+            node.classList.add(...classes)
 
             return node
         }
@@ -19,7 +30,7 @@ customElements.define(
             const label = this.getAttribute('data-label')
 
             template.innerText = label
-            template.onclick = () => {
+            const selectedFn = () => {
                 const event = new CustomEvent('selected', {
                     detail: { id, label },
                     bubbles: true,
@@ -27,6 +38,13 @@ customElements.define(
 
                 this.dispatchEvent(event)
             }
+
+            template.addEventListener('click', () => selectedFn)
+            template.addEventListener('keyup', (e) => {
+                if (e.keyCode === 13) {
+                    selectedFn()
+                }
+            })
 
             this.appendChild(template)
         }
@@ -41,6 +59,7 @@ customElements.define(
 
             this.requestController = null
             this.requestUrl = null
+            this.debounceTimeout = null
         }
 
         template() {
@@ -51,9 +70,11 @@ customElements.define(
             node.innerHTML = `
             <input 
                 class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]"
+                aria-autocomplete="list"
+                aria-expanded="false"
             />
             <div class="relative">
-                <ul class="results | hidden absolute top-[5px] bg-slate-500 left-0 right-0 rounded"></ul>
+                <ul class="results | hidden absolute top-[5px] bg-slate-500 left-0 right-0 rounded" role="tablist"></ul>
             </div>
             `
 
@@ -61,13 +82,32 @@ customElements.define(
         }
 
         connectedCallback() {
+            const id = this.id
+
+            if (id === undefined) {
+                throw new Exception('id attribute required for request-typeahead')
+            }
+
             const template = this.template()
 
             const input = template.querySelector('input')
+            const results = template.querySelector('.results')
+
+            results.id = id + '-results'
+
+            // Set aria attributes
+            input.setAttribute('aria-controls', results.id)
 
             this.requestUrl = this.getAttribute('data-url')
 
-            input.addEventListener('keyup', (e) => this.search(e.target.value))
+            // Hide results if the escape key is pressed
+            this.addEventListener('keyup', (e) => {
+                if (e.keyCode === 27) {
+                    this.hide()
+                }
+            })
+
+            input.addEventListener('keyup', (e) => this.debounceSearch(e.target.value))
 
             input.placeholder = this.getAttribute('data-placeholder')
 
@@ -77,13 +117,31 @@ customElements.define(
         }
 
         reset() {
-                const resultsContainer = this.querySelector('.results')
-                const input = this.querySelector('input')
+            const resultsContainer = this.querySelector('.results')
+            const input = this.querySelector('input')
 
-                input.value = ''
+            input.value = ''
 
-                resultsContainer.classList.add('hidden')
-                resultsContainer.innerHTML = ''
+            this.hide()
+            resultsContainer.innerHTML = ''
+        }
+
+        show() {
+            this.querySelector('.results').classList.remove('hidden')
+            this.querySelector('input').setAttribute('aria-expanded', true)
+        }
+
+        hide() {
+            this.querySelector('.results').classList.add('hidden')
+            this.querySelector('input').setAttribute('aria-expanded', false)
+        }
+
+        debounceSearch(query) {
+            if (this.debounceTimeout !== null) {
+                clearTimeout(this.debounceTimeout)
+            }
+
+            this.debounceTimeout = setTimeout(() => this.search(query), 300)
         }
 
         async search(query) {
@@ -112,7 +170,7 @@ customElements.define(
                 resultsContainer.append(node)
             })
 
-            resultsContainer.classList.remove('hidden')
+            this.show()
         }
     }
 )
