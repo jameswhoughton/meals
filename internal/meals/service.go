@@ -143,5 +143,3 @@ func (s *Service) UpdateTag(tag *Tag) error {
 
 	return nil
 }
-
-// Return 1 or more random meals restricted by parameters/rules

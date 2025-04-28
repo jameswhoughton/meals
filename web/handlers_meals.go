@@ -3,6 +3,7 @@ package web
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/fs"
 	"log"
 	"net/http"
@@ -330,6 +331,22 @@ func PutMealHandler(service meals.Service, repo meals.MealRepository) http.Handl
 
 // Render the Planner page
 
+func calculateStartDate(date time.Time, startDay int) time.Time {
+	if date.Weekday() == time.Weekday(startDay) {
+		return time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
+	}
+
+	diff := (date.Weekday() - time.Weekday(startDay))
+
+	if diff < 0 {
+		diff += 7
+	}
+
+	date = date.Add(-time.Duration(diff) * 24 * time.Hour)
+
+	return time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
+}
+
 func GetPlannerHandler(templateFiles fs.FS, mealService meals.Service, userRepo auth.UserRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
@@ -352,34 +369,38 @@ func GetPlannerHandler(templateFiles fs.FS, mealService meals.Service, userRepo 
 
 		}
 
+		type Day struct {
+			Date  string
+			Label string
+			Meal  *meals.Meal
+		}
+
 		var startDate time.Time
+		var days []Day
 
 		if r.PathValue("date") == "" {
-			today := time.Now()
-			diffToPlannerStartDay := (today.Weekday() - time.Weekday(user.MealStartDay))
-			startDate = today.Add(-time.Duration(diffToPlannerStartDay) * 24 * time.Hour)
+			startDate = calculateStartDate(time.Now(), user.MealStartDay)
 		} else {
-			startDate, err = time.Parse("02-01-2006", r.PathValue("date"))
+			parsedDate, err := time.Parse("02-01-2006", r.PathValue("date"))
 
 			if err != nil {
 				http.Error(w, "Cannot parse date: "+r.PathValue("date"), http.StatusBadRequest)
 
 				return
 			}
-		}
 
-		var plannedMeals map[string]meals.Meal
+			startDate = calculateStartDate(parsedDate, user.MealStartDay)
+		}
+		fmt.Println(startDate)
 
 		type templateData struct {
-			Title     string
-			StartDate time.Time
-			Meals     map[string]meals.Meal
+			Title string
+			Days  []Day
 		}
 
 		tmpl.ExecuteTemplate(w, "layout", templateData{
-			Title:     "Ingredients",
-			StartDate: startDate,
-			Meals:     plannedMeals,
+			Title: "Week Planner",
+			Days:  days,
 		})
 	})
 }
