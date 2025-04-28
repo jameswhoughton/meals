@@ -4,6 +4,13 @@ import (
 	"fmt"
 )
 
+/*
+Specification:
+- Has a single owner
+- Can belong to multiple meals
+- Cannot exist if it isn't associated with a meal
+- Name should be unique
+*/
 type Ingredient struct {
 	Id     int               `json:"id"`
 	UserId int               `json:"-"`

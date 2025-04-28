@@ -20,6 +20,15 @@ type MealIngredient struct {
 	IsMain   bool
 }
 
+/*
+Specification:
+- Has a single owner
+- Has atleast one ingredient
+- Has one main ingredient
+- Can have one or more tags
+- Meal names are not unique
+- Associated ingredients must have a non-zero quantity
+*/
 type Meal struct {
 	Id          int
 	UserId      int
