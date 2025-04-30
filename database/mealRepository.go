@@ -262,6 +262,7 @@ func removeOrphanedIngredients(tx *sql.Tx) error {
 		SELECT i.id
 		FROM ingredients i
 		LEFT JOIN ingredients_meals im
+		ON i.id = im.ingredient_id
 		WHERE im.meal_id IS NULL
 	)
 	`)
@@ -316,6 +317,7 @@ func removeOrphanedTags(tx *sql.Tx) error {
 		SELECT t.id
 		FROM tags t
 		LEFT JOIN meals_tags mt
+		ON t.id = mt.tag_id
 		WHERE mt.meal_id IS NULL
 	)
 	`)
@@ -543,9 +545,17 @@ func (mr *MealRepository) Destroy(id int) error {
 		return fmt.Errorf("MealRepository.Destroy: Error removing ingredients from meal (%d): %v", id, err)
 	}
 
+	if _, err := tx.Exec("DELETE FROM meals_tags WHERE meal_id = ?", id); err != nil {
+		return fmt.Errorf("MealRepository.Destroy: Error removing tags from meal (%d): %v", id, err)
+	}
+
 	if _, err := tx.Exec("DELETE FROM meals WHERE id = ?", id); err != nil {
 		return fmt.Errorf("MealRepository.Destroy: Error removing meal (%d): %v", id, err)
 	}
+
+	removeOrphanedIngredients(tx)
+
+	removeOrphanedTags(tx)
 
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("MealRepository.Destroy: Error committing transaction: %v", err)

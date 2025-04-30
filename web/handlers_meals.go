@@ -327,7 +327,39 @@ func PutMealHandler(service meals.Service, repo meals.MealRepository) http.Handl
 	})
 }
 
-// DeleteMealHandler
+func PostDeleteMealHandler(repo meals.MealRepository) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userId := r.Context().Value("userId").(int)
+
+		mealId, _ := strconv.Atoi(r.PathValue("id"))
+
+		mealToDelete, err := repo.Get(mealId)
+
+		if err != nil {
+			if errors.As(err, &meals.ErrorMealNotFound{Id: mealId}) {
+				http.Error(w, err.Error(), http.StatusNotFound)
+
+				return
+			}
+		}
+
+		if mealToDelete.UserId != userId {
+			http.Error(w, "You do not have permission to access this page", http.StatusForbidden)
+
+			return
+		}
+
+		err = repo.Destroy(mealId)
+
+		if err != nil {
+			http.Error(w, "Server error: Unable to delete meal", http.StatusInternalServerError)
+
+			return
+		}
+
+		http.Redirect(w, r, "/meals", http.StatusFound)
+	})
+}
 
 // Render the Planner page
 

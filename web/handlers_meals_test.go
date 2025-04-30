@@ -409,6 +409,93 @@ func TestPutMealHandlerWithCorrectFormUpdatesAMeal(t *testing.T) {
 	compareMeals(t, mealToUpdate, storedMeal)
 }
 
+func TestPostMealDeleteReturns404IfMealDoesNotExist(t *testing.T) {
+	mealRepository := memory.MealRepository{}
+
+	handler := web.PostDeleteMealHandler(&mealRepository)
+
+	ctx := context.WithValue(context.Background(), "userId", 1)
+
+	req := httptest.NewRequestWithContext(ctx, http.MethodGet, "/meals/1/delete", nil)
+
+	req.SetPathValue("id", "1")
+
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	result := w.Result()
+	defer result.Body.Close()
+
+	if result.StatusCode != http.StatusNotFound {
+		t.Errorf("Expected status code: %d, got %d", http.StatusNotFound, result.StatusCode)
+	}
+}
+
+func TestPostMealDeleteReturns403IfTheUserDoesNotOwnTheMeal(t *testing.T) {
+	repository := memory.MealRepository{
+		Store: []meals.Meal{
+			{
+				Id:     1,
+				UserId: 2,
+			},
+		},
+	}
+
+	handler := web.PostDeleteMealHandler(&repository)
+
+	ctx := context.WithValue(context.Background(), "userId", 1)
+
+	req := httptest.NewRequestWithContext(ctx, http.MethodGet, "/meals/1/delete", nil)
+
+	req.SetPathValue("id", "1")
+
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	result := w.Result()
+	defer result.Body.Close()
+
+	if result.StatusCode != http.StatusForbidden {
+		t.Errorf("Expected status code: %d, got %d", http.StatusForbidden, result.StatusCode)
+	}
+}
+
+func TestPostMealDeleteDeletesMeal(t *testing.T) {
+	repository := memory.MealRepository{
+		Store: []meals.Meal{
+			{
+				Id:     1,
+				UserId: 1,
+			},
+		},
+	}
+
+	handler := web.PostDeleteMealHandler(&repository)
+
+	ctx := context.WithValue(context.Background(), "userId", 1)
+
+	req := httptest.NewRequestWithContext(ctx, http.MethodGet, "/meals/1/delete", nil)
+
+	req.SetPathValue("id", "1")
+
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	result := w.Result()
+	defer result.Body.Close()
+
+	if result.StatusCode != http.StatusFound {
+		t.Errorf("Expected status code: %d, got %d", http.StatusFound, result.StatusCode)
+	}
+
+	if len(repository.Store) != 0 {
+		t.Errorf("Expected the store to be empty, found %d meals", len(repository.Store))
+	}
+}
+
 func TestGetIngredientHandlerReturns404IfTheIngredientDoesNotExist(t *testing.T) {
 	templateFiles := fstest.MapFS{
 		"templates/layout.gohtml":                 {Data: []byte{}},

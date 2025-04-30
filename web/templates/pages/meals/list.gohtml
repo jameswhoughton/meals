@@ -21,9 +21,11 @@
 			{{range $meal := .Meals}}
 			<tr class="border-b bg-zinc-800 border-zinc-600">
 				<td class="px-6 py-4">{{$meal.Id}}</td>
-				<td class="px-6 py-4">{{$meal.Name}}</td>
+				<td class="px-6 py-4"><a class="text-cyan-400 hover:text-cyan-500 transition-colors underline" href="/meals/{{$meal.Id}}">{{$meal.Name}}</a></td>
 				<td class="px-6 py-4">
-					<a class="text-cyan-400 hover:text-cyan-500 transition-colors underline" href="/meals/{{$meal.Id}}">Edit</a>
+					<form method="post" action="/meals/{{$meal.Id}}/delete">
+						<button class="text-red-400 hover:text-red-600 transition-colors" type="submit">Delete<button>
+					</form>
 				</td>
 		    	</tr>
 			{{end}}

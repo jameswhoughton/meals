@@ -6,7 +6,7 @@
 - [x] Make typeahead accessible
 - [x] Update navigation
 - [x] Create meals list page
-- [ ] Add delete button and route for meals page (and edit meal page)
+- [x] Add delete button and route for meals page (and edit meal page)
 - [x] Create page to edit meal
 - [x] Add note to edit ingredient page 'This will affect all meals with this ingredient'
 - [x] Convert attributes to 'tags'
@@ -39,6 +39,7 @@
 - [ ] Add tests for tag handlers
 - [ ] Move auth handlers to web
 - [ ] Add tests for auth handlers
+- [ ] Add confirmation modal for deletion
 
 ## Bugs
 
