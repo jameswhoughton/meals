@@ -179,18 +179,18 @@ func (mr *MealRepository) Find(filter meals.MealFilter) ([]meals.Meal, error) {
 	if filter.DateRange != nil {
 
 		if filter.DateRange.Start != nil && filter.DateRange.End != nil {
-			wheres = append(wheres, "AND (IFNULL(s.date, 0) > ? AND IFNULL(s.date, 0) < ?)")
+			wheres = append(wheres, "AND (IFNULL(p.date, 0) > ? AND IFNULL(p.date, 0) < ?)")
 			values = append(values, *filter.DateRange.Start, *filter.DateRange.End)
 		} else if filter.DateRange.Start != nil {
-			wheres = append(wheres, "AND IFNULL(s.date, 0) > ?")
+			wheres = append(wheres, "AND IFNULL(p.date, 0) > ?")
 			values = append(values, *filter.DateRange.Start)
 		} else {
-			wheres = append(wheres, "AND IFNULL(s.date, 0) < ?")
+			wheres = append(wheres, "AND IFNULL(p.date, 0) < ?")
 			values = append(values, *filter.DateRange.End)
 		}
 		query += `
-		LEFT JOIN schedule s
-		ON m.id = s.meal_id
+		LEFT JOIN planner p
+		ON m.id = p.meal_id
 		`
 	}
 
@@ -537,8 +537,8 @@ func (mr *MealRepository) Destroy(id int) error {
 
 	defer tx.Rollback()
 
-	if _, err := tx.Exec("DELETE FROM schedule WHERE meal_id = ?", id); err != nil {
-		return fmt.Errorf("MealRepository.Destroy: Error removing meal (%d) from schedule: %v", id, err)
+	if _, err := tx.Exec("DELETE FROM planner WHERE meal_id = ?", id); err != nil {
+		return fmt.Errorf("MealRepository.Destroy: Error removing meal (%d) from planner: %v", id, err)
 	}
 
 	if _, err := tx.Exec("DELETE FROM ingredients_meals WHERE meal_id = ?", id); err != nil {
@@ -566,10 +566,10 @@ func (mr *MealRepository) Destroy(id int) error {
 
 func (mr *MealRepository) AssignToDate(id int, date time.Time) error {
 	query := `
-	INSERT OR REPLACE INTO schedule 
+	INSERT OR REPLACE INTO planner 
 	(meal_id, date)
 	SELECT ?, ?
-	WHERE NOT EXISTS (SELECT * FROM schedule WHERE meal_id = ? AND date = ?)
+	WHERE NOT EXISTS (SELECT * FROM planner WHERE meal_id = ? AND date = ?)
 	`
 	_, err := mr.db.Exec(query, id, date, id, date)
 
