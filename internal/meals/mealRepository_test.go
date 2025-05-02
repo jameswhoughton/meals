@@ -327,7 +327,7 @@ func (i RepositoryContract) Test(t *testing.T) {
 				}
 
 				for _, meal := range meals {
-					if !slices.Contains[[]int, int](testCase.expectedMeals, meal.Id) {
+					if !slices.Contains(testCase.expectedMeals, meal.Id) {
 						t.Errorf("Unexpected meal ID %d in results", meal.Id)
 					}
 				}
@@ -464,6 +464,7 @@ func (i RepositoryContract) Test(t *testing.T) {
 			t.Errorf("Expected Id %d, got %d (%s)", chickenPie.Id, meals[0].Id, meals[0].Name)
 		}
 	})
+
 }
 
 func TestDatabaseRepository(t *testing.T) {
