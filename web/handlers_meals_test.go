@@ -249,7 +249,7 @@ func TestPostMealHandlerCraetesAMeal(t *testing.T) {
 		t.Errorf("Expected status code: %d, got %d", http.StatusFound, result.StatusCode)
 	}
 
-	storedMeal, err := mealRepository.Get(1)
+	storedMeal, err := mealRepository.Get(context.Background(), 1)
 
 	if err != nil {
 		t.Errorf("Unexpected error fetching created meal: %v", err)
@@ -400,7 +400,7 @@ func TestPutMealHandlerWithCorrectFormUpdatesAMeal(t *testing.T) {
 		t.Errorf("Expected status code: %d, got %d", http.StatusFound, result.StatusCode)
 	}
 
-	storedMeal, err := mealRepository.Get(14)
+	storedMeal, err := mealRepository.Get(context.Background(), 14)
 
 	if err != nil {
 		t.Errorf("Unexpected error fetching updated meal: %v", err)

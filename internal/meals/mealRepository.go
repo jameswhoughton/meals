@@ -1,6 +1,7 @@
 package meals
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"time"
@@ -121,10 +122,10 @@ func (e ErrorMealNotFound) Error() string {
 }
 
 type MealRepository interface {
-	Get(id int) (Meal, error)
-	Find(filter MealFilter) ([]Meal, error)
-	Create(meal Meal) (Meal, error)
-	Update(meal Meal) error
-	Destroy(id int) error
-	AssignToDate(id int, date time.Time) error
+	Get(ctx context.Context, id int) (Meal, error)
+	Find(ctx context.Context, filter MealFilter) ([]Meal, error)
+	Create(ctx context.Context, meal Meal) (Meal, error)
+	Update(ctx context.Context, meal Meal) error
+	Destroy(ctx context.Context, id int) error
+	AssignToDate(ctx context.Context, id int, date time.Time) error
 }

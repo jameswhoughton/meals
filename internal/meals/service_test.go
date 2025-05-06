@@ -1,6 +1,7 @@
 package meals_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -13,6 +14,8 @@ func TestValidationErrorsWhenCreatingAMeal(t *testing.T) {
 	ingredientRepository := memory.IngredientRepository{}
 	tagRepository := memory.TagRepository{}
 	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
+
+	ctx := context.Background()
 
 	type testCase struct {
 		name           string
@@ -62,7 +65,7 @@ func TestValidationErrorsWhenCreatingAMeal(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			_, err := service.CreateMeal(&testCase.meal)
+			_, err := service.CreateMeal(ctx, &testCase.meal)
 
 			if err == nil {
 				t.Error("Expected validation error got none")
@@ -92,6 +95,8 @@ func TestServiceCanCreateAMeal(t *testing.T) {
 	tagRepository := memory.TagRepository{}
 	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
 
+	ctx := context.Background()
+
 	mealToCreate := meals.Meal{
 		Name:  "New meal",
 		Notes: "Something exciting",
@@ -112,7 +117,7 @@ func TestServiceCanCreateAMeal(t *testing.T) {
 		},
 	}
 
-	createdMeal, err := service.CreateMeal(&mealToCreate)
+	createdMeal, err := service.CreateMeal(ctx, &mealToCreate)
 
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -140,6 +145,8 @@ func TestValidationErrorsWhenUpdatingAMeal(t *testing.T) {
 	ingredientRepository := memory.IngredientRepository{}
 	tagRepository := memory.TagRepository{}
 	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
+
+	ctx := context.Background()
 
 	type testCase struct {
 		name           string
@@ -189,7 +196,7 @@ func TestValidationErrorsWhenUpdatingAMeal(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			err := service.UpdateMeal(&testCase.meal)
+			err := service.UpdateMeal(ctx, &testCase.meal)
 
 			if err == nil {
 				t.Error("Expected validation error got none")
@@ -225,6 +232,8 @@ func TestServiceCanUpdateAMeal(t *testing.T) {
 	tagRepository := memory.TagRepository{}
 	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
 
+	ctx := context.Background()
+
 	mealToUpdate := meals.Meal{
 		Id:   23,
 		Name: "New name",
@@ -245,7 +254,7 @@ func TestServiceCanUpdateAMeal(t *testing.T) {
 		},
 	}
 
-	err := service.UpdateMeal(&mealToUpdate)
+	err := service.UpdateMeal(ctx, &mealToUpdate)
 
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -370,6 +379,8 @@ func TestIngredientNameShouldBeUniquePerUser(t *testing.T) {
 	tagRepository := memory.TagRepository{}
 	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
 
+	ctx := context.Background()
+
 	newMeal := meals.Meal{
 		Name:   "D",
 		UserId: 1,
@@ -382,7 +393,7 @@ func TestIngredientNameShouldBeUniquePerUser(t *testing.T) {
 		},
 	}
 
-	createdMeal, err := service.CreateMeal(&newMeal)
+	createdMeal, err := service.CreateMeal(ctx, &newMeal)
 
 	if err != nil {
 		t.Errorf("Unexpected error creating meal: %v", err)
@@ -406,13 +417,13 @@ func TestIngredientNameShouldBeUniquePerUser(t *testing.T) {
 		},
 	}
 
-	err = service.UpdateMeal(&updateMeal)
+	err = service.UpdateMeal(ctx, &updateMeal)
 
 	if err != nil {
 		t.Errorf("Unexpected error updating meal: %v", err)
 	}
 
-	updatedMeal, _ := mealRepository.Get(13)
+	updatedMeal, _ := mealRepository.Get(ctx, 13)
 
 	// The id for eggs in the updated meal should match the id for eggs in mealC as it is owned by the same user
 	if updatedMeal.Ingredients[0].Id != mealB.Ingredients[0].Id {
@@ -522,6 +533,8 @@ func TestTagNameShouldBeUniquePerUser(t *testing.T) {
 	ingredientRepository := memory.IngredientRepository{}
 	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
 
+	ctx := context.Background()
+
 	newMeal := meals.Meal{
 		Name:   "D",
 		UserId: 1,
@@ -539,7 +552,7 @@ func TestTagNameShouldBeUniquePerUser(t *testing.T) {
 		},
 	}
 
-	createdMeal, err := service.CreateMeal(&newMeal)
+	createdMeal, err := service.CreateMeal(ctx, &newMeal)
 
 	if err != nil {
 		t.Errorf("Unexpected error creating meal: %v", err)
@@ -567,13 +580,13 @@ func TestTagNameShouldBeUniquePerUser(t *testing.T) {
 		},
 	}
 
-	err = service.UpdateMeal(&updateMeal)
+	err = service.UpdateMeal(ctx, &updateMeal)
 
 	if err != nil {
 		t.Errorf("Unexpected error updating meal: %v", err)
 	}
 
-	updatedMeal, _ := mealRepository.Get(13)
+	updatedMeal, _ := mealRepository.Get(ctx, 13)
 
 	if updatedMeal.Tags[0].Id != mealB.Tags[0].Id {
 		t.Errorf("Tag Ids should match but they don't (%d - %d)", updatedMeal.Tags[0].Id, mealB.Tags[0].Id)

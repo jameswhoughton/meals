@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -19,7 +20,7 @@ type MealRepository struct {
 	db *sql.DB
 }
 
-func (mr *MealRepository) getIngredientsForMeal(id int) ([]meals.MealIngredient, error) {
+func (mr *MealRepository) getIngredientsForMeal(ctx context.Context, id int) ([]meals.MealIngredient, error) {
 	query := `
 	SELECT ingredient_id, i.name, quantity, unit, is_main
 	FROM ingredients_meals im
@@ -30,7 +31,7 @@ func (mr *MealRepository) getIngredientsForMeal(id int) ([]meals.MealIngredient,
 
 	var ingredients []meals.MealIngredient
 
-	rows, err := mr.db.Query(query, id)
+	rows, err := mr.db.QueryContext(ctx, query, id)
 
 	if err != nil {
 		return ingredients, err
@@ -49,7 +50,7 @@ func (mr *MealRepository) getIngredientsForMeal(id int) ([]meals.MealIngredient,
 	return ingredients, nil
 }
 
-func (mr *MealRepository) getTagsForMeal(id int) ([]meals.Tag, error) {
+func (mr *MealRepository) getTagsForMeal(ctx context.Context, id int) ([]meals.Tag, error) {
 	query := `
 	SELECT tag_id, t.user_id, t.name
 	FROM meals_tags mt
@@ -60,7 +61,7 @@ func (mr *MealRepository) getTagsForMeal(id int) ([]meals.Tag, error) {
 
 	var tags []meals.Tag
 
-	rows, err := mr.db.Query(query, id)
+	rows, err := mr.db.QueryContext(ctx, query, id)
 
 	if err != nil {
 		return tags, err
@@ -79,14 +80,14 @@ func (mr *MealRepository) getTagsForMeal(id int) ([]meals.Tag, error) {
 	return tags, nil
 }
 
-func (mr *MealRepository) Get(id int) (meals.Meal, error) {
+func (mr *MealRepository) Get(ctx context.Context, id int) (meals.Meal, error) {
 	var meal meals.Meal
 
 	mealQuery := `
 	SELECT id, name, notes, user_id FROM meals WHERE id = ?
 	`
 
-	err := mr.db.QueryRow(mealQuery, id).Scan(
+	err := mr.db.QueryRowContext(ctx, mealQuery, id).Scan(
 		&meal.Id,
 		&meal.Name,
 		&meal.Notes,
@@ -101,7 +102,7 @@ func (mr *MealRepository) Get(id int) (meals.Meal, error) {
 		return meals.Meal{}, fmt.Errorf("MealRepository.Get: query error: %v", err)
 	}
 
-	ingredients, err := mr.getIngredientsForMeal(id)
+	ingredients, err := mr.getIngredientsForMeal(ctx, id)
 
 	if err != nil {
 		return meal, fmt.Errorf("MealRepository.Get: Error retrieving ingredients for meal %d: %v", meal.Id, err)
@@ -109,7 +110,7 @@ func (mr *MealRepository) Get(id int) (meals.Meal, error) {
 
 	meal.Ingredients = ingredients
 
-	tags, err := mr.getTagsForMeal(id)
+	tags, err := mr.getTagsForMeal(ctx, id)
 
 	if err != nil {
 		return meal, fmt.Errorf("MealRepository.Get: Error retrieving tags for meal %d: %v", meal.Id, err)
@@ -119,7 +120,7 @@ func (mr *MealRepository) Get(id int) (meals.Meal, error) {
 
 	return meal, nil
 }
-func (mr *MealRepository) Find(filter meals.MealFilter) ([]meals.Meal, error) {
+func (mr *MealRepository) Find(ctx context.Context, filter meals.MealFilter) ([]meals.Meal, error) {
 	err := filter.Validate()
 
 	if err != nil {
@@ -196,7 +197,7 @@ func (mr *MealRepository) Find(filter meals.MealFilter) ([]meals.Meal, error) {
 
 	query += "WHERE 1 = 1 " + strings.Join(wheres, " ")
 
-	rows, err := mr.db.Query(query, values...)
+	rows, err := mr.db.QueryContext(ctx, query, values...)
 
 	if err != nil {
 		return mealList, fmt.Errorf("MealRepository.List: query error: %v", err)
@@ -217,8 +218,8 @@ func (mr *MealRepository) Find(filter meals.MealFilter) ([]meals.Meal, error) {
 	return mealList, nil
 }
 
-func createIngredient(tx *sql.Tx, userId int, name string) (int, error) {
-	result, err := tx.Exec("INSERT INTO ingredients (user_id, name) VALUES (?, ?)", userId, name)
+func createIngredient(ctx context.Context, tx *sql.Tx, userId int, name string) (int, error) {
+	result, err := tx.ExecContext(ctx, "INSERT INTO ingredients (user_id, name) VALUES (?, ?)", userId, name)
 
 	if err != nil {
 		return 0, err
@@ -233,13 +234,14 @@ func createIngredient(tx *sql.Tx, userId int, name string) (int, error) {
 	return int(id), nil
 }
 
-func associateIngredientToMeal(tx *sql.Tx, mealId int, ingredient meals.MealIngredient) error {
+func associateIngredientToMeal(ctx context.Context, tx *sql.Tx, mealId int, ingredient meals.MealIngredient) error {
 	insertUpdateQuery := `
 	REPLACE INTO ingredients_meals
 	(ingredient_id, meal_id, quantity, unit, is_main)
 	VALUES (?, ?, ?, ?, ?)
 	`
-	_, err := tx.Exec(
+	_, err := tx.ExecContext(
+		ctx,
 		insertUpdateQuery,
 		ingredient.Id,
 		mealId,
@@ -255,8 +257,8 @@ func associateIngredientToMeal(tx *sql.Tx, mealId int, ingredient meals.MealIngr
 	return nil
 }
 
-func removeOrphanedIngredients(tx *sql.Tx) error {
-	_, err := tx.Exec(`
+func removeOrphanedIngredients(ctx context.Context, tx *sql.Tx) error {
+	_, err := tx.ExecContext(ctx, `
 	DELETE FROM ingredients
 	WHERE id IN (
 		SELECT i.id
@@ -274,8 +276,8 @@ func removeOrphanedIngredients(tx *sql.Tx) error {
 	return nil
 }
 
-func createTag(tx *sql.Tx, userId int, name string) (int, error) {
-	result, err := tx.Exec("INSERT INTO tags (user_id, name) VALUES (?, ?)", userId, name)
+func createTag(ctx context.Context, tx *sql.Tx, userId int, name string) (int, error) {
+	result, err := tx.ExecContext(ctx, "INSERT INTO tags (user_id, name) VALUES (?, ?)", userId, name)
 
 	if err != nil {
 		return 0, err
@@ -290,14 +292,15 @@ func createTag(tx *sql.Tx, userId int, name string) (int, error) {
 	return int(id), nil
 }
 
-func associateTagToMeal(tx *sql.Tx, mealId int, tagId int) error {
+func associateTagToMeal(ctx context.Context, tx *sql.Tx, mealId int, tagId int) error {
 	insertUpdateQuery := `
 	REPLACE INTO meals_tags
 	(tag_id, meal_id)
 	VALUES (?, ?)
 	`
 
-	_, err := tx.Exec(
+	_, err := tx.ExecContext(
+		ctx,
 		insertUpdateQuery,
 		tagId,
 		mealId,
@@ -310,8 +313,8 @@ func associateTagToMeal(tx *sql.Tx, mealId int, tagId int) error {
 	return nil
 }
 
-func removeOrphanedTags(tx *sql.Tx) error {
-	_, err := tx.Exec(`
+func removeOrphanedTags(ctx context.Context, tx *sql.Tx) error {
+	_, err := tx.ExecContext(ctx, `
 	DELETE FROM tags
 	WHERE id IN (
 		SELECT t.id
@@ -329,7 +332,7 @@ func removeOrphanedTags(tx *sql.Tx) error {
 	return nil
 }
 
-func (mr *MealRepository) Create(meal meals.Meal) (meals.Meal, error) {
+func (mr *MealRepository) Create(ctx context.Context, meal meals.Meal) (meals.Meal, error) {
 	tx, err := mr.db.Begin()
 
 	if err != nil {
@@ -344,7 +347,8 @@ func (mr *MealRepository) Create(meal meals.Meal) (meals.Meal, error) {
 	VALUES (?, ?, ?)
 	`
 
-	result, err := tx.Exec(
+	result, err := tx.ExecContext(
+		ctx,
 		insertQuery,
 		meal.UserId,
 		meal.Name,
@@ -352,7 +356,7 @@ func (mr *MealRepository) Create(meal meals.Meal) (meals.Meal, error) {
 	)
 
 	if err != nil {
-		return meal, fmt.Errorf("MealRepository.Create: Erorr inserting meal: %v", err)
+		return meal, fmt.Errorf("MealRepository.Create: Error inserting meal: %v", err)
 	}
 
 	id, err := result.LastInsertId()
@@ -365,7 +369,7 @@ func (mr *MealRepository) Create(meal meals.Meal) (meals.Meal, error) {
 
 	for i, ingredient := range meal.Ingredients {
 		if ingredient.Id == 0 {
-			id, err := createIngredient(tx, meal.UserId, ingredient.Name)
+			id, err := createIngredient(ctx, tx, meal.UserId, ingredient.Name)
 
 			if err != nil {
 				return meal, fmt.Errorf("MealRepository.Create: Error inserting new ingredient: %v", err)
@@ -374,7 +378,7 @@ func (mr *MealRepository) Create(meal meals.Meal) (meals.Meal, error) {
 			meal.Ingredients[i].Id = id
 		}
 
-		err = associateIngredientToMeal(tx, meal.Id, meal.Ingredients[i])
+		err = associateIngredientToMeal(ctx, tx, meal.Id, meal.Ingredients[i])
 
 		if err != nil {
 			return meal, fmt.Errorf("MealRepository.Create: Error associating ingredient: %v", err)
@@ -383,7 +387,7 @@ func (mr *MealRepository) Create(meal meals.Meal) (meals.Meal, error) {
 
 	for i, tag := range meal.Tags {
 		if tag.Id == 0 {
-			id, err := createTag(tx, meal.UserId, tag.Name)
+			id, err := createTag(ctx, tx, meal.UserId, tag.Name)
 
 			if err != nil {
 				return meal, fmt.Errorf("MealRepository.Create: Error inserting new tag: %v", err)
@@ -392,7 +396,7 @@ func (mr *MealRepository) Create(meal meals.Meal) (meals.Meal, error) {
 			meal.Tags[i].Id = id
 		}
 
-		err = associateTagToMeal(tx, meal.Id, meal.Tags[i].Id)
+		err = associateTagToMeal(ctx, tx, meal.Id, meal.Tags[i].Id)
 
 		if err != nil {
 			return meal, fmt.Errorf("MealRepository.Create: Error associating tag: %v", err)
@@ -407,7 +411,7 @@ func (mr *MealRepository) Create(meal meals.Meal) (meals.Meal, error) {
 
 }
 
-func (mr *MealRepository) Update(meal meals.Meal) error {
+func (mr *MealRepository) Update(ctx context.Context, meal meals.Meal) error {
 	tx, err := mr.db.Begin()
 
 	if err != nil {
@@ -423,7 +427,8 @@ func (mr *MealRepository) Update(meal meals.Meal) error {
 	WHERE id = ?
 	`
 
-	_, err = tx.Exec(
+	_, err = tx.ExecContext(
+		ctx,
 		updateQuery,
 		meal.Name,
 		meal.Notes,
@@ -438,7 +443,7 @@ func (mr *MealRepository) Update(meal meals.Meal) error {
 
 	for i, ingredient := range meal.Ingredients {
 		if ingredient.Id == 0 {
-			id, err := createIngredient(tx, meal.UserId, ingredient.Name)
+			id, err := createIngredient(ctx, tx, meal.UserId, ingredient.Name)
 
 			if err != nil {
 				return fmt.Errorf("MealRepository.Update: Error inserting new ingredient: %v", err)
@@ -447,7 +452,7 @@ func (mr *MealRepository) Update(meal meals.Meal) error {
 			meal.Ingredients[i].Id = id
 		}
 
-		err = associateIngredientToMeal(tx, meal.Id, meal.Ingredients[i])
+		err = associateIngredientToMeal(ctx, tx, meal.Id, meal.Ingredients[i])
 
 		if err != nil {
 			return fmt.Errorf("MealRepository.Update: Error associating ingredient: %v", err)
@@ -466,20 +471,20 @@ func (mr *MealRepository) Update(meal meals.Meal) error {
 		deleteIngredientsQuery += `AND ingredient_id NOT IN (?` + strings.Repeat(",?", len(deleteParams)-2) + `)`
 	}
 
-	_, err = tx.Exec(deleteIngredientsQuery, deleteParams...)
+	_, err = tx.ExecContext(ctx, deleteIngredientsQuery, deleteParams...)
 
 	if err != nil {
 		return fmt.Errorf("MealRepository.Update: Error disassociating ingredient: %v", err)
 	}
 
 	// Remove any ingredients that are no longer associated with any meal
-	err = removeOrphanedIngredients(tx)
+	err = removeOrphanedIngredients(ctx, tx)
 
 	deleteParams = []any{meal.Id}
 
 	for i, tag := range meal.Tags {
 		if tag.Id == 0 {
-			id, err := createTag(tx, meal.UserId, tag.Name)
+			id, err := createTag(ctx, tx, meal.UserId, tag.Name)
 
 			if err != nil {
 				return fmt.Errorf("MealRepository.Update: Error inserting new tag: %v", err)
@@ -488,7 +493,7 @@ func (mr *MealRepository) Update(meal meals.Meal) error {
 			meal.Tags[i].Id = id
 		}
 
-		err = associateTagToMeal(tx, meal.Id, meal.Tags[i].Id)
+		err = associateTagToMeal(ctx, tx, meal.Id, meal.Tags[i].Id)
 
 		if err != nil {
 			return fmt.Errorf("MealRepository.Update: Error associating tag: %v", err)
@@ -508,14 +513,14 @@ func (mr *MealRepository) Update(meal meals.Meal) error {
 
 	}
 
-	_, err = tx.Exec(deleteTagQuery, deleteParams...)
+	_, err = tx.ExecContext(ctx, deleteTagQuery, deleteParams...)
 
 	if err != nil {
 		return fmt.Errorf("MealRepository.Update: Error disassociating tag: %v", err)
 	}
 
 	// Remove any tags that are no longer associated with any meal
-	err = removeOrphanedTags(tx)
+	err = removeOrphanedTags(ctx, tx)
 
 	if err != nil {
 		return fmt.Errorf("MealRepository.Update: Error removing orphaned tags: %v", err)
@@ -528,7 +533,7 @@ func (mr *MealRepository) Update(meal meals.Meal) error {
 	return nil
 }
 
-func (mr *MealRepository) Destroy(id int) error {
+func (mr *MealRepository) Destroy(ctx context.Context, id int) error {
 	tx, err := mr.db.Begin()
 
 	if err != nil {
@@ -537,25 +542,25 @@ func (mr *MealRepository) Destroy(id int) error {
 
 	defer tx.Rollback()
 
-	if _, err := tx.Exec("DELETE FROM planner WHERE meal_id = ?", id); err != nil {
+	if _, err := tx.ExecContext(ctx, "DELETE FROM planner WHERE meal_id = ?", id); err != nil {
 		return fmt.Errorf("MealRepository.Destroy: Error removing meal (%d) from planner: %v", id, err)
 	}
 
-	if _, err := tx.Exec("DELETE FROM ingredients_meals WHERE meal_id = ?", id); err != nil {
+	if _, err := tx.ExecContext(ctx, "DELETE FROM ingredients_meals WHERE meal_id = ?", id); err != nil {
 		return fmt.Errorf("MealRepository.Destroy: Error removing ingredients from meal (%d): %v", id, err)
 	}
 
-	if _, err := tx.Exec("DELETE FROM meals_tags WHERE meal_id = ?", id); err != nil {
+	if _, err := tx.ExecContext(ctx, "DELETE FROM meals_tags WHERE meal_id = ?", id); err != nil {
 		return fmt.Errorf("MealRepository.Destroy: Error removing tags from meal (%d): %v", id, err)
 	}
 
-	if _, err := tx.Exec("DELETE FROM meals WHERE id = ?", id); err != nil {
+	if _, err := tx.ExecContext(ctx, "DELETE FROM meals WHERE id = ?", id); err != nil {
 		return fmt.Errorf("MealRepository.Destroy: Error removing meal (%d): %v", id, err)
 	}
 
-	removeOrphanedIngredients(tx)
+	removeOrphanedIngredients(ctx, tx)
 
-	removeOrphanedTags(tx)
+	removeOrphanedTags(ctx, tx)
 
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("MealRepository.Destroy: Error committing transaction: %v", err)
@@ -564,14 +569,14 @@ func (mr *MealRepository) Destroy(id int) error {
 	return nil
 }
 
-func (mr *MealRepository) AssignToDate(id int, date time.Time) error {
+func (mr *MealRepository) AssignToDate(ctx context.Context, id int, date time.Time) error {
 	query := `
 	INSERT OR REPLACE INTO planner 
 	(meal_id, date)
 	SELECT ?, ?
 	WHERE NOT EXISTS (SELECT * FROM planner WHERE meal_id = ? AND date = ?)
 	`
-	_, err := mr.db.Exec(query, id, date, id, date)
+	_, err := mr.db.ExecContext(ctx, query, id, date, id, date)
 
 	if err != nil {
 		return fmt.Errorf("MealRepository.AssignToDate: Error assigning meal %d to date %v: %v", id, date, err)

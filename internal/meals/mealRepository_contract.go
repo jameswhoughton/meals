@@ -1,6 +1,7 @@
 package meals
 
 import (
+	"context"
 	"errors"
 	"slices"
 	"testing"
@@ -21,6 +22,8 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 	t.Run("Can create get update and delete a meal", func(t *testing.T) {
 		repo, closeDown := i.Repo()
 		defer closeDown()
+
+		ctx := context.Background()
 
 		newMeal := Meal{
 			Name:   "Bolognese",
@@ -55,7 +58,7 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 			},
 		}
 
-		createdMeal, err := repo.Create(newMeal)
+		createdMeal, err := repo.Create(ctx, newMeal)
 
 		if err != nil {
 			t.Errorf("Creating ingredient: unexpected error: %v", err)
@@ -89,7 +92,7 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 			}
 		}
 
-		updatedMeal, err := repo.Get(createdMeal.Id)
+		updatedMeal, err := repo.Get(ctx, createdMeal.Id)
 
 		if err != nil {
 			t.Errorf("Fetching meal: unexpected error: %v", err)
@@ -104,13 +107,13 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 			Quantity: 2,
 		})
 
-		err = repo.Update(updatedMeal)
+		err = repo.Update(ctx, updatedMeal)
 
 		if err != nil {
 			t.Errorf("Updating meal: unexpected error: %v", err)
 		}
 
-		fetchedMeal, err := repo.Get(createdMeal.Id)
+		fetchedMeal, err := repo.Get(ctx, createdMeal.Id)
 
 		if err != nil {
 			t.Errorf("Fetching meal: unexpected error: %v", err)
@@ -144,13 +147,13 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 			}
 		}
 
-		err = repo.Destroy(fetchedMeal.Id)
+		err = repo.Destroy(ctx, fetchedMeal.Id)
 
 		if err != nil {
 			t.Errorf("Destroying meal: unexpected error: %v", err)
 		}
 
-		_, err = repo.Get(fetchedMeal.Id)
+		_, err = repo.Get(ctx, fetchedMeal.Id)
 
 		if err == nil {
 			t.Error("Expected error, got none")
@@ -165,7 +168,9 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 		repo, closeDown := i.Repo()
 		defer closeDown()
 
-		mealA, _ := repo.Create(Meal{
+		ctx := context.Background()
+
+		mealA, _ := repo.Create(ctx, Meal{
 			UserId: 1,
 			Name:   "Meal A",
 			Tags: []Tag{
@@ -190,7 +195,7 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 			},
 		})
 
-		mealB, _ := repo.Create(Meal{
+		mealB, _ := repo.Create(ctx, Meal{
 			UserId: 1,
 			Name:   "Meal B",
 			Tags:   []Tag{},
@@ -202,7 +207,7 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 			},
 		})
 
-		mealC, _ := repo.Create(Meal{
+		mealC, _ := repo.Create(ctx, Meal{
 			UserId: 1,
 			Name:   "Meal C",
 			Tags: []Tag{
@@ -227,7 +232,7 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 			},
 		})
 
-		repo.Create(Meal{
+		repo.Create(ctx, Meal{
 			UserId: 2,
 			Name:   "Meal D",
 			Tags: []Tag{
@@ -252,13 +257,13 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 			},
 		})
 
-		err := repo.AssignToDate(mealB.Id, time.Date(2025, time.March, 9, 0, 0, 0, 0, time.UTC))
+		err := repo.AssignToDate(ctx, mealB.Id, time.Date(2025, time.March, 9, 0, 0, 0, 0, time.UTC))
 
 		if err != nil {
 			t.Errorf("Unexpected error when assigning date: %v", err)
 		}
 
-		err = repo.AssignToDate(mealC.Id, time.Date(2025, time.March, 11, 0, 0, 0, 0, time.UTC))
+		err = repo.AssignToDate(ctx, mealC.Id, time.Date(2025, time.March, 11, 0, 0, 0, 0, time.UTC))
 
 		if err != nil {
 			t.Errorf("Unexpected error when assigning date: %v", err)
@@ -309,7 +314,7 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 
 		for _, testCase := range testCases {
 			t.Run(testCase.label, func(t *testing.T) {
-				meals, err := repo.Find(testCase.filters)
+				meals, err := repo.Find(ctx, testCase.filters)
 
 				if err != nil {
 					t.Errorf("Unexpected error %v", err)
@@ -332,7 +337,9 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 		repo, closeDown := i.Repo()
 		defer closeDown()
 
-		_, err := repo.Find(MealFilter{})
+		ctx := context.Background()
+
+		_, err := repo.Find(ctx, MealFilter{})
 
 		if err == nil {
 			t.Errorf("Expected error, got nil")
@@ -348,10 +355,12 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 		repo, closeDown := i.Repo()
 		defer closeDown()
 
+		ctx := context.Background()
+
 		futureTime := time.Now().Add(time.Hour * 12)
 
 		// Start date should not be in the future
-		_, err := repo.Find(MealFilter{
+		_, err := repo.Find(ctx, MealFilter{
 			UserId: 1,
 			DateRange: &DateRange{
 				Start: &futureTime,
@@ -367,7 +376,7 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 		}
 
 		// End date should not be in the future
-		_, err = repo.Find(MealFilter{
+		_, err = repo.Find(ctx, MealFilter{
 			UserId: 1,
 			DateRange: &DateRange{
 				End: &futureTime,
@@ -383,7 +392,7 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 		}
 
 		// End date can't be before start date
-		_, err = repo.Find(MealFilter{
+		_, err = repo.Find(ctx, MealFilter{
 			UserId: 1,
 			DateRange: &DateRange{
 				Start: toPtr(time.Date(2025, time.March, 10, 0, 0, 0, 0, time.UTC)),
@@ -404,32 +413,34 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 		repo, closeDown := i.Repo()
 		defer closeDown()
 
-		chickenPie, _ := repo.Create(Meal{
+		ctx := context.Background()
+
+		chickenPie, _ := repo.Create(ctx, Meal{
 			Name:   "Chicken Pie",
 			UserId: 1,
 		})
-		pizza, _ := repo.Create(Meal{
+		pizza, _ := repo.Create(ctx, Meal{
 			Name:   "Pizza",
 			UserId: 2,
 		})
-		pestoSalmon, _ := repo.Create(Meal{
+		pestoSalmon, _ := repo.Create(ctx, Meal{
 			Name:   "Pesto Salmon",
 			UserId: 1,
 		})
 
-		err := repo.AssignToDate(chickenPie.Id, time.Date(2025, time.March, 5, 0, 0, 0, 0, time.UTC))
+		err := repo.AssignToDate(ctx, chickenPie.Id, time.Date(2025, time.March, 5, 0, 0, 0, 0, time.UTC))
 
 		if err != nil {
 			t.Errorf("Unexpected error when assigning date: %v", err)
 		}
 
-		err = repo.AssignToDate(pizza.Id, time.Date(2025, time.March, 5, 0, 0, 0, 0, time.UTC))
+		err = repo.AssignToDate(ctx, pizza.Id, time.Date(2025, time.March, 5, 0, 0, 0, 0, time.UTC))
 
 		if err != nil {
 			t.Errorf("Unexpected error when assigning date: %v", err)
 		}
 
-		err = repo.AssignToDate(pestoSalmon.Id, time.Date(2025, time.March, 15, 0, 0, 0, 0, time.UTC))
+		err = repo.AssignToDate(ctx, pestoSalmon.Id, time.Date(2025, time.March, 15, 0, 0, 0, 0, time.UTC))
 
 		if err != nil {
 			t.Errorf("Unexpected error when assigning date: %v", err)
@@ -440,7 +451,7 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 			End:   toPtr(time.Date(2025, time.March, 9, 0, 0, 0, 0, time.UTC)),
 		}
 
-		meals, err := repo.Find(MealFilter{
+		meals, err := repo.Find(ctx, MealFilter{
 			UserId:    1,
 			DateRange: &dateRange,
 		})

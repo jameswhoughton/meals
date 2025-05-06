@@ -1,6 +1,7 @@
 package meals
 
 import (
+	"context"
 	"fmt"
 	"time"
 )
@@ -77,7 +78,7 @@ func (s *Service) populateTagIds(meal *Meal) error {
 	return nil
 }
 
-func (s *Service) CreateMeal(meal *Meal) (Meal, error) {
+func (s *Service) CreateMeal(ctx context.Context, meal *Meal) (Meal, error) {
 	if isValid := meal.Validate(); !isValid {
 		return Meal{}, ErrorFormInvalid{}
 	}
@@ -88,7 +89,7 @@ func (s *Service) CreateMeal(meal *Meal) (Meal, error) {
 	s.populateIngredientIds(meal)
 	s.populateTagIds(meal)
 
-	createdMeal, err := s.meals.Create(*meal)
+	createdMeal, err := s.meals.Create(ctx, *meal)
 
 	if err != nil {
 		return Meal{}, fmt.Errorf("Error creating meal: %v", err)
@@ -97,7 +98,7 @@ func (s *Service) CreateMeal(meal *Meal) (Meal, error) {
 	return createdMeal, nil
 }
 
-func (s *Service) UpdateMeal(meal *Meal) error {
+func (s *Service) UpdateMeal(ctx context.Context, meal *Meal) error {
 	if isValid := meal.Validate(); !isValid {
 		return ErrorFormInvalid{}
 	}
@@ -107,7 +108,7 @@ func (s *Service) UpdateMeal(meal *Meal) error {
 	s.populateIngredientIds(meal)
 	s.populateTagIds(meal)
 
-	err := s.meals.Update(*meal)
+	err := s.meals.Update(ctx, *meal)
 
 	if err != nil {
 		return fmt.Errorf("Error updating meal: %v", err)

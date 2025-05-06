@@ -43,7 +43,7 @@ func GetMealsHandler(templateFiles fs.FS, repo meals.MealRepository) http.Handle
 			Name:   &queryString,
 		}
 
-		results, err := repo.Find(filter)
+		results, err := repo.Find(r.Context(), filter)
 
 		if err != nil {
 			log.Println(err)
@@ -87,7 +87,7 @@ func GetMealHandler(templateFiles fs.FS, repo meals.MealRepository) http.Handler
 		userId := r.Context().Value("userId").(int)
 		mealId, _ := strconv.Atoi(r.PathValue("id"))
 
-		meal, err := repo.Get(mealId)
+		meal, err := repo.Get(r.Context(), mealId)
 
 		if err != nil {
 			if errors.As(err, &meals.ErrorMealNotFound{Id: mealId}) {
@@ -247,7 +247,9 @@ func PostMealHandler(service meals.Service) http.Handler {
 
 		meal.UserId = userId
 
-		_, err := service.CreateMeal(&meal)
+		time.Sleep(5 * time.Second)
+
+		_, err := service.CreateMeal(r.Context(), &meal)
 
 		if err != nil && errors.Is(err, meals.ErrorFormInvalid{}) {
 			formJson, _ := json.Marshal(meal)
@@ -261,6 +263,8 @@ func PostMealHandler(service meals.Service) http.Handler {
 		if err != nil {
 			log.Println(err)
 			http.Error(w, "server error", http.StatusInternalServerError)
+
+			return
 		}
 
 		helpers.SetMessage(w, "success", "Meal "+meal.Name+" has been created")
@@ -284,7 +288,7 @@ func PutMealHandler(service meals.Service, repo meals.MealRepository) http.Handl
 
 		meal.Id, _ = strconv.Atoi(r.PathValue("id"))
 
-		existingMeal, err := repo.Get(meal.Id)
+		existingMeal, err := repo.Get(r.Context(), meal.Id)
 
 		if err != nil {
 			if errors.As(err, &meals.ErrorMealNotFound{Id: meal.Id}) {
@@ -302,7 +306,7 @@ func PutMealHandler(service meals.Service, repo meals.MealRepository) http.Handl
 
 		meal.UserId = userId
 
-		err = service.UpdateMeal(&meal)
+		err = service.UpdateMeal(r.Context(), &meal)
 
 		if err != nil && errors.Is(err, meals.ErrorFormInvalid{}) {
 			formJson, _ := json.Marshal(meal)
@@ -333,7 +337,7 @@ func PostDeleteMealHandler(repo meals.MealRepository) http.Handler {
 
 		mealId, _ := strconv.Atoi(r.PathValue("id"))
 
-		mealToDelete, err := repo.Get(mealId)
+		mealToDelete, err := repo.Get(r.Context(), mealId)
 
 		if err != nil {
 			if errors.As(err, &meals.ErrorMealNotFound{Id: mealId}) {
@@ -349,7 +353,7 @@ func PostDeleteMealHandler(repo meals.MealRepository) http.Handler {
 			return
 		}
 
-		err = repo.Destroy(mealId)
+		err = repo.Destroy(r.Context(), mealId)
 
 		if err != nil {
 			http.Error(w, "Server error: Unable to delete meal", http.StatusInternalServerError)

@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"slices"
 	"strings"
 	"time"
@@ -13,7 +14,7 @@ type MealRepository struct {
 	Calendar map[int][]time.Time
 }
 
-func (mr *MealRepository) Get(id int) (meals.Meal, error) {
+func (mr *MealRepository) Get(ctx context.Context, id int) (meals.Meal, error) {
 	for _, meal := range mr.Store {
 		if meal.Id == id {
 			return meal, nil
@@ -23,7 +24,7 @@ func (mr *MealRepository) Get(id int) (meals.Meal, error) {
 	return meals.Meal{}, meals.ErrorMealNotFound{Id: id}
 }
 
-func (mr *MealRepository) Find(filter meals.MealFilter) ([]meals.Meal, error) {
+func (mr *MealRepository) Find(ctx context.Context, filter meals.MealFilter) ([]meals.Meal, error) {
 	var meals []meals.Meal
 	err := filter.Validate()
 
@@ -119,7 +120,7 @@ func (mr *MealRepository) getNextTagId() int {
 	return len(count) + 1
 }
 
-func (mr *MealRepository) Create(meal meals.Meal) (meals.Meal, error) {
+func (mr *MealRepository) Create(ctx context.Context, meal meals.Meal) (meals.Meal, error) {
 	meal.Id = len(mr.Store) + 1
 
 	ingredientId := mr.getNextIngredientId()
@@ -149,7 +150,7 @@ func (mr *MealRepository) Create(meal meals.Meal) (meals.Meal, error) {
 	return meal, nil
 }
 
-func (mr *MealRepository) Update(meal meals.Meal) error {
+func (mr *MealRepository) Update(ctx context.Context, meal meals.Meal) error {
 	for i, existingMeal := range mr.Store {
 		if existingMeal.Id == meal.Id {
 			ingredientId := mr.getNextIngredientId()
@@ -183,7 +184,7 @@ func (mr *MealRepository) Update(meal meals.Meal) error {
 	return nil
 }
 
-func (mr *MealRepository) Destroy(id int) error {
+func (mr *MealRepository) Destroy(ctx context.Context, id int) error {
 	var meals []meals.Meal
 
 	for _, meal := range mr.Store {
@@ -201,7 +202,7 @@ func (mr *MealRepository) Destroy(id int) error {
 	return nil
 }
 
-func (mr *MealRepository) AssignToDate(id int, date time.Time) error {
+func (mr *MealRepository) AssignToDate(ctx context.Context, id int, date time.Time) error {
 	if _, ok := mr.Calendar[id]; ok {
 		mr.Calendar[id] = append(mr.Calendar[id], date)
 	} else {
