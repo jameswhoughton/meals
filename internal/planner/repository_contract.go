@@ -1,36 +1,30 @@
-package planner_test
+package planner
 
 import (
-	"database/sql"
-	"log"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/jameswhoughton/meals/database"
-	"github.com/jameswhoughton/meals/internal/planner"
-	"github.com/jameswhoughton/meals/memory"
 )
 
 type RepositoryContract struct {
-	repo func([]planner.Meal) (planner.Repository, func())
+	Repo func([]Meal) (Repository, func())
 }
 
 func (i RepositoryContract) Test(t *testing.T) {
 
 	t.Run("Can add a meal to a date, fetch it and remove it", func(t *testing.T) {
-		meal1 := planner.Meal{
+		meal1 := Meal{
 			Id:     1,
 			UserId: 1,
 			Name:   "Chicken Curry",
 		}
-		meal2 := planner.Meal{
+		meal2 := Meal{
 			Id:     2,
 			UserId: 2,
 			Name:   "Lamb Curry",
 		}
-		repo, closeDown := i.repo([]planner.Meal{
+		repo, closeDown := i.Repo([]Meal{
 			meal1,
 			meal2,
 		})
@@ -82,7 +76,7 @@ func (i RepositoryContract) Test(t *testing.T) {
 	})
 
 	t.Run("The time should be ignored when interacting with the planner", func(t *testing.T) {
-		repo, closeDown := i.repo([]planner.Meal{
+		repo, closeDown := i.Repo([]Meal{
 			{
 				Id:     23,
 				UserId: 4,
@@ -110,58 +104,4 @@ func (i RepositoryContract) Test(t *testing.T) {
 		}
 
 	})
-}
-
-func TestDatabasePlannerRepository(t *testing.T) {
-	init := func(meals []planner.Meal) (planner.Repository, func()) {
-		conn, err := sql.Open("sqlite3", "meals.db")
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		err = database.Migrate(conn)
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		for _, meal := range meals {
-			_, err := conn.Exec("INSERT INTO meals (id, user_id, name) VALUES (?, ?, ?)", meal.Id, meal.UserId, meal.Name)
-
-			if err != nil {
-				log.Fatalf("Error inserting test data: %v", err)
-			}
-		}
-
-		closeDown := func() {
-			os.Remove("meals.db")
-		}
-		return database.NewPlannerRepository(conn), closeDown
-	}
-
-	contract := RepositoryContract{
-		init,
-	}
-
-	contract.Test(t)
-
-}
-
-func TestMemoryPlannerRepository(t *testing.T) {
-	init := func(meals []planner.Meal) (planner.Repository, func()) {
-		store := make(map[string]int)
-
-		return &memory.PlannerRepository{
-			Planner: store,
-			Meals:   meals,
-		}, func() {}
-	}
-
-	contract := RepositoryContract{
-		init,
-	}
-
-	contract.Test(t)
-
 }

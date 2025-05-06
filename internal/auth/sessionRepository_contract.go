@@ -1,28 +1,21 @@
-package auth_test
+package auth
 
 import (
-	"database/sql"
 	"errors"
-	"log"
-	"os"
 	"testing"
 	"time"
-
-	"github.com/jameswhoughton/meals/database"
-	"github.com/jameswhoughton/meals/internal/auth"
-	"github.com/jameswhoughton/meals/memory"
 )
 
 type SessionRepositoryContract struct {
-	repo func() (auth.SessionRepository, func())
+	Repo func() (SessionRepository, func())
 }
 
 func (rc *SessionRepositoryContract) Test(t *testing.T) {
 	t.Run("Can create get and destroy a session", func(t *testing.T) {
-		repo, closeDown := rc.repo()
+		repo, closeDown := rc.Repo()
 		defer closeDown()
 
-		newSession := auth.Session{
+		newSession := Session{
 			SessionId: "NEW_SESSION_01",
 			UserId:    1,
 			CreatedAt: time.Now(),
@@ -81,16 +74,16 @@ func (rc *SessionRepositoryContract) Test(t *testing.T) {
 			t.Error("Expected error when fetching destroyed session, got none")
 		}
 
-		if !errors.Is(err, auth.ErrorSessionNotFound{}) {
-			t.Errorf("Expected error of type %T, got %T (%v)", auth.ErrorSessionNotFound{}, err, err)
+		if !errors.Is(err, ErrorSessionNotFound{}) {
+			t.Errorf("Expected error of type %T, got %T (%v)", ErrorSessionNotFound{}, err, err)
 		}
 	})
 
 	t.Run("Cannot get a session with a valid ID that has expired", func(t *testing.T) {
-		repo, closeDown := rc.repo()
+		repo, closeDown := rc.Repo()
 		defer closeDown()
 
-		repo.Create(auth.Session{
+		repo.Create(Session{
 			UserId:    1,
 			SessionId: "AA",
 			UpdatedAt: time.Date(2025, time.March, 5, 12, 30, 0, 0, time.UTC),
@@ -102,29 +95,29 @@ func (rc *SessionRepositoryContract) Test(t *testing.T) {
 			t.Error("Expected error, got nil")
 		}
 
-		if !errors.Is(err, auth.ErrorSessionNotFound{}) {
-			t.Errorf("Expected error of type %T, got %T (%v)", auth.ErrorSessionNotFound{}, err, err)
+		if !errors.Is(err, ErrorSessionNotFound{}) {
+			t.Errorf("Expected error of type %T, got %T (%v)", ErrorSessionNotFound{}, err, err)
 		}
 
 	})
 
 	t.Run("Can delete sessions that have exceeded the given lifetime", func(t *testing.T) {
-		repo, closeDown := rc.repo()
+		repo, closeDown := rc.Repo()
 		defer closeDown()
 
-		repo.Create(auth.Session{
+		repo.Create(Session{
 			UserId:    1,
 			SessionId: "AA",
 			UpdatedAt: time.Date(2025, time.March, 5, 12, 30, 0, 0, time.UTC),
 		})
 
-		repo.Create(auth.Session{
+		repo.Create(Session{
 			UserId:    2,
 			SessionId: "BB",
 			UpdatedAt: time.Date(2025, time.March, 5, 12, 45, 0, 0, time.UTC),
 		})
 
-		repo.Create(auth.Session{
+		repo.Create(Session{
 			UserId:    3,
 			SessionId: "CC",
 			UpdatedAt: time.Date(2025, time.March, 5, 13, 31, 0, 0, time.UTC),
@@ -144,8 +137,8 @@ func (rc *SessionRepositoryContract) Test(t *testing.T) {
 			t.Error("Expected error when fetching destroyed session, got none")
 		}
 
-		if !errors.Is(err, auth.ErrorSessionNotFound{}) {
-			t.Errorf("Expected error of type %T, got %T (%v)", auth.ErrorSessionNotFound{}, err, err)
+		if !errors.Is(err, ErrorSessionNotFound{}) {
+			t.Errorf("Expected error of type %T, got %T (%v)", ErrorSessionNotFound{}, err, err)
 		}
 
 		_, err = repo.Get("CC", expiredTime)
@@ -160,51 +153,8 @@ func (rc *SessionRepositoryContract) Test(t *testing.T) {
 			t.Error("Expected error when fetching destroyed session, got none")
 		}
 
-		if !errors.Is(err, auth.ErrorSessionNotFound{}) {
-			t.Errorf("Expected error of type %T, got %T (%v)", auth.ErrorSessionNotFound{}, err, err)
+		if !errors.Is(err, ErrorSessionNotFound{}) {
+			t.Errorf("Expected error of type %T, got %T (%v)", ErrorSessionNotFound{}, err, err)
 		}
 	})
-}
-
-func TestDatabaseSessionService(t *testing.T) {
-	init := func() (auth.SessionRepository, func()) {
-		conn, err := sql.Open("sqlite3", "meals.db")
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		err = database.Migrate(conn)
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		closeDown := func() {
-			os.Remove("meals.db")
-		}
-		return database.NewSessionRepository(conn), closeDown
-	}
-
-	contract := SessionRepositoryContract{
-		init,
-	}
-
-	contract.Test(t)
-
-}
-
-func TestMemorySessionService(t *testing.T) {
-	init := func() (auth.SessionRepository, func()) {
-		return &memory.SessionRepository{
-			Store: []auth.Session{},
-		}, func() {}
-	}
-
-	contract := SessionRepositoryContract{
-		repo: init,
-	}
-
-	contract.Test(t)
-
 }

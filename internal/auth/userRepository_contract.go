@@ -1,26 +1,19 @@
-package auth_test
+package auth
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
-	"log"
-	"os"
 	"testing"
 	"time"
-
-	"github.com/jameswhoughton/meals/database"
-	"github.com/jameswhoughton/meals/internal/auth"
-	"github.com/jameswhoughton/meals/memory"
 )
 
 type UserRepositoryContract struct {
-	repo func() (auth.UserRepository, func())
+	Repo func() (UserRepository, func())
 }
 
 func (c *UserRepositoryContract) Test(t *testing.T) {
 	t.Run("Can add, update and retrieve a user", func(t *testing.T) {
-		repo, closeDown := c.repo()
+		repo, closeDown := c.Repo()
 		defer closeDown()
 
 		newUserEmail := "john@example.com"
@@ -28,7 +21,7 @@ func (c *UserRepositoryContract) Test(t *testing.T) {
 		newName := "John Smith"
 
 		// Add a new user
-		form := auth.User{
+		form := User{
 			Email:    newUserEmail,
 			Password: newUserPassword,
 			Name:     newName,
@@ -52,7 +45,7 @@ func (c *UserRepositoryContract) Test(t *testing.T) {
 		}
 
 		// Fetch an existing user by ID
-		fetchedUsers, err := repo.Get(auth.UserGet{Id: &user.Id})
+		fetchedUsers, err := repo.Get(UserGet{Id: &user.Id})
 
 		if err != nil {
 			t.Error(err)
@@ -63,7 +56,7 @@ func (c *UserRepositoryContract) Test(t *testing.T) {
 		}
 
 		// Fetch an existing user by email
-		fetchedUser, err := repo.Get(auth.UserGet{Email: &newUserEmail})
+		fetchedUser, err := repo.Get(UserGet{Email: &newUserEmail})
 
 		if err != nil {
 			t.Error(err)
@@ -82,7 +75,7 @@ func (c *UserRepositoryContract) Test(t *testing.T) {
 		newStartDay := 3
 
 		// Update User
-		update := auth.UserUpdate{
+		update := UserUpdate{
 			Name:         newName,
 			Email:        newEmail,
 			MealStartDay: newStartDay,
@@ -95,7 +88,7 @@ func (c *UserRepositoryContract) Test(t *testing.T) {
 			t.Error(err)
 		}
 
-		updatedUser, err := repo.Get(auth.UserGet{Email: &newEmail})
+		updatedUser, err := repo.Get(UserGet{Email: &newEmail})
 
 		if err != nil {
 			t.Error(err)
@@ -119,79 +112,36 @@ func (c *UserRepositoryContract) Test(t *testing.T) {
 	})
 
 	t.Run("Returns expected error if the user does not exist", func(t *testing.T) {
-		repo, closeDown := c.repo()
+		repo, closeDown := c.Repo()
 		defer closeDown()
 
 		id := 1
 
-		_, err := repo.Get(auth.UserGet{Id: &id})
+		_, err := repo.Get(UserGet{Id: &id})
 
 		if err == nil {
 			t.Errorf("Expected error got nil")
 		}
 
-		if !errors.Is(err, auth.ErrorUserNotFound{}) {
+		if !errors.Is(err, ErrorUserNotFound{}) {
 			t.Errorf("Expected UserNotFoundError, got %T", err)
 		}
 	})
 
 	t.Run("Returns expected error if no search parameters passed to Get", func(t *testing.T) {
-		repo, closeDown := c.repo()
+		repo, closeDown := c.Repo()
 		defer closeDown()
 
-		_, err := repo.Get(auth.UserGet{})
+		_, err := repo.Get(UserGet{})
 
 		if err == nil {
 			t.Errorf("Expected error, got nil")
 		}
 
-		if !errors.Is(err, auth.ErrorUserGetInvalid{}) {
+		if !errors.Is(err, ErrorUserGetInvalid{}) {
 			fmt.Printf("%v, %T", err, err)
 			t.Errorf("Expected ErrorUserGetInvalid, got %T", err)
 		}
 
 	})
-}
-
-func TestDatabaseUserService(t *testing.T) {
-	init := func() (auth.UserRepository, func()) {
-		conn, err := sql.Open("sqlite3", "meals.db")
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		err = database.Migrate(conn)
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		closeDown := func() {
-			os.Remove("meals.db")
-		}
-		return database.NewUserRespository(conn), closeDown
-	}
-
-	contract := UserRepositoryContract{
-		init,
-	}
-
-	contract.Test(t)
-
-}
-
-func TestMemoryUserService(t *testing.T) {
-	init := func() (auth.UserRepository, func()) {
-		return &memory.UserRepository{
-			Store: []auth.User{},
-		}, func() {}
-	}
-
-	contract := UserRepositoryContract{
-		init,
-	}
-
-	contract.Test(t)
-
 }
