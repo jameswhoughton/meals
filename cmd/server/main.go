@@ -1,8 +1,13 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"log"
+	"net/http"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/jameswhoughton/meals/database"
 	"github.com/jameswhoughton/meals/internal/auth"
@@ -13,6 +18,7 @@ import (
 
 func main() {
 	conn, err := sql.Open("sqlite3", "meals.db")
+	defer conn.Close()
 
 	if err != nil {
 		log.Fatal(err)
@@ -24,6 +30,10 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Signal context to detext an interupt (Ctrl + c) or terminate signal
+	rootCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
 	userRepository := database.NewUserRespository(conn)
 	sessionRepsoitory := database.NewSessionRepository(conn)
 	mealRepository := database.NewMealRepository(conn)
@@ -33,8 +43,11 @@ func main() {
 	userService := auth.NewUserService(userRepository, sessionRepsoitory, 3600)
 	mealService := meals.NewService(mealRepository, ingredientRepository, tagRepository)
 
+	ongoingCtx, stopOngoningGracefully := context.WithCancel(context.Background())
+	port := "8000"
 	server := web.NewServer(
-		"8000",
+		ongoingCtx,
+		port,
 		&userService,
 		&mealService,
 		userRepository,
@@ -43,5 +56,35 @@ func main() {
 		tagRepository,
 	)
 
-	log.Fatal(server.Start())
+	go func() {
+		log.Printf("Server starting on port :%s\n", port)
+
+		// Ignore ErrServerClosed as this happens when the server is expectedly shutdown
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Error running server: %v", err)
+		}
+	}()
+
+	<-rootCtx.Done()
+	// Need to call stop here as well to unregister the signal so that a second SIGINT will behave
+	// in the default manner and kiil the program.
+	stop()
+
+	log.Println("Gracefully shutting down")
+
+	// Create a timeout context allowing 10s for the server to stop receiving requests and
+	// finish processing existing requests.
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	err = server.Shutdown(shutdownCtx)
+
+	// Inform any in progress requests to stop processing
+	stopOngoningGracefully()
+
+	if err != nil {
+		log.Println("Requests have not finished")
+	}
+
+	log.Println("Server shut down gracefully")
 }
