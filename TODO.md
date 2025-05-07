@@ -37,7 +37,7 @@
 - [ ] Replace old alerts with alert-message component
 - [ ] Prevent user updating name of ingredient/tag to one that already exists
 - [ ] Add tests for tag handlers
-- [ ] Move auth handlers to web
+- [x] Move auth handlers to web
 - [ ] Add tests for auth handlers
 - [ ] Add confirmation modal for deletion
 

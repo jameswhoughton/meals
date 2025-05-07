@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"time"
@@ -21,7 +22,7 @@ type PlannerRepository struct {
 	Planner map[string]int
 }
 
-func (pr *PlannerRepository) findMeal(id int) (planner.Meal, error) {
+func (pr *PlannerRepository) findMeal(_ context.Context, id int) (planner.Meal, error) {
 	var meal planner.Meal
 
 	for _, m := range pr.Meals {
@@ -38,8 +39,8 @@ func (pr *PlannerRepository) findMeal(id int) (planner.Meal, error) {
 	return meal, nil
 }
 
-func (pr *PlannerRepository) Add(date time.Time, mealId int) error {
-	meal, err := pr.findMeal(mealId)
+func (pr *PlannerRepository) Add(ctx context.Context, date time.Time, mealId int) error {
+	meal, err := pr.findMeal(ctx, mealId)
 
 	if err != nil {
 		return err
@@ -52,11 +53,11 @@ func (pr *PlannerRepository) Add(date time.Time, mealId int) error {
 	return nil
 }
 
-func (pr *PlannerRepository) Get(date time.Time, userId int) (planner.Meal, error) {
+func (pr *PlannerRepository) Get(ctx context.Context, date time.Time, userId int) (planner.Meal, error) {
 	key := date.Format("2006-01-02") + "|" + strconv.Itoa(userId)
 	mealId := pr.Planner[key]
 
-	meal, err := pr.findMeal(mealId)
+	meal, err := pr.findMeal(ctx, mealId)
 
 	if err != nil {
 		return meal, err
@@ -65,7 +66,7 @@ func (pr *PlannerRepository) Get(date time.Time, userId int) (planner.Meal, erro
 	return meal, nil
 }
 
-func (pr *PlannerRepository) Clear(date time.Time, userId int) error {
+func (pr *PlannerRepository) Clear(ctx context.Context, date time.Time, userId int) error {
 	key := date.Format("2006-01-02") + "|" + strconv.Itoa(userId)
 
 	delete(pr.Planner, key)

@@ -1,6 +1,9 @@
 package planner
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 type Meal struct {
 	Id     int
@@ -9,7 +12,7 @@ type Meal struct {
 }
 
 type Repository interface {
-	Get(date time.Time, userId int) (Meal, error)
-	Add(date time.Time, mealId int) error
-	Clear(date time.Time, userId int) error
+	Get(ctx context.Context, date time.Time, userId int) (Meal, error)
+	Add(ctx context.Context, date time.Time, mealId int) error
+	Clear(ctx context.Context, date time.Time, userId int) error
 }

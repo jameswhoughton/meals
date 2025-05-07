@@ -672,7 +672,7 @@ func TestPutIngredientHandlerWithCorrectFormUpdatesIngredient(t *testing.T) {
 		t.Errorf("Expected status code: %d, got %d", http.StatusFound, result.StatusCode)
 	}
 
-	fetchedIngredient, err := ingredientRepository.GetById(12)
+	fetchedIngredient, err := ingredientRepository.GetById(ctx, 12)
 
 	if err != nil {
 		t.Errorf("Unexpected error fetching ingredient: %v", err)

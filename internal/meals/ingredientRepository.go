@@ -1,6 +1,7 @@
 package meals
 
 import (
+	"context"
 	"fmt"
 )
 
@@ -37,8 +38,8 @@ func (e ErrorIngredientNotFound) Error() string {
 }
 
 type IngredientRepository interface {
-	Find(search string, userId int) ([]Ingredient, error)
-	GetById(id int) (Ingredient, error)
-	Update(ingredient Ingredient) error
-	FromNames(names []string, userId int) (map[string]int, error)
+	Find(ctx context.Context, search string, userId int) ([]Ingredient, error)
+	GetById(ctx context.Context, id int) (Ingredient, error)
+	Update(ctx context.Context, ingredient Ingredient) error
+	FromNames(ctx context.Context, names []string, userId int) (map[string]int, error)
 }

@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"slices"
@@ -19,10 +20,10 @@ type IngredientRepository struct {
 	db *sql.DB
 }
 
-func (ir *IngredientRepository) GetById(id int) (meals.Ingredient, error) {
+func (ir *IngredientRepository) GetById(ctx context.Context, id int) (meals.Ingredient, error) {
 	var ingredient meals.Ingredient
 
-	err := ir.db.QueryRow("SELECT id, user_id, name FROM ingredients WHERE id = ?", id).Scan(
+	err := ir.db.QueryRowContext(ctx, "SELECT id, user_id, name FROM ingredients WHERE id = ?", id).Scan(
 		&ingredient.Id,
 		&ingredient.UserId,
 		&ingredient.Name,
@@ -39,10 +40,11 @@ func (ir *IngredientRepository) GetById(id int) (meals.Ingredient, error) {
 	return ingredient, nil
 }
 
-func (ir *IngredientRepository) Find(search string, userId int) ([]meals.Ingredient, error) {
+func (ir *IngredientRepository) Find(ctx context.Context, search string, userId int) ([]meals.Ingredient, error) {
 	ingredients := []meals.Ingredient{}
 
-	rows, err := ir.db.Query(
+	rows, err := ir.db.QueryContext(
+		ctx,
 		"SELECT id, user_id, name FROM ingredients WHERE name LIKE ? AND user_id = ?",
 		"%"+search+"%",
 		userId,
@@ -67,13 +69,13 @@ func (ir *IngredientRepository) Find(search string, userId int) ([]meals.Ingredi
 	return ingredients, nil
 }
 
-func (ir *IngredientRepository) Update(ingredient meals.Ingredient) error {
+func (ir *IngredientRepository) Update(ctx context.Context, ingredient meals.Ingredient) error {
 	ir.db.Exec("UPDATE ingredients SET name = ? WHERE id = ? AND user_id = ?", ingredient.Name, ingredient.Id, ingredient.UserId)
 
 	return nil
 }
 
-func (ir *IngredientRepository) FromNames(names []string, userId int) (map[string]int, error) {
+func (ir *IngredientRepository) FromNames(ctx context.Context, names []string, userId int) (map[string]int, error) {
 	ingredientMap := make(map[string]int, len(names))
 	var values []any
 
@@ -84,7 +86,8 @@ func (ir *IngredientRepository) FromNames(names []string, userId int) (map[strin
 	values = append(values, userId)
 	params := slices.Repeat([]string{"?"}, len(names))
 
-	rows, err := ir.db.Query(
+	rows, err := ir.db.QueryContext(
+		ctx,
 		"SELECT id, name FROM ingredients WHERE name IN ("+strings.Join(params, ", ")+") AND user_id = ?",
 		values...,
 	)

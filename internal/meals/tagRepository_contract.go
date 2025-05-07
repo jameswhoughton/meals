@@ -1,6 +1,7 @@
 package meals
 
 import (
+	"context"
 	"errors"
 	"testing"
 )
@@ -34,8 +35,10 @@ func (i TagRepositoryContract) Test(t *testing.T) {
 		repo, closeDown := i.Repo(tags)
 		defer closeDown()
 
+		ctx := context.Background()
+
 		searchString := "ag "
-		tags, err := repo.Find(searchString, 1)
+		tags, err := repo.Find(ctx, searchString, 1)
 
 		if err != nil {
 			t.Errorf("List tags: Unexpected error: %v", err)
@@ -58,15 +61,17 @@ func (i TagRepositoryContract) Test(t *testing.T) {
 		repo, closeDown := i.Repo(tags)
 		defer closeDown()
 
+		ctx := context.Background()
+
 		newName := "Quick"
 
-		err := repo.Update(Tag{Id: 1, Name: newName})
+		err := repo.Update(ctx, Tag{Id: 1, Name: newName})
 
 		if err != nil {
 			t.Errorf("Unexpected error: %v", err)
 		}
 
-		fetchedtag, err := repo.GetById(1)
+		fetchedtag, err := repo.GetById(ctx, 1)
 
 		if err != nil {
 			t.Errorf("Unexpected error: %v", err)
@@ -92,7 +97,9 @@ func (i TagRepositoryContract) Test(t *testing.T) {
 		repo, closeDown := i.Repo(tags)
 		defer closeDown()
 
-		tag, err := repo.GetById(1)
+		ctx := context.Background()
+
+		tag, err := repo.GetById(ctx, 1)
 
 		if err != nil {
 			t.Errorf("Unexpected error: %v", err)
@@ -102,7 +109,7 @@ func (i TagRepositoryContract) Test(t *testing.T) {
 			t.Errorf("Expected tag with name 'quick' got '%s'", tag.Name)
 		}
 
-		_, err = repo.GetById(10)
+		_, err = repo.GetById(ctx, 10)
 
 		if err == nil {
 			t.Errorf("Expected error, got none")

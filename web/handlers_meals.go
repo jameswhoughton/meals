@@ -247,8 +247,6 @@ func PostMealHandler(service meals.Service) http.Handler {
 
 		meal.UserId = userId
 
-		time.Sleep(5 * time.Second)
-
 		_, err := service.CreateMeal(r.Context(), &meal)
 
 		if err != nil && errors.Is(err, meals.ErrorFormInvalid{}) {
@@ -464,7 +462,7 @@ func GetIngredientsHandler(templateFiles fs.FS, ingredients meals.IngredientRepo
 		userId := r.Context().Value("userId").(int)
 		queryString := r.URL.Query().Get("query")
 
-		ingredients, err := ingredients.Find(queryString, userId)
+		ingredients, err := ingredients.Find(r.Context(), queryString, userId)
 
 		if err != nil {
 			log.Println(err)
@@ -497,7 +495,7 @@ func GetSearchIngredientsHandler(ingredients meals.IngredientRepository) http.Ha
 
 		queryString := r.URL.Query().Get("query")
 
-		results, err := ingredients.Find(queryString, userId)
+		results, err := ingredients.Find(r.Context(), queryString, userId)
 
 		if err != nil {
 			log.Println(err)
@@ -533,7 +531,7 @@ func GetIngredientHandler(templateFiles fs.FS, ingredients meals.IngredientRepos
 		userId := r.Context().Value("userId").(int)
 		ingredientId, _ := strconv.Atoi(r.PathValue("id"))
 
-		ingredient, err := ingredients.GetById(ingredientId)
+		ingredient, err := ingredients.GetById(r.Context(), ingredientId)
 
 		if err != nil {
 			if errors.As(err, &meals.ErrorIngredientNotFound{Id: ingredientId}) {
@@ -588,7 +586,7 @@ func PutIngredientHandler(service meals.Service, repo meals.IngredientRepository
 
 		ingredientId, _ := strconv.Atoi(r.PathValue("id"))
 
-		existingIngredient, err := repo.GetById(ingredientId)
+		existingIngredient, err := repo.GetById(r.Context(), ingredientId)
 
 		if err != nil {
 			if errors.As(err, &meals.ErrorIngredientNotFound{Id: ingredientId}) {
@@ -610,7 +608,7 @@ func PutIngredientHandler(service meals.Service, repo meals.IngredientRepository
 			Name:   r.FormValue("name"),
 		}
 
-		err = service.UpdateIngredient(&ingredient)
+		err = service.UpdateIngredient(r.Context(), &ingredient)
 
 		if err != nil && errors.Is(err, meals.ErrorFormInvalid{}) {
 			formJson, _ := json.Marshal(ingredient)
@@ -642,7 +640,7 @@ func GetSearchTagHandler(tags meals.TagRepository) http.Handler {
 
 		queryString := r.URL.Query().Get("query")
 
-		results, err := tags.Find(queryString, userId)
+		results, err := tags.Find(r.Context(), queryString, userId)
 
 		if err != nil {
 			log.Println(err)
@@ -676,7 +674,7 @@ func GetTagsHandler(templateFiles fs.FS, tags meals.TagRepository) http.Handler 
 		userId := r.Context().Value("userId").(int)
 		queryString := r.URL.Query().Get("query")
 
-		tags, err := tags.Find(queryString, userId)
+		tags, err := tags.Find(r.Context(), queryString, userId)
 
 		if err != nil {
 			log.Println(err)
@@ -720,7 +718,7 @@ func GetTagHandler(templateFiles fs.FS, tags meals.TagRepository) http.Handler {
 		userId := r.Context().Value("userId").(int)
 		tagId, _ := strconv.Atoi(r.PathValue("id"))
 
-		tag, err := tags.GetById(tagId)
+		tag, err := tags.GetById(r.Context(), tagId)
 
 		if err != nil {
 			if errors.As(err, &meals.ErrorTagNotFound{Id: tagId}) {
@@ -774,7 +772,7 @@ func PutTagHandler(service meals.Service, repo meals.TagRepository) http.Handler
 
 		tagId, _ := strconv.Atoi(r.PathValue("id"))
 
-		existingTag, err := repo.GetById(tagId)
+		existingTag, err := repo.GetById(r.Context(), tagId)
 
 		if err != nil {
 			if errors.As(err, &meals.ErrorTagNotFound{Id: tagId}) {
@@ -796,7 +794,7 @@ func PutTagHandler(service meals.Service, repo meals.TagRepository) http.Handler
 			Name:   r.FormValue("name"),
 		}
 
-		err = service.UpdateTag(&tag)
+		err = service.UpdateTag(r.Context(), &tag)
 
 		if err != nil && errors.Is(err, meals.ErrorFormInvalid{}) {
 			formJson, _ := json.Marshal(tag)

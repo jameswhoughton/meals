@@ -22,7 +22,7 @@ func NewService(m MealRepository, i IngredientRepository, t TagRepository) Servi
 	return Service{m, i, t}
 }
 
-func (s *Service) populateIngredientIds(meal *Meal) error {
+func (s *Service) populateIngredientIds(ctx context.Context, meal *Meal) error {
 	ingredientNames := make([]string, len(meal.Ingredients))
 
 	for i, ingredient := range meal.Ingredients {
@@ -33,7 +33,7 @@ func (s *Service) populateIngredientIds(meal *Meal) error {
 		ingredientNames[i] = ingredient.Name
 	}
 
-	ingredientIds, err := s.ingredients.FromNames(ingredientNames, meal.UserId)
+	ingredientIds, err := s.ingredients.FromNames(ctx, ingredientNames, meal.UserId)
 
 	if err != nil {
 		return err
@@ -50,7 +50,7 @@ func (s *Service) populateIngredientIds(meal *Meal) error {
 	return nil
 }
 
-func (s *Service) populateTagIds(meal *Meal) error {
+func (s *Service) populateTagIds(ctx context.Context, meal *Meal) error {
 	tagNames := make([]string, len(meal.Tags))
 
 	for i, tag := range meal.Tags {
@@ -61,7 +61,7 @@ func (s *Service) populateTagIds(meal *Meal) error {
 		tagNames[i] = tag.Name
 	}
 
-	tagIds, err := s.tags.FromNames(tagNames, meal.UserId)
+	tagIds, err := s.tags.FromNames(ctx, tagNames, meal.UserId)
 
 	if err != nil {
 		return err
@@ -86,8 +86,8 @@ func (s *Service) CreateMeal(ctx context.Context, meal *Meal) (Meal, error) {
 	meal.CreatedAt = time.Now()
 	meal.UpdatedAt = time.Now()
 
-	s.populateIngredientIds(meal)
-	s.populateTagIds(meal)
+	s.populateIngredientIds(ctx, meal)
+	s.populateTagIds(ctx, meal)
 
 	createdMeal, err := s.meals.Create(ctx, *meal)
 
@@ -105,8 +105,8 @@ func (s *Service) UpdateMeal(ctx context.Context, meal *Meal) error {
 
 	meal.UpdatedAt = time.Now()
 
-	s.populateIngredientIds(meal)
-	s.populateTagIds(meal)
+	s.populateIngredientIds(ctx, meal)
+	s.populateTagIds(ctx, meal)
 
 	err := s.meals.Update(ctx, *meal)
 
@@ -117,12 +117,12 @@ func (s *Service) UpdateMeal(ctx context.Context, meal *Meal) error {
 	return nil
 }
 
-func (s *Service) UpdateIngredient(ingredient *Ingredient) error {
+func (s *Service) UpdateIngredient(ctx context.Context, ingredient *Ingredient) error {
 	if isValid := ingredient.Validate(); !isValid {
 		return ErrorFormInvalid{}
 	}
 
-	err := s.ingredients.Update(*ingredient)
+	err := s.ingredients.Update(ctx, *ingredient)
 
 	if err != nil {
 		return fmt.Errorf("Error updating ingredient: %v", err)
@@ -131,12 +131,12 @@ func (s *Service) UpdateIngredient(ingredient *Ingredient) error {
 	return nil
 }
 
-func (s *Service) UpdateTag(tag *Tag) error {
+func (s *Service) UpdateTag(ctx context.Context, tag *Tag) error {
 	if isValid := tag.Validate(); !isValid {
 		return ErrorFormInvalid{}
 	}
 
-	err := s.tags.Update(*tag)
+	err := s.tags.Update(ctx, *tag)
 
 	if err != nil {
 		return fmt.Errorf("Error updating tag: %v", err)

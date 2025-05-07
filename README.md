@@ -49,7 +49,7 @@ This is the main web app executeable.
     - [ ] Reset their password
     - [x] Add a meal
     - [x] Edit a meal
-    - [ ] Delete a meal
+    - [x] Delete a meal
     - [x] Edit ingredients
     - [x] Edit tags
     - [ ] Assign a meal to a day

@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"time"
@@ -22,8 +23,8 @@ func normaliseDate(date time.Time) time.Time {
 	return time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
 }
 
-func (pr *PlannerRepository) Add(date time.Time, mealId int) error {
-	_, err := pr.db.Exec(`
+func (pr *PlannerRepository) Add(ctx context.Context, date time.Time, mealId int) error {
+	_, err := pr.db.ExecContext(ctx, `
 		INSERT INTO planner 
 		(meal_id, date)
 		VALUES (?, ?)
@@ -36,10 +37,10 @@ func (pr *PlannerRepository) Add(date time.Time, mealId int) error {
 	return nil
 }
 
-func (pr *PlannerRepository) Get(date time.Time, userId int) (planner.Meal, error) {
+func (pr *PlannerRepository) Get(ctx context.Context, date time.Time, userId int) (planner.Meal, error) {
 	var meal planner.Meal
 
-	err := pr.db.QueryRow(`
+	err := pr.db.QueryRowContext(ctx, `
 		SELECT m.id, m.user_id, m.name 
 		FROM planner p 
 		LEFT JOIN meals m 
@@ -60,8 +61,8 @@ func (pr *PlannerRepository) Get(date time.Time, userId int) (planner.Meal, erro
 	return meal, nil
 }
 
-func (pr *PlannerRepository) Clear(date time.Time, userId int) error {
-	_, err := pr.db.Exec(`
+func (pr *PlannerRepository) Clear(ctx context.Context, date time.Time, userId int) error {
+	_, err := pr.db.ExecContext(ctx, `
 		DELETE FROM planner
 		WHERE id IN (
 			SELECT p.id FROM planner p

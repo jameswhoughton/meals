@@ -1,6 +1,7 @@
 package meals
 
 import (
+	"context"
 	"fmt"
 )
 
@@ -37,8 +38,8 @@ func (e ErrorTagNotFound) Error() string {
 }
 
 type TagRepository interface {
-	Find(search string, userId int) ([]Tag, error)
-	GetById(id int) (Tag, error)
-	Update(tag Tag) error
-	FromNames(names []string, userId int) (map[string]int, error)
+	Find(ctx context.Context, search string, userId int) ([]Tag, error)
+	GetById(ctx context.Context, id int) (Tag, error)
+	Update(ctx context.Context, tag Tag) error
+	FromNames(ctx context.Context, names []string, userId int) (map[string]int, error)
 }

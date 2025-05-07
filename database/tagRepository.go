@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"slices"
@@ -19,10 +20,10 @@ type TagRepository struct {
 	db *sql.DB
 }
 
-func (tr *TagRepository) GetById(id int) (meals.Tag, error) {
+func (tr *TagRepository) GetById(ctx context.Context, id int) (meals.Tag, error) {
 	var tag meals.Tag
 
-	err := tr.db.QueryRow("SELECT id, user_id, name FROM tags WHERE id = ?", id).Scan(
+	err := tr.db.QueryRowContext(ctx, "SELECT id, user_id, name FROM tags WHERE id = ?", id).Scan(
 		&tag.Id,
 		&tag.UserId,
 		&tag.Name,
@@ -39,10 +40,11 @@ func (tr *TagRepository) GetById(id int) (meals.Tag, error) {
 	return tag, nil
 }
 
-func (tr *TagRepository) Find(search string, userId int) ([]meals.Tag, error) {
+func (tr *TagRepository) Find(ctx context.Context, search string, userId int) ([]meals.Tag, error) {
 	tags := []meals.Tag{}
 
-	rows, err := tr.db.Query(
+	rows, err := tr.db.QueryContext(
+		ctx,
 		"SELECT id, user_id, name FROM tags WHERE name LIKE ? AND user_id = ?",
 		"%"+search+"%",
 		userId,
@@ -67,12 +69,12 @@ func (tr *TagRepository) Find(search string, userId int) ([]meals.Tag, error) {
 	return tags, nil
 }
 
-func (tr *TagRepository) Update(tag meals.Tag) error {
-	tr.db.Exec("UPDATE tags SET name = ? WHERE id = ? AND user_id = ?", tag.Name, tag.Id, tag.UserId)
+func (tr *TagRepository) Update(ctx context.Context, tag meals.Tag) error {
+	tr.db.ExecContext(ctx, "UPDATE tags SET name = ? WHERE id = ? AND user_id = ?", tag.Name, tag.Id, tag.UserId)
 
 	return nil
 }
-func (tr *TagRepository) FromNames(names []string, userId int) (map[string]int, error) {
+func (tr *TagRepository) FromNames(ctx context.Context, names []string, userId int) (map[string]int, error) {
 	tagMap := make(map[string]int, len(names))
 	var values []any
 
@@ -83,7 +85,8 @@ func (tr *TagRepository) FromNames(names []string, userId int) (map[string]int, 
 	values = append(values, userId)
 	params := slices.Repeat([]string{"?"}, len(names))
 
-	rows, err := tr.db.Query(
+	rows, err := tr.db.QueryContext(
+		ctx,
 		"SELECT id, name FROM tags WHERE name IN ("+strings.Join(params, ", ")+") AND user_id = ?",
 		values...,
 	)

@@ -1,6 +1,7 @@
 package meals
 
 import (
+	"context"
 	"errors"
 	"testing"
 )
@@ -34,8 +35,10 @@ func (i IngredientRepositoryContract) Test(t *testing.T) {
 		repo, closeDown := i.Repo(ingredients)
 		defer closeDown()
 
+		ctx := context.Background()
+
 		searchString := "Onio"
-		ingredients, err := repo.Find(searchString, 1)
+		ingredients, err := repo.Find(ctx, searchString, 1)
 
 		if err != nil {
 			t.Errorf("List ingredients: Unexpected error: %v", err)
@@ -58,15 +61,17 @@ func (i IngredientRepositoryContract) Test(t *testing.T) {
 		repo, closeDown := i.Repo(ingredients)
 		defer closeDown()
 
+		ctx := context.Background()
+
 		newName := "Spring onion"
 
-		err := repo.Update(Ingredient{Id: 1, Name: newName})
+		err := repo.Update(ctx, Ingredient{Id: 1, Name: newName})
 
 		if err != nil {
 			t.Errorf("Unexpected error: %v", err)
 		}
 
-		fetchedIngredient, err := repo.GetById(1)
+		fetchedIngredient, err := repo.GetById(ctx, 1)
 
 		if err != nil {
 			t.Errorf("Unexpected error: %v", err)
@@ -92,7 +97,9 @@ func (i IngredientRepositoryContract) Test(t *testing.T) {
 		repo, closeDown := i.Repo(ingredients)
 		defer closeDown()
 
-		ingredient, err := repo.GetById(1)
+		ctx := context.Background()
+
+		ingredient, err := repo.GetById(ctx, 1)
 
 		if err != nil {
 			t.Errorf("Unexpected error: %v", err)
@@ -102,7 +109,7 @@ func (i IngredientRepositoryContract) Test(t *testing.T) {
 			t.Errorf("Expected ingredient with name 'apple' got '%s'", ingredient.Name)
 		}
 
-		_, err = repo.GetById(10)
+		_, err = repo.GetById(ctx, 10)
 
 		if err == nil {
 			t.Errorf("Expected error, got none")
@@ -137,7 +144,9 @@ func (i IngredientRepositoryContract) Test(t *testing.T) {
 		repo, closeDown := i.Repo(ingredients)
 		defer closeDown()
 
-		ingredientMap, err := repo.FromNames([]string{"Apple", "Cheese", "Ham"}, 1)
+		ctx := context.Background()
+
+		ingredientMap, err := repo.FromNames(ctx, []string{"Apple", "Cheese", "Ham"}, 1)
 
 		if err != nil {
 			t.Errorf("Unexpected error fetching ingredient map: %v", err)

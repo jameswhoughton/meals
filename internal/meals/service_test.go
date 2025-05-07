@@ -291,7 +291,9 @@ func TestServiceCanUpdateAnIngredient(t *testing.T) {
 		Name: "Tomatoes",
 	}
 
-	err := service.UpdateIngredient(&ingredientToUpdate)
+	ctx := context.Background()
+
+	err := service.UpdateIngredient(ctx, &ingredientToUpdate)
 
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -450,7 +452,9 @@ func TestServiceCanUpdateATag(t *testing.T) {
 		Name: "Quick",
 	}
 
-	err := service.UpdateTag(&tagToUpdate)
+	ctx := context.Background()
+
+	err := service.UpdateTag(ctx, &tagToUpdate)
 
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
