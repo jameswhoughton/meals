@@ -13,7 +13,6 @@ import (
 
 	"github.com/jameswhoughton/meals/internal/account"
 	"github.com/jameswhoughton/meals/internal/meals"
-	"github.com/jameswhoughton/meals/web/helpers"
 )
 
 // Render the meals list page.
@@ -103,7 +102,7 @@ func GetMealHandler(templateFiles fs.FS, repo meals.MealRepository) http.Handler
 			return
 		}
 
-		formJson, err := helpers.GetMessage(w, r, "formData")
+		formJson, err := getMessage(w, r, "formData")
 
 		if err != nil {
 			log.Println(err)
@@ -148,7 +147,7 @@ func GetCreateMealHandler(templateFiles fs.FS) http.Handler {
 			return
 		}
 
-		formJson, err := helpers.GetMessage(w, r, "formData")
+		formJson, err := getMessage(w, r, "formData")
 
 		if err != nil {
 			log.Println(err)
@@ -251,7 +250,7 @@ func PostMealHandler(service meals.Service) http.Handler {
 
 		if err != nil && errors.Is(err, meals.ErrorFormInvalid{}) {
 			formJson, _ := json.Marshal(meal)
-			helpers.SetMessage(w, "formData", string(formJson))
+			setMessage(w, "formData", string(formJson))
 
 			http.Redirect(w, r, "/meals/create", http.StatusFound)
 
@@ -265,7 +264,7 @@ func PostMealHandler(service meals.Service) http.Handler {
 			return
 		}
 
-		helpers.SetMessage(w, "success", "Meal "+meal.Name+" has been created")
+		setMessage(w, "success", "Meal "+meal.Name+" has been created")
 
 		http.Redirect(w, r, "/meals", http.StatusFound)
 	})
@@ -308,7 +307,7 @@ func PutMealHandler(service meals.Service, repo meals.MealRepository) http.Handl
 
 		if err != nil && errors.Is(err, meals.ErrorFormInvalid{}) {
 			formJson, _ := json.Marshal(meal)
-			helpers.SetMessage(w, "formData", string(formJson))
+			setMessage(w, "formData", string(formJson))
 
 			http.Redirect(w, r, "/meals/"+r.PathValue("id"), http.StatusFound)
 
@@ -322,7 +321,7 @@ func PutMealHandler(service meals.Service, repo meals.MealRepository) http.Handl
 			return
 		}
 
-		helpers.SetMessage(w, "success", "Meal "+meal.Name+" has been updated")
+		setMessage(w, "success", "Meal "+meal.Name+" has been updated")
 
 		http.Redirect(w, r, "/meals", http.StatusFound)
 
@@ -547,7 +546,7 @@ func GetIngredientHandler(templateFiles fs.FS, ingredients meals.IngredientRepos
 			return
 		}
 
-		formJson, err := helpers.GetMessage(w, r, "formData")
+		formJson, err := getMessage(w, r, "formData")
 
 		if err != nil {
 			log.Println(err)
@@ -612,7 +611,7 @@ func PutIngredientHandler(service meals.Service, repo meals.IngredientRepository
 
 		if err != nil && errors.Is(err, meals.ErrorFormInvalid{}) {
 			formJson, _ := json.Marshal(ingredient)
-			helpers.SetMessage(w, "formData", string(formJson))
+			setMessage(w, "formData", string(formJson))
 
 			http.Redirect(w, r, "/ingredients/"+r.PathValue("id"), http.StatusFound)
 
@@ -734,7 +733,7 @@ func GetTagHandler(templateFiles fs.FS, tags meals.TagRepository) http.Handler {
 			return
 		}
 
-		formJson, err := helpers.GetMessage(w, r, "formData")
+		formJson, err := getMessage(w, r, "formData")
 
 		if err != nil {
 			log.Println(err)
@@ -798,7 +797,7 @@ func PutTagHandler(service meals.Service, repo meals.TagRepository) http.Handler
 
 		if err != nil && errors.Is(err, meals.ErrorFormInvalid{}) {
 			formJson, _ := json.Marshal(tag)
-			helpers.SetMessage(w, "formData", string(formJson))
+			setMessage(w, "formData", string(formJson))
 
 			http.Redirect(w, r, "/tags/"+r.PathValue("id"), http.StatusFound)
 

@@ -1,11 +1,11 @@
-package helpers
+package web
 
 import (
 	"encoding/base64"
 	"net/http"
 )
 
-func SetMessage(w http.ResponseWriter, name, value string) {
+func setMessage(w http.ResponseWriter, name, value string) {
 	mesageCookie := http.Cookie{
 		Name:  name,
 		Value: base64.StdEncoding.EncodeToString([]byte(value)),
@@ -14,7 +14,7 @@ func SetMessage(w http.ResponseWriter, name, value string) {
 	http.SetCookie(w, &mesageCookie)
 }
 
-func GetMessage(w http.ResponseWriter, r *http.Request, name string) (string, error) {
+func getMessage(w http.ResponseWriter, r *http.Request, name string) (string, error) {
 	messageCookie, err := r.Cookie(name)
 	if err != nil {
 		switch err {

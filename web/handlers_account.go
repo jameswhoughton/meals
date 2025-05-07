@@ -11,7 +11,6 @@ import (
 	"strconv"
 
 	"github.com/jameswhoughton/meals/internal/account"
-	"github.com/jameswhoughton/meals/web/helpers"
 )
 
 type middleware func(http.Handler) http.Handler
@@ -31,7 +30,7 @@ func GetRegistrationHandler(templateFiles fs.FS) http.Handler {
 			return
 		}
 
-		formJson, err := helpers.GetMessage(w, r, "formData")
+		formJson, err := getMessage(w, r, "formData")
 
 		if err != nil {
 			log.Println(err)
@@ -73,7 +72,7 @@ func PostRegistrationHandler(service account.Service) http.Handler {
 
 		if err != nil && errors.Is(err, account.ErrorFormInvalid{}) {
 			formJson, _ := json.Marshal(form)
-			helpers.SetMessage(w, "formData", string(formJson))
+			setMessage(w, "formData", string(formJson))
 
 			http.Redirect(w, r, "/register", http.StatusFound)
 
@@ -87,7 +86,7 @@ func PostRegistrationHandler(service account.Service) http.Handler {
 			return
 		}
 
-		helpers.SetMessage(w, "success", "Your account has been created, please login below")
+		setMessage(w, "success", "Your account has been created, please login below")
 
 		http.Redirect(w, r, "/login", http.StatusFound)
 	})
@@ -127,7 +126,7 @@ func GetAccountHandler(templateFiles fs.FS, service SessionService) http.Handler
 			Form    account.UserFormUpdate
 		}
 
-		success, err := helpers.GetMessage(w, r, "success")
+		success, err := getMessage(w, r, "success")
 
 		if err != nil {
 			log.Println(err)
@@ -136,7 +135,7 @@ func GetAccountHandler(templateFiles fs.FS, service SessionService) http.Handler
 			return
 		}
 
-		formJson, err := helpers.GetMessage(w, r, "formData")
+		formJson, err := getMessage(w, r, "formData")
 
 		if err != nil {
 			log.Println(err)
@@ -216,7 +215,7 @@ func PutAccountHandler(accountService account.Service, sessionService SessionSer
 
 		if err != nil && errors.Is(err, account.ErrorFormInvalid{}) {
 			formJson, _ := json.Marshal(form)
-			helpers.SetMessage(w, "formData", string(formJson))
+			setMessage(w, "formData", string(formJson))
 
 			http.Redirect(w, r, "/account", http.StatusFound)
 
@@ -227,7 +226,7 @@ func PutAccountHandler(accountService account.Service, sessionService SessionSer
 			http.Error(w, "server error", http.StatusInternalServerError)
 		}
 
-		helpers.SetMessage(w, "success", "you account has been updated")
+		setMessage(w, "success", "you account has been updated")
 
 		http.Redirect(w, r, "/account", http.StatusFound)
 	})
@@ -253,7 +252,7 @@ func GetLoginHandler(templateFiles fs.FS) http.Handler {
 			Success string
 		}
 
-		errorMessage, err := helpers.GetMessage(w, r, "error")
+		errorMessage, err := getMessage(w, r, "error")
 
 		if err != nil {
 			log.Println(err)
@@ -261,7 +260,7 @@ func GetLoginHandler(templateFiles fs.FS) http.Handler {
 			errorMessage = "There was a problem with your request, please try again"
 		}
 
-		successMessage, err := helpers.GetMessage(w, r, "success")
+		successMessage, err := getMessage(w, r, "success")
 
 		if err != nil {
 			log.Println(err)
@@ -291,7 +290,7 @@ func PostLoginHandler(accountService account.Service, sessionService SessionServ
 
 		if err != nil {
 			log.Println(err)
-			helpers.SetMessage(w, "error", "credentials are invalid")
+			setMessage(w, "error", "credentials are invalid")
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}
@@ -373,7 +372,7 @@ func NewIsAuthenticatedMiddleware(accountService account.Service, sessionService
 
 			if err != nil {
 				if errors.Is(err, ErrorSessionNotFound{}) {
-					helpers.SetMessage(w, "error", "Session has expired, please login again")
+					setMessage(w, "error", "Session has expired, please login again")
 					http.Redirect(w, r, "/login", http.StatusFound)
 
 					return
