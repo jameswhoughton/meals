@@ -39,6 +39,7 @@ func main() {
 	mealRepository := database.NewMealRepository(conn)
 	ingredientRepository := database.NewIngredientRepository(conn)
 	tagRepository := database.NewTagRepository(conn)
+	plannerRepository := database.NewPlannerRepository(conn)
 
 	accountService := account.NewService(accountRepository)
 	mealService := meals.NewService(mealRepository, ingredientRepository, tagRepository)
@@ -57,6 +58,7 @@ func main() {
 		ingredientRepository,
 		tagRepository,
 		sessionRepsoitory,
+		plannerRepository,
 	)
 
 	go func() {

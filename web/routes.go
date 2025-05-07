@@ -8,6 +8,7 @@ import (
 
 	"github.com/jameswhoughton/meals/internal/account"
 	"github.com/jameswhoughton/meals/internal/meals"
+	"github.com/jameswhoughton/meals/internal/planner"
 )
 
 //go:embed templates/*.gohtml
@@ -29,6 +30,7 @@ func AddRoutes(
 	ingredientRepository meals.IngredientRepository,
 	tagRepository meals.TagRepository,
 	sessionRepository SessionRepository,
+	plannerRepository planner.Repository,
 ) {
 	// Middleware
 	isAuthed := NewIsAuthenticatedMiddleware(accountService, sessionService)
@@ -85,8 +87,8 @@ func AddRoutes(
 	mux.Handle("POST /tags/{id}", isAuthed(PutTagHandler(mealService, tagRepository)))
 
 	// Planner
-	mux.Handle("GET /planner", isAuthed(GetPlannerHandler(templateFiles, mealService, accountRepository)))
-	mux.Handle("GET /planner/{date}", isAuthed(GetPlannerHandler(templateFiles, mealService, accountRepository)))
+	mux.Handle("GET /planner", isAuthed(GetPlannerHandler(templateFiles, plannerRepository, accountRepository)))
+	mux.Handle("GET /planner/{date}", isAuthed(GetPlannerHandler(templateFiles, plannerRepository, accountRepository)))
 
 	// API
 	mux.Handle("GET /api/ingredients", isAuthed(GetSearchIngredientsHandler(ingredientRepository)))

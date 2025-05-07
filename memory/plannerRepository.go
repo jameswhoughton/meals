@@ -53,17 +53,17 @@ func (pr *PlannerRepository) Add(ctx context.Context, date time.Time, mealId int
 	return nil
 }
 
-func (pr *PlannerRepository) Get(ctx context.Context, date time.Time, userId int) (planner.Meal, error) {
+func (pr *PlannerRepository) Get(ctx context.Context, date time.Time, userId int) (*planner.Meal, error) {
 	key := date.Format("2006-01-02") + "|" + strconv.Itoa(userId)
 	mealId := pr.Planner[key]
 
 	meal, err := pr.findMeal(ctx, mealId)
 
 	if err != nil {
-		return meal, err
+		return nil, err
 	}
 
-	return meal, nil
+	return &meal, nil
 }
 
 func (pr *PlannerRepository) Clear(ctx context.Context, date time.Time, userId int) error {

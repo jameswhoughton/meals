@@ -3,15 +3,12 @@ package web
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/fs"
 	"log"
 	"net/http"
 	"strconv"
 	"text/template"
-	"time"
 
-	"github.com/jameswhoughton/meals/internal/account"
 	"github.com/jameswhoughton/meals/internal/meals"
 )
 
@@ -359,83 +356,6 @@ func PostDeleteMealHandler(repo meals.MealRepository) http.Handler {
 		}
 
 		http.Redirect(w, r, "/meals", http.StatusFound)
-	})
-}
-
-// Render the Planner page
-
-func calculateStartDate(date time.Time, startDay int) time.Time {
-	if date.Weekday() == time.Weekday(startDay) {
-		return time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
-	}
-
-	diff := (date.Weekday() - time.Weekday(startDay))
-
-	if diff < 0 {
-		diff += 7
-	}
-
-	date = date.Add(-time.Duration(diff) * 24 * time.Hour)
-
-	return time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
-}
-
-func GetPlannerHandler(templateFiles fs.FS, mealService meals.Service, accountRepo account.Repository) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tmpl, err := template.ParseFS(
-			templateFiles,
-			"templates/layout.gohtml",
-			"templates/navigation.gohtml",
-			"templates/pages/planner.gohtml",
-		)
-
-		if err != nil {
-			w.Write([]byte("Template error: " + err.Error()))
-
-			return
-		}
-		userId := r.Context().Value("userId").(int)
-
-		user, err := accountRepo.Get(r.Context(), account.GetForm{Id: &userId})
-
-		if err != nil {
-
-		}
-
-		type Day struct {
-			Date  string
-			Label string
-			Meal  *meals.Meal
-		}
-
-		var startDate time.Time
-		var days []Day
-
-		if r.PathValue("date") == "" {
-			startDate = calculateStartDate(time.Now(), user.MealStartDay)
-		} else {
-			parsedDate, err := time.Parse("02-01-2006", r.PathValue("date"))
-
-			if err != nil {
-				http.Error(w, "Cannot parse date: "+r.PathValue("date"), http.StatusBadRequest)
-
-				return
-			}
-
-			startDate = calculateStartDate(parsedDate, user.MealStartDay)
-		}
-
-		fmt.Println(startDate)
-
-		type templateData struct {
-			Title string
-			Days  []Day
-		}
-
-		tmpl.ExecuteTemplate(w, "layout", templateData{
-			Title: "Week Planner",
-			Days:  days,
-		})
 	})
 }
 
