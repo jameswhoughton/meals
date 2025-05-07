@@ -1,6 +1,7 @@
-package auth
+package web
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -15,6 +16,8 @@ func (rc *SessionRepositoryContract) Test(t *testing.T) {
 		repo, closeDown := rc.Repo()
 		defer closeDown()
 
+		ctx := context.Background()
+
 		newSession := Session{
 			SessionId: "NEW_SESSION_01",
 			UserId:    1,
@@ -22,7 +25,7 @@ func (rc *SessionRepositoryContract) Test(t *testing.T) {
 			UpdatedAt: time.Now().Add(time.Second * -30),
 		}
 
-		createdSession, err := repo.Create(newSession)
+		createdSession, err := repo.Create(ctx, newSession)
 
 		if err != nil {
 			t.Errorf("Unexpected error when creating a session: %v", err)
@@ -40,7 +43,7 @@ func (rc *SessionRepositoryContract) Test(t *testing.T) {
 			t.Errorf("Expected user ID %d, got %d", newSession.UserId, createdSession.Id)
 		}
 
-		fetchedSession, err := repo.Get(newSession.SessionId, time.Now().Add(-time.Second*100))
+		fetchedSession, err := repo.Get(ctx, newSession.SessionId)
 
 		if err != nil {
 			t.Errorf("Unexpected error when fetching a session: %v", err)
@@ -58,17 +61,13 @@ func (rc *SessionRepositoryContract) Test(t *testing.T) {
 			t.Errorf("Expected user ID %d, got %d", newSession.UserId, fetchedSession.Id)
 		}
 
-		if fetchedSession.UpdatedAt.Round(time.Minute).Equal(createdSession.UpdatedAt.Round(time.Minute)) {
-			t.Error("updated_at should update when using Get, dates match")
-		}
-
-		err = repo.Destroy(newSession.SessionId)
+		err = repo.Destroy(ctx, newSession.SessionId)
 
 		if err != nil {
 			t.Errorf("Unexpected error when destroying a session: %v", err)
 		}
 
-		_, err = repo.Get(newSession.SessionId, time.Now().Add(-time.Second*100))
+		_, err = repo.Get(ctx, newSession.SessionId)
 
 		if err == nil {
 			t.Error("Expected error when fetching destroyed session, got none")
@@ -79,45 +78,25 @@ func (rc *SessionRepositoryContract) Test(t *testing.T) {
 		}
 	})
 
-	t.Run("Cannot get a session with a valid ID that has expired", func(t *testing.T) {
-		repo, closeDown := rc.Repo()
-		defer closeDown()
-
-		repo.Create(Session{
-			UserId:    1,
-			SessionId: "AA",
-			UpdatedAt: time.Date(2025, time.March, 5, 12, 30, 0, 0, time.UTC),
-		})
-
-		_, err := repo.Get("AA", time.Date(2025, time.March, 5, 13, 0, 0, 0, time.UTC))
-
-		if err == nil {
-			t.Error("Expected error, got nil")
-		}
-
-		if !errors.Is(err, ErrorSessionNotFound{}) {
-			t.Errorf("Expected error of type %T, got %T (%v)", ErrorSessionNotFound{}, err, err)
-		}
-
-	})
-
 	t.Run("Can delete sessions that have exceeded the given lifetime", func(t *testing.T) {
 		repo, closeDown := rc.Repo()
 		defer closeDown()
 
-		repo.Create(Session{
+		ctx := context.Background()
+
+		repo.Create(ctx, Session{
 			UserId:    1,
 			SessionId: "AA",
 			UpdatedAt: time.Date(2025, time.March, 5, 12, 30, 0, 0, time.UTC),
 		})
 
-		repo.Create(Session{
+		repo.Create(ctx, Session{
 			UserId:    2,
 			SessionId: "BB",
 			UpdatedAt: time.Date(2025, time.March, 5, 12, 45, 0, 0, time.UTC),
 		})
 
-		repo.Create(Session{
+		repo.Create(ctx, Session{
 			UserId:    3,
 			SessionId: "CC",
 			UpdatedAt: time.Date(2025, time.March, 5, 13, 31, 0, 0, time.UTC),
@@ -125,13 +104,13 @@ func (rc *SessionRepositoryContract) Test(t *testing.T) {
 
 		expiredTime := time.Date(2025, time.March, 5, 13, 30, 0, 0, time.UTC)
 
-		err := repo.DestroyExpired(expiredTime)
+		err := repo.DestroyExpired(ctx, expiredTime)
 
 		if err != nil {
 			t.Errorf("Unexpected error when destroying user sessions: %v", err)
 		}
 
-		_, err = repo.Get("AA", expiredTime)
+		_, err = repo.Get(ctx, "AA")
 
 		if err == nil {
 			t.Error("Expected error when fetching destroyed session, got none")
@@ -141,13 +120,13 @@ func (rc *SessionRepositoryContract) Test(t *testing.T) {
 			t.Errorf("Expected error of type %T, got %T (%v)", ErrorSessionNotFound{}, err, err)
 		}
 
-		_, err = repo.Get("CC", expiredTime)
+		_, err = repo.Get(ctx, "CC")
 
 		if err != nil {
 			t.Errorf("Unexpected error when fetching session that should still exist: %v", err)
 		}
 
-		_, err = repo.Get("BB", expiredTime)
+		_, err = repo.Get(ctx, "BB")
 
 		if err == nil {
 			t.Error("Expected error when fetching destroyed session, got none")

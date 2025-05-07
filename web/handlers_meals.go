@@ -11,7 +11,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/jameswhoughton/meals/internal/auth"
+	"github.com/jameswhoughton/meals/internal/account"
 	"github.com/jameswhoughton/meals/internal/meals"
 	"github.com/jameswhoughton/meals/web/helpers"
 )
@@ -383,7 +383,7 @@ func calculateStartDate(date time.Time, startDay int) time.Time {
 	return time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
 }
 
-func GetPlannerHandler(templateFiles fs.FS, mealService meals.Service, userRepo auth.UserRepository) http.Handler {
+func GetPlannerHandler(templateFiles fs.FS, mealService meals.Service, accountRepo account.Repository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
 			templateFiles,
@@ -399,7 +399,7 @@ func GetPlannerHandler(templateFiles fs.FS, mealService meals.Service, userRepo 
 		}
 		userId := r.Context().Value("userId").(int)
 
-		user, err := userRepo.Get(auth.UserGet{Id: &userId})
+		user, err := accountRepo.Get(r.Context(), account.GetForm{Id: &userId})
 
 		if err != nil {
 
@@ -427,6 +427,7 @@ func GetPlannerHandler(templateFiles fs.FS, mealService meals.Service, userRepo 
 
 			startDate = calculateStartDate(parsedDate, user.MealStartDay)
 		}
+
 		fmt.Println(startDate)
 
 		type templateData struct {

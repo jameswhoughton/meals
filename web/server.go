@@ -5,23 +5,25 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/jameswhoughton/meals/internal/auth"
+	"github.com/jameswhoughton/meals/internal/account"
 	"github.com/jameswhoughton/meals/internal/meals"
 )
 
 func NewServer(
 	ctx context.Context,
 	port string,
-	userService *auth.UserService,
+	accountService *account.Service,
 	mealService *meals.Service,
-	userRepository auth.UserRepository,
+	sessionService *SessionService,
+	accountRepository account.Repository,
 	mealRepository meals.MealRepository,
 	ingredientRepository meals.IngredientRepository,
 	tagRepository meals.TagRepository,
+	sessionRepository SessionRepository,
 ) *http.Server {
 	mux := http.NewServeMux()
 
-	AddRoutes(mux, *userService, *mealService, userRepository, mealRepository, ingredientRepository, tagRepository)
+	AddRoutes(mux, *accountService, *mealService, *sessionService, accountRepository, mealRepository, ingredientRepository, tagRepository, sessionRepository)
 
 	return &http.Server{
 		Addr:        ":" + port,

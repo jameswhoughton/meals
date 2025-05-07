@@ -7,11 +7,11 @@ import (
 	"testing"
 
 	"github.com/jameswhoughton/meals/database"
-	"github.com/jameswhoughton/meals/internal/auth"
+	"github.com/jameswhoughton/meals/web"
 )
 
 func TestDatabaseSessionService(t *testing.T) {
-	init := func() (auth.SessionRepository, func()) {
+	init := func() (web.SessionRepository, func()) {
 		conn, err := sql.Open("sqlite3", "meals.db")
 
 		if err != nil {
@@ -30,7 +30,7 @@ func TestDatabaseSessionService(t *testing.T) {
 		return database.NewSessionRepository(conn), closeDown
 	}
 
-	contract := auth.SessionRepositoryContract{
+	contract := web.SessionRepositoryContract{
 		Repo: init,
 	}
 

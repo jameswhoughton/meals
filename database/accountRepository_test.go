@@ -7,11 +7,11 @@ import (
 	"testing"
 
 	"github.com/jameswhoughton/meals/database"
-	"github.com/jameswhoughton/meals/internal/auth"
+	"github.com/jameswhoughton/meals/internal/account"
 )
 
-func TestDatabaseUserService(t *testing.T) {
-	init := func() (auth.UserRepository, func()) {
+func TestDatabaseAccountRepository(t *testing.T) {
+	init := func() (account.Repository, func()) {
 		conn, err := sql.Open("sqlite3", "meals.db")
 
 		if err != nil {
@@ -27,10 +27,10 @@ func TestDatabaseUserService(t *testing.T) {
 		closeDown := func() {
 			os.Remove("meals.db")
 		}
-		return database.NewUserRespository(conn), closeDown
+		return database.NewAccountRespository(conn), closeDown
 	}
 
-	contract := auth.UserRepositoryContract{
+	contract := account.RepositoryContract{
 		Repo: init,
 	}
 

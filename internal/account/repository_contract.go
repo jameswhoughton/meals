@@ -8,11 +8,11 @@ import (
 	"time"
 )
 
-type AccountRepositoryContract struct {
+type RepositoryContract struct {
 	Repo func() (Repository, func())
 }
 
-func (c *AccountRepositoryContract) Test(t *testing.T) {
+func (c *RepositoryContract) Test(t *testing.T) {
 	t.Run("Can add, update and retrieve a user", func(t *testing.T) {
 		repo, closeDown := c.Repo()
 		defer closeDown()

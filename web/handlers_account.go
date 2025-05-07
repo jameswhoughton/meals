@@ -1,4 +1,4 @@
-package auth
+package web
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/jameswhoughton/meals/internal/account"
 	"github.com/jameswhoughton/meals/web/helpers"
 )
 
@@ -39,7 +40,7 @@ func GetRegistrationHandler(templateFiles fs.FS) http.Handler {
 			return
 		}
 
-		formData := UserFormCreate{}
+		formData := account.UserFormCreate{}
 
 		if formJson != "" {
 			json.Unmarshal([]byte(formJson), &formData)
@@ -47,7 +48,7 @@ func GetRegistrationHandler(templateFiles fs.FS) http.Handler {
 
 		type templateData struct {
 			Title string
-			Form  UserFormCreate
+			Form  account.UserFormCreate
 		}
 
 		tmpl.ExecuteTemplate(w, "layout", templateData{
@@ -57,20 +58,20 @@ func GetRegistrationHandler(templateFiles fs.FS) http.Handler {
 	})
 }
 
-func PostRegistrationHandler(userService UserService) http.Handler {
+func PostRegistrationHandler(service account.Service) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 
-		form := UserFormCreate{
+		form := account.UserFormCreate{
 			Email:           r.FormValue("email"),
 			Password:        r.FormValue("password"),
 			PasswordConfirm: r.FormValue("passwordConfirm"),
 			Name:            r.FormValue("name"),
 		}
 
-		_, err := userService.CreateUser(&form)
+		_, err := service.CreateUser(r.Context(), &form)
 
-		if err != nil && errors.Is(err, ErrorFormInvalid{}) {
+		if err != nil && errors.Is(err, account.ErrorFormInvalid{}) {
 			formJson, _ := json.Marshal(form)
 			helpers.SetMessage(w, "formData", string(formJson))
 
@@ -82,6 +83,8 @@ func PostRegistrationHandler(userService UserService) http.Handler {
 		if err != nil {
 			log.Println(err)
 			http.Error(w, "server error", http.StatusInternalServerError)
+
+			return
 		}
 
 		helpers.SetMessage(w, "success", "Your account has been created, please login below")
@@ -90,7 +93,7 @@ func PostRegistrationHandler(userService UserService) http.Handler {
 	})
 }
 
-func GetAccountHandler(templateFiles fs.FS, userService UserService) http.Handler {
+func GetAccountHandler(templateFiles fs.FS, service SessionService) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(templateFiles, "templates/layout.gohtml", "templates/navigation.gohtml", "templates/pages/auth/account.gohtml")
 
@@ -109,7 +112,7 @@ func GetAccountHandler(templateFiles fs.FS, userService UserService) http.Handle
 			return
 		}
 
-		user, err := userService.GetUserFromSession(session.Value)
+		user, err := service.UserFromSession(r.Context(), session.Value)
 
 		if err != nil {
 			log.Println(err)
@@ -121,7 +124,7 @@ func GetAccountHandler(templateFiles fs.FS, userService UserService) http.Handle
 		type templateData struct {
 			Title   string
 			Success string
-			Form    UserFormUpdate
+			Form    account.UserFormUpdate
 		}
 
 		success, err := helpers.GetMessage(w, r, "success")
@@ -142,7 +145,7 @@ func GetAccountHandler(templateFiles fs.FS, userService UserService) http.Handle
 			return
 		}
 
-		formData := UserFormUpdate{
+		formData := account.UserFormUpdate{
 			Name:         user.Name,
 			Email:        user.Email,
 			MealStartDay: user.MealStartDay,
@@ -164,7 +167,7 @@ func GetAccountHandler(templateFiles fs.FS, userService UserService) http.Handle
 	})
 }
 
-func PutAccountHandler(userService UserService) http.Handler {
+func PutAccountHandler(accountService account.Service, sessionService SessionService) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		session, err := r.Cookie("session")
 
@@ -175,7 +178,7 @@ func PutAccountHandler(userService UserService) http.Handler {
 			return
 		}
 
-		user, err := userService.GetUserFromSession(session.Value)
+		user, err := sessionService.UserFromSession(r.Context(), session.Value)
 
 		if err != nil {
 			log.Println(err)
@@ -197,7 +200,7 @@ func PutAccountHandler(userService UserService) http.Handler {
 			return
 		}
 
-		form := UserFormUpdate{
+		form := account.UserFormUpdate{
 			Id:           user.Id,
 			Email:        r.FormValue("email"),
 			Name:         r.FormValue("name"),
@@ -209,9 +212,9 @@ func PutAccountHandler(userService UserService) http.Handler {
 			form.PasswordConfirm = passwordConfirm
 		}
 
-		err = userService.UpdateUser(&form)
+		err = accountService.UpdateUser(r.Context(), &form)
 
-		if err != nil && errors.Is(err, ErrorFormInvalid{}) {
+		if err != nil && errors.Is(err, account.ErrorFormInvalid{}) {
 			formJson, _ := json.Marshal(form)
 			helpers.SetMessage(w, "formData", string(formJson))
 
@@ -278,13 +281,13 @@ func GetLoginHandler(templateFiles fs.FS) http.Handler {
 	})
 }
 
-func PostLoginHandler(userService UserService) http.Handler {
+func PostLoginHandler(accountService account.Service, sessionService SessionService) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 
 		email, password := r.FormValue("email"), r.FormValue("password")
 
-		user, err := userService.GetUserFromCredentials(email, password)
+		user, err := accountService.GetUserFromCredentials(r.Context(), email, password)
 
 		if err != nil {
 			log.Println(err)
@@ -293,7 +296,7 @@ func PostLoginHandler(userService UserService) http.Handler {
 			return
 		}
 
-		session, err := userService.CreateSession(user.Id)
+		session, err := sessionService.CreateForUser(r.Context(), user.Id)
 
 		if err != nil {
 			w.WriteHeader(500)
@@ -301,7 +304,7 @@ func PostLoginHandler(userService UserService) http.Handler {
 			return
 		}
 
-		userSession := http.Cookie{
+		sessionCookie := http.Cookie{
 			Name:     "session",
 			Value:    session.SessionId,
 			Path:     "/",
@@ -311,13 +314,13 @@ func PostLoginHandler(userService UserService) http.Handler {
 			SameSite: http.SameSiteStrictMode,
 		}
 
-		http.SetCookie(w, &userSession)
+		http.SetCookie(w, &sessionCookie)
 
 		http.Redirect(w, r, "/account", http.StatusFound)
 	})
 }
 
-func GetLogoutHandler(userService UserService) http.Handler {
+func GetLogoutHandler(service account.Service, session SessionRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		currentSesion, err := r.Cookie("session")
 
@@ -326,7 +329,7 @@ func GetLogoutHandler(userService UserService) http.Handler {
 			http.Error(w, "server error", http.StatusInternalServerError)
 		}
 
-		err = userService.sessionRepo.Destroy(currentSesion.Value)
+		err = session.Destroy(r.Context(), currentSesion.Value)
 
 		if err != nil {
 			log.Println(err)
@@ -349,7 +352,7 @@ func GetLogoutHandler(userService UserService) http.Handler {
 	})
 }
 
-func NewIsAuthenticatedMiddleware(userService UserService) middleware {
+func NewIsAuthenticatedMiddleware(accountService account.Service, sessionService SessionService) middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -366,7 +369,7 @@ func NewIsAuthenticatedMiddleware(userService UserService) middleware {
 				return
 			}
 
-			user, err := userService.GetUserFromSession(session.Value)
+			user, err := sessionService.UserFromSession(r.Context(), session.Value)
 
 			if err != nil {
 				if errors.Is(err, ErrorSessionNotFound{}) {

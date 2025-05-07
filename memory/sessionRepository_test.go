@@ -3,18 +3,18 @@ package memory_test
 import (
 	"testing"
 
-	"github.com/jameswhoughton/meals/internal/auth"
 	"github.com/jameswhoughton/meals/memory"
+	"github.com/jameswhoughton/meals/web"
 )
 
 func TestMemorySessionService(t *testing.T) {
-	init := func() (auth.SessionRepository, func()) {
+	init := func() (web.SessionRepository, func()) {
 		return &memory.SessionRepository{
-			Store: []auth.Session{},
+			Store: []web.Session{},
 		}, func() {}
 	}
 
-	contract := auth.SessionRepositoryContract{
+	contract := web.SessionRepositoryContract{
 		Repo: init,
 	}
 

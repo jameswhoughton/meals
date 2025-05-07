@@ -2,21 +2,12 @@ package account
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"fmt"
 	"log"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
-
-func GenerateKey() string {
-	key := make([]byte, 32)
-	rand.Read(key)
-
-	return base64.StdEncoding.EncodeToString(key)
-}
 
 func validateName(name string) (bool, string) {
 	if len(name) == 0 {

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/jameswhoughton/meals/database"
-	"github.com/jameswhoughton/meals/internal/auth"
+	"github.com/jameswhoughton/meals/internal/account"
 	"github.com/jameswhoughton/meals/internal/meals"
 	"github.com/jameswhoughton/meals/web"
 	_ "github.com/mattn/go-sqlite3"
@@ -34,26 +34,29 @@ func main() {
 	rootCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	userRepository := database.NewUserRespository(conn)
+	accountRepository := database.NewAccountRespository(conn)
 	sessionRepsoitory := database.NewSessionRepository(conn)
 	mealRepository := database.NewMealRepository(conn)
 	ingredientRepository := database.NewIngredientRepository(conn)
 	tagRepository := database.NewTagRepository(conn)
 
-	userService := auth.NewUserService(userRepository, sessionRepsoitory, 3600)
+	accountService := account.NewService(accountRepository)
 	mealService := meals.NewService(mealRepository, ingredientRepository, tagRepository)
+	sessionService := web.NewSessionService(accountRepository, sessionRepsoitory, 600)
 
 	ongoingCtx, stopOngoningGracefully := context.WithCancel(context.Background())
 	port := "8000"
 	server := web.NewServer(
 		ongoingCtx,
 		port,
-		&userService,
+		&accountService,
 		&mealService,
-		userRepository,
+		sessionService,
+		accountRepository,
 		mealRepository,
 		ingredientRepository,
 		tagRepository,
+		sessionRepsoitory,
 	)
 
 	go func() {
