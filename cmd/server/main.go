@@ -43,7 +43,7 @@ func main() {
 
 	accountService := account.NewService(accountRepository)
 	mealService := meals.NewService(mealRepository, ingredientRepository, tagRepository)
-	sessionService := web.NewSessionService(accountRepository, sessionRepsoitory, 600)
+	sessionService := web.NewSessionService(accountRepository, sessionRepsoitory, 3600)
 
 	ongoingCtx, stopOngoningGracefully := context.WithCancel(context.Background())
 	port := "8000"

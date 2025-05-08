@@ -70,9 +70,9 @@ func (ss *SessionService) UserFromSession(ctx context.Context, sessionId string)
 		return account.User{}, fmt.Errorf("error fetching session: %w", err)
 	}
 
-	expiredTime := time.Now().Add(-time.Duration(ss.SessionLifetime) * time.Second)
+	expiredTime := time.Now().Add(-time.Duration(ss.SessionLifetime) * time.Second).UTC()
 
-	if session.UpdatedAt.Before(expiredTime) {
+	if session.UpdatedAt.UTC().Before(expiredTime) {
 		ss.SessionRepo.Destroy(ctx, sessionId)
 
 		return account.User{}, fmt.Errorf("Session has expired")
