@@ -70,7 +70,7 @@ func (sr *SessionRepository) DestroyExpired(ctx context.Context, expiredTime tim
 }
 
 func (sr *SessionRepository) Refresh(ctx context.Context, sessionId string) error {
-	_, err := sr.db.ExecContext(ctx, "UPDATE sessions SET updated_at = NOW() WHERE session_id = ?", sessionId)
+	_, err := sr.db.ExecContext(ctx, "UPDATE sessions SET updated_at = DATETIME('now') WHERE session_id = ?", sessionId)
 
 	if err != nil {
 		return fmt.Errorf("error refreshing session: %v", err)
