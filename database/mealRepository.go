@@ -212,6 +212,10 @@ func (mr *MealRepository) Find(ctx context.Context, filter meals.MealFilter) ([]
 			return mealList, fmt.Errorf("MealRepository.List: row parse error: %v", err)
 		}
 
+		tags, _ := mr.getTagsForMeal(ctx, meal.Id)
+
+		meal.Tags = tags
+
 		mealList = append(mealList, meal)
 	}
 

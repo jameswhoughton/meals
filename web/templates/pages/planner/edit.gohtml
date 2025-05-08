@@ -1,0 +1,61 @@
+
+{{define "body"}}
+<div class="bg-zinc-800 p-6 rounded-md shadow-md w-full h-full">
+    <h1 class="text-xl mb-6">{{.Title}}</h1>
+    <p class="mb-2">Choose a meal below</p>
+    {{if .Meal.Id}}
+    <p class="mb-2"><strong>Current Meal:</strong> {{.Meal.Name}}</p>
+    {{end}}
+    <form class="flex items-center gap-2 justify-end mb-4" action="/planner/{{.Date}}" method="GET">
+        {{range .Tags}}
+        <label><input type="checkbox" name="tags" value="{{.Id}}" {{if contains $.FilterTags .Id}}checked{{end}}/> {{.Name}}</label>
+        {{end}}
+        <input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" name="query" placeholder="Search" value="{{.FilterSearch}}" />
+        <button class="py-2 px-1.5 rounded-md bg-cyan-800 hover:bg-cyan-900 transition-colors w-auto">Search</button>
+        {{if or (gt (len .FilterTags) 0) (ne .FilterSearch "")}}
+        <a class="py-2 px-1.5 rounded-md bg-red-700 hover:bg-red-800 transition-colors w-auto" href="/planner/{{.Date}}">Reset</a>
+        {{end}}
+    </form>
+    {{if gt (len .Meals) 0}}
+    <table class="w-full text-sm text-left rtl:text-right">
+            <thead class="uppercase bg-zinc-700">
+                    <tr>
+                            <td class="px-6 py-3"></td>
+                            <td class="px-6 py-3">Name</td>
+                            <td class="px-6 py-3">Tags</td>
+                            <td class="px-6 py-3"></td>
+                    </tr>
+            </thead>
+            <tbody>
+                    {{range .Meals}}
+                    <tr class="border-b bg-zinc-800 border-zinc-600">
+                            <td class="px-6 py-4">
+                                <input type="radio" name="mealId" value="{{.Id}}" {{if eq .Id $.Meal.Id}}selected{{end}} />
+                            </td>
+                            <td class="px-6 py-4"><a class="text-cyan-400 hover:text-cyan-500 transition-colors underline" href="/meals/{{.Id}}">{{.Name}}</a></td>
+                            <td class="px-6 py-4 flex gap-2">
+                                {{range .Tags}}
+                                <div class="border rounded-lg p-2">{{.Name}}</div>
+                                {{end}}
+                            </td>
+                    </tr>
+                    {{end}}
+            </tbody>
+    </table>
+    {{else}}
+    <div class="bg-zinc-700 h-[400px] rounded flex items-center justify-center">
+            <div class="flex flex-col gap-8 items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                    </svg>
+                    <h2 class="text-2xl">No Meals</h2>
+                    {{if eq .FilterSearch ""}}
+                    <p>There are no meals in the system, Use the 'create a meal' button to get started.
+                    {{else}}
+                    <p>Try a different search.</p>
+                    {{end}}
+            </div>
+    </div>
+    {{end}}
+</div>
+{{end}}

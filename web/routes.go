@@ -12,7 +12,6 @@ import (
 )
 
 //go:embed templates/*.gohtml
-//go:embed templates/**/*.gohtml
 //go:embed templates/**/**/*.gohtml
 //go:embed templates/**/**/**/*.gohtml
 var templateFiles embed.FS
@@ -88,7 +87,7 @@ func AddRoutes(
 
 	// Planner
 	mux.Handle("GET /planner", isAuthed(GetPlannerHandler(templateFiles, plannerRepository, accountRepository)))
-	mux.Handle("GET /planner/{date}", isAuthed(GetPlannerHandler(templateFiles, plannerRepository, accountRepository)))
+	mux.Handle("GET /planner/{date}", isAuthed(GetEditDayHandler(templateFiles, plannerRepository, mealRepository, tagRepository)))
 
 	// API
 	mux.Handle("GET /api/ingredients", isAuthed(GetSearchIngredientsHandler(ingredientRepository)))

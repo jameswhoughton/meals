@@ -137,3 +137,5 @@ func (rc *SessionRepositoryContract) Test(t *testing.T) {
 		}
 	})
 }
+
+// Test that Refresh updates the UpdatedAt field

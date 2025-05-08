@@ -40,6 +40,7 @@
 - [x] Move auth handlers to web
 - [ ] Add tests for auth handlers
 - [ ] Add confirmation modal for deletion
+- [ ] Add test for SessionRepository.Refresh
 
 ## Bugs
 

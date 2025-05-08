@@ -37,7 +37,7 @@ func (pr *PlannerRepository) Add(ctx context.Context, date time.Time, mealId int
 	return nil
 }
 
-func (pr *PlannerRepository) Get(ctx context.Context, date time.Time, userId int) (*planner.Meal, error) {
+func (pr *PlannerRepository) Get(ctx context.Context, date time.Time, userId int) (planner.Meal, error) {
 	var meal planner.Meal
 
 	err := pr.db.QueryRowContext(ctx, `
@@ -52,13 +52,13 @@ func (pr *PlannerRepository) Get(ctx context.Context, date time.Time, userId int
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("Planner Repository: No meal set for user %d on date %s: %w", userId, date, err)
+			return meal, fmt.Errorf("Planner Repository: No meal set for user %d on date %s: %w", userId, date, err)
 		}
 
-		return &meal, fmt.Errorf("PlannerRepository: Unable to fetch meal for date: %v", err)
+		return meal, fmt.Errorf("PlannerRepository: Unable to fetch meal for date: %v", err)
 	}
 
-	return &meal, nil
+	return meal, nil
 }
 
 func (pr *PlannerRepository) Clear(ctx context.Context, date time.Time, userId int) error {

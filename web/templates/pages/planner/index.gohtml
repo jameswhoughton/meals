@@ -1,0 +1,21 @@
+{{define "body"}}
+<div class="bg-zinc-800 p-6 rounded-md shadow-md w-full h-full">
+    <div class="flex justify-between items-center mb-4">
+        <a class="py-2 px-1.5 rounded-md bg-cyan-800 hover:bg-cyan-900 transition-colors w-auto" href="/planner?date={{.Previous}}">Previous week</a>
+        <a class="py-2 px-1.5 rounded-md bg-cyan-800 hover:bg-cyan-900 transition-colors w-auto" href="/planner?date={{.Next}}">Next week</a>
+    </div>
+    <div class="flex flex-wrap gap-3 w-full">
+        {{range .Days}}
+        <div class="grow border border-zinc-600 rounded p-3 flex flex-col justify-between min-h-48">
+            <div class="">{{.Label}}</div>
+            {{if .Meal}}
+            <div>{{.Meal.Name}}</div>
+            {{end}}
+            <a href="/planner/{{.Date}}" class="self-end justify-end hover:bg-slate-700 transition-colors rounded-md p-1">
+                <img class="w-6 h-6" src="/static/icons/edit.svg" alt="Edit day" />
+            </a>
+        </div>
+        {{end}}
+    </div>
+</div>
+{{end}}
