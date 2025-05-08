@@ -172,7 +172,7 @@ func GetEditDayHandler(templateFiles fs.FS, plannerRepo planner.Repository, meal
 		}
 
 		tmpl.ExecuteTemplate(w, "layout", templateData{
-			Title:        "Editing " + dateLabel(parsedDate),
+			Title:        dateLabel(parsedDate),
 			Date:         parsedDate.Format("2006-01-02"),
 			Meal:         meal,
 			Meals:        filteredMeals,
@@ -180,5 +180,43 @@ func GetEditDayHandler(templateFiles fs.FS, plannerRepo planner.Repository, meal
 			FilterSearch: filterSearch,
 			FilterTags:   filterTags,
 		})
+	})
+}
+
+func PostEditDayHandler(plannerRepo planner.Repository) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userId := r.Context().Value("userId").(int)
+
+		parsedDate, err := time.Parse("2006-01-02", r.PathValue("date"))
+
+		if err != nil {
+			http.Error(w, "Invalid date", http.StatusBadRequest)
+
+			return
+		}
+
+		mealId := r.FormValue("meal_id")
+		clearMeal := r.FormValue("action") == "clear"
+
+		plannerRepo.Clear(r.Context(), parsedDate, userId)
+
+		if !clearMeal && mealId != "" {
+			mealId, err := strconv.Atoi(mealId)
+
+			if err != nil {
+				http.Error(w, "Meal ID must be an integer", http.StatusBadRequest)
+
+				return
+			}
+			err = plannerRepo.Add(r.Context(), parsedDate, mealId)
+
+			if err != nil {
+				http.Error(w, "Server error: unable to save meal to date", http.StatusInternalServerError)
+
+				return
+			}
+		}
+
+		http.Redirect(w, r, "/planner?date="+r.PathValue("date"), http.StatusFound)
 	})
 }

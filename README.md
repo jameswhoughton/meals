@@ -52,7 +52,7 @@ This is the main web app executeable.
     - [x] Delete a meal
     - [x] Edit ingredients
     - [x] Edit tags
-    - [ ] Assign a meal to a day
+    - [x] Assign a meal to a day
     - [ ] Generate an ingredients list
 
 ## Build and run

@@ -88,6 +88,7 @@ func AddRoutes(
 	// Planner
 	mux.Handle("GET /planner", isAuthed(GetPlannerHandler(templateFiles, plannerRepository, accountRepository)))
 	mux.Handle("GET /planner/{date}", isAuthed(GetEditDayHandler(templateFiles, plannerRepository, mealRepository, tagRepository)))
+	mux.Handle("POST /planner/{date}", isAuthed(PostEditDayHandler(plannerRepository)))
 
 	// API
 	mux.Handle("GET /api/ingredients", isAuthed(GetSearchIngredientsHandler(ingredientRepository)))

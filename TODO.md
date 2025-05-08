@@ -16,14 +16,14 @@
     - [x] Add edit tag page
     - [x] Add new TagRepository
     - [x] Update existing tests
-- [ ] Create planner page
+- [x] Create planner page
     - [x] Add account config for week start day
-    - [ ] page listing days of the week from user's start day
-    - [ ] Each day shows the name of the chosen meal or a button to add one
-    - [ ] Days with meals have an edit/delete button
-    - [ ] Can search for meals by name or filter by tag
+    - [x] page listing days of the week from user's start day
+    - [x] Each day shows the name of the chosen meal or a button to add one
+    - [x] Days with meals have an edit/delete button
+    - [x] Can search for meals by name or filter by tag
 - [x] Ensure session cookie refreshes on request
-- [ ] Background pattern
+- [ ] Add background pattern
 - [x] Remove requirement to provide a unit
 - [ ] Show success messages when creating/updating meals
 - [ ] Meal/ingredient/tag pagination
@@ -41,6 +41,8 @@
 - [ ] Add tests for auth handlers
 - [ ] Add confirmation modal for deletion
 - [ ] Add test for SessionRepository.Refresh
+- [ ] Add validation to restrict user to assigning only their own meals
+- [ ] Review and polish UI
 
 ## Bugs
 
@@ -54,3 +56,4 @@
     - [ ] Integrate email service
     - [ ] Configure mailhog/mailtrap with Docker
 - [ ] Meal import/export
+- [ ] Add default filters for days
