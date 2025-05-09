@@ -37,11 +37,10 @@ func main() {
 	accountRepository := database.NewAccountRespository(conn)
 	sessionRepsoitory := database.NewSessionRepository(conn)
 	mealRepository := database.NewMealRepository(conn)
-	tagRepository := database.NewTagRepository(conn)
 	plannerRepository := database.NewPlannerRepository(conn)
 
 	accountService := account.NewService(accountRepository)
-	mealService := meals.NewService(mealRepository, tagRepository)
+	mealService := meals.NewService(mealRepository)
 	sessionService := web.NewSessionService(accountRepository, sessionRepsoitory, 3600)
 
 	ongoingCtx, stopOngoningGracefully := context.WithCancel(context.Background())
@@ -54,7 +53,6 @@ func main() {
 		sessionService,
 		accountRepository,
 		mealRepository,
-		tagRepository,
 		sessionRepsoitory,
 		plannerRepository,
 	)

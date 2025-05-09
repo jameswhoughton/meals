@@ -112,10 +112,10 @@ func GetPlannerHandler(templateFiles fs.FS, plannerRepo planner.Repository, acco
 	})
 }
 
-func GetEditDayHandler(templateFiles fs.FS, plannerRepo planner.Repository, mealRepo meals.MealRepository, tagRepo meals.TagRepository) http.Handler {
+func GetEditDayHandler(templateFiles fs.FS, plannerRepo planner.Repository, mealRepo meals.Repository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		contains := func(tags []int, id int) bool {
-			return slices.Contains(tags, id)
+		contains := func(tags []string, name string) bool {
+			return slices.Contains(tags, name)
 		}
 
 		funcMap := template.FuncMap{
@@ -147,9 +147,9 @@ func GetEditDayHandler(templateFiles fs.FS, plannerRepo planner.Repository, meal
 		r.ParseForm()
 
 		filterSearch := r.Form.Get("query")
-		filterTags := make([]int, len(r.Form["tags"]))
+		filterTags := make([]string, len(r.Form["tags"]))
 		for i := range len(r.Form["tags"]) {
-			filterTags[i], _ = strconv.Atoi(r.Form["tags"][i])
+			filterTags[i] = r.Form["tags"][i]
 		}
 		filter := meals.MealFilter{
 			UserId: userId,
@@ -159,16 +159,16 @@ func GetEditDayHandler(templateFiles fs.FS, plannerRepo planner.Repository, meal
 
 		filteredMeals, err := mealRepo.Find(r.Context(), filter)
 
-		tags, err := tagRepo.Find(r.Context(), "", userId)
+		tags, err := mealRepo.TagNamesForUser(r.Context(), userId)
 
 		type templateData struct {
 			Title        string
 			Date         string
 			Meal         planner.Meal
 			Meals        []meals.Meal
-			Tags         []meals.Tag
+			Tags         []string
 			FilterSearch string
-			FilterTags   []int
+			FilterTags   []string
 		}
 
 		tmpl.ExecuteTemplate(w, "layout", templateData{

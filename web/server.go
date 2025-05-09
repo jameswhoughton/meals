@@ -17,14 +17,13 @@ func NewServer(
 	mealService *meals.Service,
 	sessionService *SessionService,
 	accountRepository account.Repository,
-	mealRepository meals.MealRepository,
-	tagRepository meals.TagRepository,
+	mealRepository meals.Repository,
 	sessionRepository SessionRepository,
 	plannerRepository planner.Repository,
 ) *http.Server {
 	mux := http.NewServeMux()
 
-	AddRoutes(mux, *accountService, *mealService, *sessionService, accountRepository, mealRepository, tagRepository, sessionRepository, plannerRepository)
+	AddRoutes(mux, *accountService, *mealService, *sessionService, accountRepository, mealRepository, sessionRepository, plannerRepository)
 
 	return &http.Server{
 		Addr:        ":" + port,

@@ -11,8 +11,7 @@ import (
 
 func TestValidationErrorsWhenCreatingAMeal(t *testing.T) {
 	mealRepository := memory.MealRepository{}
-	tagRepository := memory.TagRepository{}
-	service := meals.NewService(&mealRepository, &tagRepository)
+	service := meals.NewService(&mealRepository)
 
 	ctx := context.Background()
 
@@ -76,8 +75,7 @@ func TestValidationErrorsWhenCreatingAMeal(t *testing.T) {
 
 func TestServiceCanCreateAMeal(t *testing.T) {
 	mealRepository := memory.MealRepository{}
-	tagRepository := memory.TagRepository{}
-	service := meals.NewService(&mealRepository, &tagRepository)
+	service := meals.NewService(&mealRepository)
 
 	ctx := context.Background()
 
@@ -125,8 +123,7 @@ func TestServiceCanCreateAMeal(t *testing.T) {
 
 func TestValidationErrorsWhenUpdatingAMeal(t *testing.T) {
 	mealRepository := memory.MealRepository{}
-	tagRepository := memory.TagRepository{}
-	service := meals.NewService(&mealRepository, &tagRepository)
+	service := meals.NewService(&mealRepository)
 
 	ctx := context.Background()
 
@@ -196,8 +193,7 @@ func TestServiceCanUpdateAMeal(t *testing.T) {
 			},
 		},
 	}
-	tagRepository := memory.TagRepository{}
-	service := meals.NewService(&mealRepository, &tagRepository)
+	service := meals.NewService(&mealRepository)
 
 	ctx := context.Background()
 

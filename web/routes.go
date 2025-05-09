@@ -25,8 +25,7 @@ func AddRoutes(
 	mealService meals.Service,
 	sessionService SessionService,
 	accountRepository account.Repository,
-	mealRepository meals.MealRepository,
-	tagRepository meals.TagRepository,
+	mealRepository meals.Repository,
 	sessionRepository SessionRepository,
 	plannerRepository planner.Repository,
 ) {
@@ -74,17 +73,12 @@ func AddRoutes(
 	mux.Handle("POST /meals/{id}", isAuthed(PutMealHandler(mealService, mealRepository)))
 	mux.Handle("POST /meals/{id}/delete", isAuthed(PostDeleteMealHandler(mealRepository)))
 
-	// Tags
-	mux.Handle("GET /tags", isAuthed(GetTagsHandler(templateFiles, tagRepository)))
-	mux.Handle("GET /tags/{id}", isAuthed(GetTagHandler(templateFiles, tagRepository)))
-	mux.Handle("POST /tags/{id}", isAuthed(PutTagHandler(mealService, tagRepository)))
-
 	// Planner
 	mux.Handle("GET /planner", isAuthed(GetPlannerHandler(templateFiles, plannerRepository, accountRepository)))
-	mux.Handle("GET /planner/{date}", isAuthed(GetEditDayHandler(templateFiles, plannerRepository, mealRepository, tagRepository)))
+	mux.Handle("GET /planner/{date}", isAuthed(GetEditDayHandler(templateFiles, plannerRepository, mealRepository)))
 	mux.Handle("POST /planner/{date}", isAuthed(PostEditDayHandler(plannerRepository)))
 
 	// API
 	mux.Handle("GET /api/ingredients", isAuthed(GetSearchIngredientsHandler(mealRepository)))
-	mux.Handle("GET /api/tags", isAuthed(GetSearchTagHandler(tagRepository)))
+	mux.Handle("GET /api/tags", isAuthed(GetSearchTagHandler(mealRepository)))
 }

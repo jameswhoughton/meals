@@ -7,8 +7,7 @@ import (
 )
 
 type Service struct {
-	meals MealRepository
-	tags  TagRepository
+	meals Repository
 }
 
 type ErrorFormInvalid struct{}
@@ -17,36 +16,8 @@ func (e ErrorFormInvalid) Error() string {
 	return "Form invalid"
 }
 
-func NewService(m MealRepository, t TagRepository) Service {
-	return Service{m, t}
-}
-
-func (s *Service) populateTagIds(ctx context.Context, meal *Meal) error {
-	tagNames := make([]string, len(meal.Tags))
-
-	for i, tag := range meal.Tags {
-		if tag.Id > 0 {
-			continue
-		}
-
-		tagNames[i] = tag.Name
-	}
-
-	tagIds, err := s.tags.FromNames(ctx, tagNames, meal.UserId)
-
-	if err != nil {
-		return err
-	}
-
-	for i, name := range tagNames {
-		if tagIds[name] == 0 {
-			continue
-		}
-
-		meal.Tags[i].Id = tagIds[name]
-	}
-
-	return nil
+func NewService(m Repository) Service {
+	return Service{m}
 }
 
 func (s *Service) CreateMeal(ctx context.Context, meal *Meal) (Meal, error) {
@@ -56,8 +27,6 @@ func (s *Service) CreateMeal(ctx context.Context, meal *Meal) (Meal, error) {
 
 	meal.CreatedAt = time.Now()
 	meal.UpdatedAt = time.Now()
-
-	s.populateTagIds(ctx, meal)
 
 	createdMeal, err := s.meals.Create(ctx, *meal)
 
@@ -75,26 +44,10 @@ func (s *Service) UpdateMeal(ctx context.Context, meal *Meal) error {
 
 	meal.UpdatedAt = time.Now()
 
-	s.populateTagIds(ctx, meal)
-
 	err := s.meals.Update(ctx, *meal)
 
 	if err != nil {
 		return fmt.Errorf("Error updating meal: %v", err)
-	}
-
-	return nil
-}
-
-func (s *Service) UpdateTag(ctx context.Context, tag *Tag) error {
-	if isValid := tag.Validate(); !isValid {
-		return ErrorFormInvalid{}
-	}
-
-	err := s.tags.Update(ctx, *tag)
-
-	if err != nil {
-		return fmt.Errorf("Error updating tag: %v", err)
 	}
 
 	return nil

@@ -50,11 +50,9 @@ func (mr *MealRepository) getIngredientsForMeal(ctx context.Context, id int) ([]
 
 func (mr *MealRepository) getTagsForMeal(ctx context.Context, id int) ([]meals.Tag, error) {
 	query := `
-	SELECT tag_id, t.user_id, t.name
-	FROM meals_tags mt
-	LEFT JOIN tags t
-	ON mt.tag_id = t.id
-	WHERE mt.meal_id = ?
+	SELECT id, name
+	FROM meal_tags mt
+	WHERE meal_id = ?
 	`
 
 	var tags []meals.Tag
@@ -70,7 +68,7 @@ func (mr *MealRepository) getTagsForMeal(ctx context.Context, id int) ([]meals.T
 	for rows.Next() {
 		var tag meals.Tag
 
-		rows.Scan(&tag.Id, &tag.UserId, &tag.Name)
+		rows.Scan(&tag.Id, &tag.Name)
 
 		tags = append(tags, tag)
 	}
@@ -139,7 +137,7 @@ func (mr *MealRepository) Find(ctx context.Context, filter meals.MealFilter) ([]
 	`
 
 	if filter.Name != nil {
-		wheres = append(wheres, "AND name LIKE ?")
+		wheres = append(wheres, "AND m.name LIKE ?")
 		values = append(values, "%"+*filter.Name+"%")
 	}
 
@@ -151,10 +149,10 @@ func (mr *MealRepository) Find(ctx context.Context, filter meals.MealFilter) ([]
 			values = append(values, v)
 		}
 
-		wheres = append(wheres, "AND tag_id IN ("+strings.Join(params, ", ")+")")
+		wheres = append(wheres, "AND t.name IN ("+strings.Join(params, ", ")+")")
 
 		query += `
-		LEFT JOIN meals_tags t
+		LEFT JOIN meal_tags t
 		ON m.id = t.meal_id
 		`
 	}
@@ -162,8 +160,10 @@ func (mr *MealRepository) Find(ctx context.Context, filter meals.MealFilter) ([]
 	query += "WHERE 1 = 1 " + strings.Join(wheres, " ")
 
 	if len(filter.Tags) > 0 {
-		query += "GROUP BY m.id HAVING COUNT(DISTINCT tag_id) = " + strconv.Itoa(len(filter.Tags))
+		query += "GROUP BY m.id HAVING COUNT(DISTINCT t.name) = " + strconv.Itoa(len(filter.Tags))
 	}
+
+	fmt.Println(query, values)
 
 	rows, err := mr.db.QueryContext(ctx, query, values...)
 
@@ -226,27 +226,8 @@ func updateIngredient(ctx context.Context, tx *sql.Tx, ingredient meals.Ingredie
 	return nil
 }
 
-func removeOrphanedIngredients(ctx context.Context, tx *sql.Tx) error {
-	_, err := tx.ExecContext(ctx, `
-	DELETE FROM ingredients
-	WHERE id IN (
-		SELECT i.id
-		FROM ingredients i
-		LEFT JOIN ingredients_meals im
-		ON i.id = im.ingredient_id
-		WHERE im.meal_id IS NULL
-	)
-	`)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func createTag(ctx context.Context, tx *sql.Tx, userId int, name string) (int, error) {
-	result, err := tx.ExecContext(ctx, "INSERT INTO tags (user_id, name) VALUES (?, ?)", userId, name)
+func createTag(ctx context.Context, tx *sql.Tx, mealId int, name string) (int, error) {
+	result, err := tx.ExecContext(ctx, "INSERT INTO meal_tags (meal_id, name) VALUES (?, ?)", mealId, name)
 
 	if err != nil {
 		return 0, err
@@ -261,38 +242,12 @@ func createTag(ctx context.Context, tx *sql.Tx, userId int, name string) (int, e
 	return int(id), nil
 }
 
-func associateTagToMeal(ctx context.Context, tx *sql.Tx, mealId int, tagId int) error {
-	insertUpdateQuery := `
-	REPLACE INTO meals_tags
-	(tag_id, meal_id)
-	VALUES (?, ?)
-	`
-
-	_, err := tx.ExecContext(
-		ctx,
-		insertUpdateQuery,
-		tagId,
-		mealId,
-	)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func removeOrphanedTags(ctx context.Context, tx *sql.Tx) error {
+func updateTag(ctx context.Context, tx *sql.Tx, tag meals.Tag) error {
 	_, err := tx.ExecContext(ctx, `
-	DELETE FROM tags
-	WHERE id IN (
-		SELECT t.id
-		FROM tags t
-		LEFT JOIN meals_tags mt
-		ON t.id = mt.tag_id
-		WHERE mt.meal_id IS NULL
-	)
-	`)
+		UPDATE meal_tags
+		SET name = ?
+		WHERE id = ?
+	`, tag.Name, tag.Id)
 
 	if err != nil {
 		return err
@@ -337,7 +292,7 @@ func (mr *MealRepository) Create(ctx context.Context, meal meals.Meal) (meals.Me
 	meal.Id = int(id)
 
 	for i, ingredient := range meal.Ingredients {
-		id, err := createIngredient(ctx, tx, meal.UserId, ingredient)
+		id, err := createIngredient(ctx, tx, meal.Id, ingredient)
 
 		if err != nil {
 			return meal, fmt.Errorf("MealRepository.Create: Error inserting new ingredient: %v", err)
@@ -347,21 +302,13 @@ func (mr *MealRepository) Create(ctx context.Context, meal meals.Meal) (meals.Me
 	}
 
 	for i, tag := range meal.Tags {
-		if tag.Id == 0 {
-			id, err := createTag(ctx, tx, meal.UserId, tag.Name)
-
-			if err != nil {
-				return meal, fmt.Errorf("MealRepository.Create: Error inserting new tag: %v", err)
-			}
-
-			meal.Tags[i].Id = id
-		}
-
-		err = associateTagToMeal(ctx, tx, meal.Id, meal.Tags[i].Id)
+		id, err := createTag(ctx, tx, meal.Id, tag.Name)
 
 		if err != nil {
-			return meal, fmt.Errorf("MealRepository.Create: Error associating tag: %v", err)
+			return meal, fmt.Errorf("MealRepository.Create: Error inserting new tag: %v", err)
 		}
+
+		meal.Tags[i].Id = id
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -404,7 +351,7 @@ func (mr *MealRepository) Update(ctx context.Context, meal meals.Meal) error {
 
 	for i, ingredient := range meal.Ingredients {
 		if ingredient.Id == 0 {
-			id, err := createIngredient(ctx, tx, meal.UserId, ingredient)
+			id, err := createIngredient(ctx, tx, meal.Id, ingredient)
 
 			if err != nil {
 				return fmt.Errorf("MealRepository.Update: Error inserting new ingredient: %v", err)
@@ -453,39 +400,34 @@ func (mr *MealRepository) Update(ctx context.Context, meal meals.Meal) error {
 			}
 
 			meal.Tags[i].Id = id
+
+			deleteParams = append(deleteParams, id)
 		}
 
-		err = associateTagToMeal(ctx, tx, meal.Id, meal.Tags[i].Id)
+		err := updateTag(ctx, tx, tag)
 
 		if err != nil {
-			return fmt.Errorf("MealRepository.Update: Error associating tag: %v", err)
+			return fmt.Errorf("MealRepository.Update: Error updating existing tag: %v", err)
 		}
 
-		deleteParams = append(deleteParams, meal.Tags[i].Id)
+		deleteParams = append(deleteParams, tag.Id)
 	}
 
 	// Remove any tags no longer associated with the meal
 	deleteTagQuery := `
-	DELETE FROM meals_tags
+	DELETE FROM meal_tags
 	WHERE meal_id = ?
 	`
 
 	if len(deleteParams) > 1 {
-		deleteTagQuery += `AND tag_id NOT IN (?` + strings.Repeat(",?", len(deleteParams)-2) + `)`
+		deleteTagQuery += `AND id NOT IN (?` + strings.Repeat(",?", len(deleteParams)-2) + `)`
 
 	}
 
 	_, err = tx.ExecContext(ctx, deleteTagQuery, deleteParams...)
 
 	if err != nil {
-		return fmt.Errorf("MealRepository.Update: Error disassociating tag: %v", err)
-	}
-
-	// Remove any tags that are no longer associated with any meal
-	err = removeOrphanedTags(ctx, tx)
-
-	if err != nil {
-		return fmt.Errorf("MealRepository.Update: Error removing orphaned tags: %v", err)
+		return fmt.Errorf("MealRepository.Update: Error deleting tag: %v", err)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -512,15 +454,13 @@ func (mr *MealRepository) Destroy(ctx context.Context, id int) error {
 		return fmt.Errorf("MealRepository.Destroy: Error removing ingredients from meal (%d): %v", id, err)
 	}
 
-	if _, err := tx.ExecContext(ctx, "DELETE FROM meals_tags WHERE meal_id = ?", id); err != nil {
+	if _, err := tx.ExecContext(ctx, "DELETE FROM meal_tags WHERE meal_id = ?", id); err != nil {
 		return fmt.Errorf("MealRepository.Destroy: Error removing tags from meal (%d): %v", id, err)
 	}
 
 	if _, err := tx.ExecContext(ctx, "DELETE FROM meals WHERE id = ?", id); err != nil {
 		return fmt.Errorf("MealRepository.Destroy: Error removing meal (%d): %v", id, err)
 	}
-
-	removeOrphanedTags(ctx, tx)
 
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("MealRepository.Destroy: Error committing transaction: %v", err)
@@ -554,4 +494,58 @@ func (mr *MealRepository) FindIngredientNames(ctx context.Context, searchString 
 	}
 
 	return ingredients, nil
+}
+
+func (mr *MealRepository) FindTagNames(ctx context.Context, searchString string) ([]string, error) {
+	tags := make([]string, 0)
+
+	rows, err := mr.db.QueryContext(
+		ctx,
+		`SELECT DISTINCT name FROM meal_tags WHERE name LIKE ?`,
+		"%"+searchString+"%",
+	)
+	if err != nil {
+		return tags, fmt.Errorf("MealRepository.FindTagNames: query error: %v", err)
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var name string
+
+		if err = rows.Scan(&name); err != nil {
+			return tags, fmt.Errorf("MealRepository.FindTagNames: row parse error: %v", err)
+		}
+
+		tags = append(tags, name)
+	}
+
+	return tags, nil
+}
+
+func (mr *MealRepository) TagNamesForUser(ctx context.Context, userId int) ([]string, error) {
+	tags := make([]string, 0)
+
+	rows, err := mr.db.QueryContext(
+		ctx,
+		`SELECT DISTINCT mt.name FROM meal_tags mt LEFT JOIN meals m ON mt.meal_id = m.id WHERE m.user_id = ?`,
+		userId,
+	)
+	if err != nil {
+		return tags, fmt.Errorf("MealRepository.TagNamesForUser: query error: %v", err)
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var name string
+
+		if err = rows.Scan(&name); err != nil {
+			return tags, fmt.Errorf("MealRepository.TagNamesForUser: row parse error: %v", err)
+		}
+
+		tags = append(tags, name)
+	}
+
+	return tags, nil
 }

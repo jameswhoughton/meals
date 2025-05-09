@@ -1,5 +1,5 @@
-CREATE TABLE meals_tags (
+CREATE TABLE meal_tags (
+	id INTEGER PRIMARY KEY,
 	meal_id INTEGER,
-	tag_id INTEGER,
-	UNIQUE(meal_id, tag_id)
+	name STRING
 );

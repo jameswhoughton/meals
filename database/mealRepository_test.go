@@ -11,7 +11,7 @@ import (
 )
 
 func TestDatabaseRepository(t *testing.T) {
-	init := func() (meals.MealRepository, func()) {
+	init := func() (meals.Repository, func()) {
 		conn, err := sql.Open("sqlite3", "db")
 
 		if err != nil {
@@ -30,7 +30,7 @@ func TestDatabaseRepository(t *testing.T) {
 		return database.NewMealRepository(conn), closeDown
 	}
 
-	contract := meals.MealRepositoryContract{
+	contract := meals.RepositoryContract{
 		Repo: init,
 	}
 

@@ -14,11 +14,11 @@ type toPtrValue interface {
 
 func toPtr[T toPtrValue](v T) *T { return &v }
 
-type MealRepositoryContract struct {
-	Repo func() (MealRepository, func())
+type RepositoryContract struct {
+	Repo func() (Repository, func())
 }
 
-func (i MealRepositoryContract) Test(t *testing.T) {
+func (i RepositoryContract) Test(t *testing.T) {
 	t.Run("Can create get update and delete a meal", func(t *testing.T) {
 		repo, closeDown := i.Repo()
 		defer closeDown()
@@ -246,10 +246,10 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 
 		testCases := []testCase{
 			{
-				label: "All attributes true",
+				label: "All tags",
 				filters: MealFilter{
 					UserId: 1,
-					Tags:   []int{1, 2, 3},
+					Tags:   []string{"Quick", "Family", "Easy"},
 				},
 				expectedMeals: []int{mealA.Id},
 			},
@@ -354,6 +354,117 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 
 		for _, name := range expectedResults {
 			if !slices.Contains(ingredients, name) {
+				t.Errorf("%s missing in the result set", name)
+			}
+		}
+
+	})
+	t.Run("Can filter a list of distinct tag names", func(t *testing.T) {
+		repo, closeDown := i.Repo()
+		defer closeDown()
+
+		ctx := context.Background()
+
+		repo.Create(ctx, Meal{
+			UserId: 1,
+			Tags: []Tag{
+				{
+					Id:   2,
+					Name: "AAA",
+				},
+				{
+					Id:   1,
+					Name: "baa",
+				},
+			},
+		})
+
+		repo.Create(ctx, Meal{
+			UserId: 2,
+			Tags: []Tag{
+				{
+					Id:   9,
+					Name: "caa",
+				},
+				{
+					Id:   5,
+					Name: "Quick",
+				},
+				{
+					Id:   7,
+					Name: "Family",
+				},
+			},
+		})
+
+		searchString := "aa"
+		tags, err := repo.FindTagNames(ctx, searchString)
+
+		if err != nil {
+			t.Errorf("List Tags: Unexpected error: %v", err)
+		}
+
+		expectedResults := []string{"AAA", "baa", "caa"}
+
+		if len(tags) != len(expectedResults) {
+			t.Errorf("Expected %d results, got %d", len(expectedResults), len(tags))
+		}
+
+		for _, name := range expectedResults {
+			if !slices.Contains(tags, name) {
+				t.Errorf("%s missing in the result set", name)
+			}
+		}
+
+	})
+	t.Run("Can list distinct tag names for a user", func(t *testing.T) {
+		repo, closeDown := i.Repo()
+		defer closeDown()
+
+		ctx := context.Background()
+
+		repo.Create(ctx, Meal{
+			UserId: 1,
+			Tags: []Tag{
+				{
+					Id:   2,
+					Name: "Quick",
+				},
+				{
+					Id:   1,
+					Name: "Family",
+				},
+			},
+		})
+
+		repo.Create(ctx, Meal{
+			UserId: 1,
+			Tags: []Tag{
+				{
+					Id:   5,
+					Name: "Quick",
+				},
+				{
+					Id:   7,
+					Name: "Family",
+				},
+			},
+		})
+
+		tags, err := repo.TagNamesForUser(ctx, 1)
+
+		if err != nil {
+			t.Errorf("List Tags for user: Unexpected error: %v", err)
+		}
+
+		expectedResults := []string{"Quick", "Family"}
+
+		if len(tags) != len(expectedResults) {
+			t.Errorf("Expected %d results, got %d", len(expectedResults), len(tags))
+		}
+
+		for _, name := range expectedResults {
+			if !slices.Contains(tags, name) {
 				t.Errorf("%s missing in the result set", name)
 			}
 		}

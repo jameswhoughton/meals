@@ -14,6 +14,11 @@ type Ingredient struct {
 	Unit     string
 }
 
+type Tag struct {
+	Id   int    `json:"id"`
+	Name string `json:"name"`
+}
+
 /*
 Specification:
 - Has a single owner
@@ -54,7 +59,7 @@ func (m *Meal) Validate() bool {
 type MealFilter struct {
 	UserId int
 	Name   *string
-	Tags   []int
+	Tags   []string
 }
 
 type ErrorMealFilterInvalid struct {
@@ -81,11 +86,13 @@ func (e ErrorMealNotFound) Error() string {
 	return fmt.Sprintf("Meal with the id: %d does not exist.", e.Id)
 }
 
-type MealRepository interface {
+type Repository interface {
 	Get(ctx context.Context, id int) (Meal, error)
 	Find(ctx context.Context, filter MealFilter) ([]Meal, error)
 	Create(ctx context.Context, meal Meal) (Meal, error)
 	Update(ctx context.Context, meal Meal) error
 	Destroy(ctx context.Context, id int) error
 	FindIngredientNames(ctx context.Context, searchString string) ([]string, error)
+	FindTagNames(ctx context.Context, searchString string) ([]string, error)
+	TagNamesForUser(ctx context.Context, userId int) ([]string, error)
 }

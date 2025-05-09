@@ -9,14 +9,14 @@ import (
 )
 
 func TestMemoryRepository(t *testing.T) {
-	init := func() (meals.MealRepository, func()) {
+	init := func() (meals.Repository, func()) {
 		return &memory.MealRepository{
 			Store:    []meals.Meal{},
 			Calendar: make(map[int][]time.Time),
 		}, func() {}
 	}
 
-	contract := meals.MealRepositoryContract{
+	contract := meals.RepositoryContract{
 		Repo: init,
 	}
 

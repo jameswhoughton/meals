@@ -45,7 +45,7 @@ func (mr *MealRepository) Find(ctx context.Context, filter meals.MealFilter) ([]
 			var foundCount int
 
 			for _, tag := range meal.Tags {
-				if slices.Contains(filter.Tags, tag.Id) {
+				if slices.Contains(filter.Tags, tag.Name) {
 					foundCount++
 				}
 			}
@@ -191,4 +191,40 @@ func (mr *MealRepository) FindIngredientNames(ctx context.Context, searchString 
 	}
 
 	return names, nil
+}
+
+func (mr *MealRepository) FindTagNames(ctx context.Context, searchString string) ([]string, error) {
+	names := make([]string, 0)
+
+	for _, meal := range mr.Store {
+		for _, tag := range meal.Tags {
+			if !strings.Contains(strings.ToLower(tag.Name), strings.ToLower(searchString)) || slices.Contains(names, tag.Name) {
+				continue
+			}
+
+			names = append(names, tag.Name)
+		}
+	}
+
+	return names, nil
+}
+
+func (mr *MealRepository) TagNamesForUser(ctx context.Context, userId int) ([]string, error) {
+	tags := make([]string, 0)
+
+	for _, meal := range mr.Store {
+		if meal.UserId != userId {
+			continue
+		}
+
+		for _, tag := range meal.Tags {
+			if slices.Contains(tags, tag.Name) {
+				continue
+			}
+
+			tags = append(tags, tag.Name)
+		}
+	}
+
+	return tags, nil
 }

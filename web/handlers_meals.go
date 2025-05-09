@@ -17,7 +17,7 @@ import (
 //
 // Only the authenticated user's meals are visible
 // Results can be filtered
-func GetMealsHandler(templateFiles fs.FS, repo meals.MealRepository) http.Handler {
+func GetMealsHandler(templateFiles fs.FS, repo meals.Repository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
 			templateFiles,
@@ -66,7 +66,7 @@ func GetMealsHandler(templateFiles fs.FS, repo meals.MealRepository) http.Handle
 // Only the owner of a meal can access this page.
 // If a meal does not exist a 404 is returned.
 // Expects the meal Id as a url path value with the name 'id'.
-func GetMealHandler(templateFiles fs.FS, repo meals.MealRepository) http.Handler {
+func GetMealHandler(templateFiles fs.FS, repo meals.Repository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
 			templateFiles,
@@ -265,7 +265,7 @@ func PostMealHandler(service meals.Service) http.Handler {
 // Expects the meal Id as a url path value with the name 'id'.
 // If the form is invalid, redirects back to the edit a meal page.
 // Redirects to the meal list page on success.
-func PutMealHandler(service meals.Service, repo meals.MealRepository) http.Handler {
+func PutMealHandler(service meals.Service, repo meals.Repository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userId := r.Context().Value("userId").(int)
 
@@ -316,7 +316,7 @@ func PutMealHandler(service meals.Service, repo meals.MealRepository) http.Handl
 	})
 }
 
-func PostDeleteMealHandler(repo meals.MealRepository) http.Handler {
+func PostDeleteMealHandler(repo meals.Repository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userId := r.Context().Value("userId").(int)
 
@@ -353,7 +353,7 @@ func PostDeleteMealHandler(repo meals.MealRepository) http.Handler {
 // API endpoint to search for existing ingredient names
 
 // Returns JSON.
-func GetSearchIngredientsHandler(mealRepo meals.MealRepository) http.Handler {
+func GetSearchIngredientsHandler(mealRepo meals.Repository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		queryString := r.URL.Query().Get("query")
 
@@ -375,13 +375,11 @@ func GetSearchIngredientsHandler(mealRepo meals.MealRepository) http.Handler {
 //
 // Limited to tags belonging to the authed user.
 // Returns JSON.
-func GetSearchTagHandler(tags meals.TagRepository) http.Handler {
+func GetSearchTagHandler(mealRepo meals.Repository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userId := r.Context().Value("userId").(int)
-
 		queryString := r.URL.Query().Get("query")
 
-		results, err := tags.Find(r.Context(), queryString, userId)
+		results, err := mealRepo.FindTagNames(r.Context(), queryString)
 
 		if err != nil {
 			log.Println(err)
@@ -391,168 +389,5 @@ func GetSearchTagHandler(tags meals.TagRepository) http.Handler {
 		w.Header().Set("Content-Type", "application/json")
 
 		json.NewEncoder(w).Encode(results)
-	})
-}
-
-// Render the tags list page
-//
-// Only lists tags owned by the authed user.
-func GetTagsHandler(templateFiles fs.FS, tags meals.TagRepository) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tmpl, err := template.ParseFS(
-			templateFiles,
-			"templates/layout.gohtml",
-			"templates/navigation.gohtml",
-			"templates/pages/tags/list.gohtml",
-		)
-
-		if err != nil {
-			w.Write([]byte("Template error: " + err.Error()))
-
-			return
-		}
-
-		userId := r.Context().Value("userId").(int)
-		queryString := r.URL.Query().Get("query")
-
-		tags, err := tags.Find(r.Context(), queryString, userId)
-
-		if err != nil {
-			log.Println(err)
-			http.Error(w, "server error", http.StatusInternalServerError)
-		}
-
-		type templateData struct {
-			Title       string
-			SearchQuery string
-			Tags        []meals.Tag
-		}
-
-		tmpl.ExecuteTemplate(w, "layout", templateData{
-			Title:       "Tags",
-			SearchQuery: queryString,
-			Tags:        tags,
-		})
-	})
-}
-
-// Render the edit tag page
-//
-// Returns 404 if the tag does not exist
-// Only the owner of the tag can access the page
-// Expects the tag id to be set as a path value with the name 'id'
-func GetTagHandler(templateFiles fs.FS, tags meals.TagRepository) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tmpl, err := template.ParseFS(
-			templateFiles,
-			"templates/layout.gohtml",
-			"templates/navigation.gohtml",
-			"templates/pages/tags/edit.gohtml",
-		)
-
-		if err != nil {
-			w.Write([]byte("Template error: " + err.Error()))
-
-			return
-		}
-
-		userId := r.Context().Value("userId").(int)
-		tagId, _ := strconv.Atoi(r.PathValue("id"))
-
-		tag, err := tags.GetById(r.Context(), tagId)
-
-		if err != nil {
-			if errors.As(err, &meals.ErrorTagNotFound{Id: tagId}) {
-				http.Error(w, err.Error(), http.StatusNotFound)
-
-				return
-			}
-		}
-
-		if tag.UserId != userId {
-			http.Error(w, "You do not have permission to access this page", http.StatusForbidden)
-
-			return
-		}
-
-		formJson, err := getMessage(w, r, "formData")
-
-		if err != nil {
-			log.Println(err)
-			http.Error(w, "server error", http.StatusInternalServerError)
-
-			return
-		}
-
-		if formJson != "" {
-			json.Unmarshal([]byte(formJson), &tag)
-		}
-
-		type templateData struct {
-			Title string
-			Form  meals.Tag
-		}
-
-		tmpl.ExecuteTemplate(w, "layout", templateData{
-			Title: "Edit Tag",
-			Form:  tag,
-		})
-	})
-}
-
-// Handler to update tag
-//
-// Only the owner of a tag can edit it
-// On success redirects to the tag list page
-// If there are validation errors, redirects to the edit tag page
-func PutTagHandler(service meals.Service, repo meals.TagRepository) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r.ParseForm()
-
-		userId := r.Context().Value("userId").(int)
-
-		tagId, _ := strconv.Atoi(r.PathValue("id"))
-
-		existingTag, err := repo.GetById(r.Context(), tagId)
-
-		if err != nil {
-			if errors.As(err, &meals.ErrorTagNotFound{Id: tagId}) {
-				http.Error(w, err.Error(), http.StatusNotFound)
-
-				return
-			}
-		}
-
-		if existingTag.UserId != userId {
-			http.Error(w, "You do not have permission to access this page", http.StatusForbidden)
-
-			return
-		}
-
-		tag := meals.Tag{
-			Id:     tagId,
-			UserId: userId,
-			Name:   r.FormValue("name"),
-		}
-
-		err = service.UpdateTag(r.Context(), &tag)
-
-		if err != nil && errors.Is(err, meals.ErrorFormInvalid{}) {
-			formJson, _ := json.Marshal(tag)
-			setMessage(w, "formData", string(formJson))
-
-			http.Redirect(w, r, "/tags/"+r.PathValue("id"), http.StatusFound)
-
-			return
-		}
-
-		if err != nil {
-			log.Println(err)
-			http.Error(w, "server error", http.StatusInternalServerError)
-
-			return
-		}
-
-		http.Redirect(w, r, "/tags", http.StatusFound)
 	})
 }
