@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -196,6 +197,10 @@ func (mr *MealRepository) Find(ctx context.Context, filter meals.MealFilter) ([]
 	}
 
 	query += "WHERE 1 = 1 " + strings.Join(wheres, " ")
+
+	if len(filter.HasTags) > 0 {
+		query += "GROUP BY m.id HAVING COUNT(DISTINCT tag_id) = " + strconv.Itoa(len(filter.HasTags))
+	}
 
 	rows, err := mr.db.QueryContext(ctx, query, values...)
 
