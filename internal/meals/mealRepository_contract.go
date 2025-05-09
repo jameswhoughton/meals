@@ -36,24 +36,21 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 					Name: "Family",
 				},
 			},
-			Ingredients: []MealIngredient{
+			Ingredients: []Ingredient{
 				{
 					Name:     "Beef mince",
 					Quantity: 500,
 					Unit:     "gram",
-					IsMain:   true,
 				},
 				{
 					Name:     "Tinned tomatoes",
 					Quantity: 2,
 					Unit:     "can",
-					IsMain:   false,
 				},
 				{
 					Name:     "Garlic",
 					Quantity: 3,
 					Unit:     "clove",
-					IsMain:   false,
 				},
 			},
 		}
@@ -102,7 +99,7 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 			Name: "Quick",
 		})
 
-		updatedMeal.Ingredients = append(updatedMeal.Ingredients, MealIngredient{
+		updatedMeal.Ingredients = append(updatedMeal.Ingredients, Ingredient{
 			Name:     "Onion",
 			Quantity: 2,
 		})
@@ -187,29 +184,16 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 					Name: "Easy",
 				},
 			},
-			Ingredients: []MealIngredient{
+			Ingredients: []Ingredient{
 				{
-					Id:     1,
-					IsMain: true,
+					Id: 1,
 				},
 			},
 		})
 
-		mealB, _ := repo.Create(ctx, Meal{
+		repo.Create(ctx, Meal{
 			UserId: 1,
 			Name:   "Meal B",
-			Tags:   []Tag{},
-			Ingredients: []MealIngredient{
-				{
-					Id:     4,
-					IsMain: true,
-				},
-			},
-		})
-
-		mealC, _ := repo.Create(ctx, Meal{
-			UserId: 1,
-			Name:   "Meal C",
 			Tags: []Tag{
 				{
 					Id:   2,
@@ -220,21 +204,19 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 					Name: "Easy",
 				},
 			},
-			Ingredients: []MealIngredient{
+			Ingredients: []Ingredient{
 				{
-					Id:     2,
-					IsMain: true,
+					Id: 2,
 				},
 				{
-					Id:     1,
-					IsMain: false,
+					Id: 1,
 				},
 			},
 		})
 
 		repo.Create(ctx, Meal{
 			UserId: 2,
-			Name:   "Meal D",
+			Name:   "Meal C",
 			Tags: []Tag{
 				{
 					Id:   1,
@@ -249,25 +231,12 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 					Name: "Easy",
 				},
 			},
-			Ingredients: []MealIngredient{
+			Ingredients: []Ingredient{
 				{
-					Id:     1,
-					IsMain: true,
+					Id: 1,
 				},
 			},
 		})
-
-		err := repo.AssignToDate(ctx, mealB.Id, time.Date(2025, time.March, 9, 0, 0, 0, 0, time.UTC))
-
-		if err != nil {
-			t.Errorf("Unexpected error when assigning date: %v", err)
-		}
-
-		err = repo.AssignToDate(ctx, mealC.Id, time.Date(2025, time.March, 11, 0, 0, 0, 0, time.UTC))
-
-		if err != nil {
-			t.Errorf("Unexpected error when assigning date: %v", err)
-		}
 
 		type testCase struct {
 			label         string
@@ -279,10 +248,10 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 			{
 				label: "All attributes true",
 				filters: MealFilter{
-					UserId:  1,
-					HasTags: []int{1, 2, 3},
+					UserId: 1,
+					Tags:   []int{1, 2, 3},
 				},
-				expectedMeals: []int{mealA.Id, mealC.Id},
+				expectedMeals: []int{mealA.Id},
 			},
 			{
 				label: "By name",
@@ -291,24 +260,6 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 					Name:   toPtr("eAl a"),
 				},
 				expectedMeals: []int{mealA.Id},
-			},
-			{
-				label: "Exclude ingredient",
-				filters: MealFilter{
-					UserId:                1,
-					ExcludeMainIngredient: []int{1},
-				},
-				expectedMeals: []int{mealB.Id, mealC.Id},
-			},
-			{
-				label: "Exclude recent",
-				filters: MealFilter{
-					UserId: 1,
-					DateRange: &DateRange{
-						End: toPtr(time.Date(2025, time.March, 10, 0, 0, 0, 0, time.UTC)),
-					},
-				},
-				expectedMeals: []int{mealA.Id, mealB.Id},
 			},
 		}
 
@@ -350,123 +301,62 @@ func (i MealRepositoryContract) Test(t *testing.T) {
 		}
 
 	})
-
-	t.Run("filter field DateRange validation", func(t *testing.T) {
+	t.Run("Can filter a list of distinct ingredient names", func(t *testing.T) {
 		repo, closeDown := i.Repo()
 		defer closeDown()
 
 		ctx := context.Background()
 
-		futureTime := time.Now().Add(time.Hour * 12)
-
-		// Start date should not be in the future
-		_, err := repo.Find(ctx, MealFilter{
+		repo.Create(ctx, Meal{
 			UserId: 1,
-			DateRange: &DateRange{
-				Start: &futureTime,
+			Ingredients: []Ingredient{
+				{
+					Id:   2,
+					Name: "Onion",
+				},
+				{
+					Id:   1,
+					Name: "Spring Onion",
+				},
 			},
 		})
 
-		if err == nil {
-			t.Errorf("Expected error, got nil")
-		}
-
-		if !errors.As(err, &ErrorMealFilterInvalid{}) {
-			t.Errorf("Expected error of type %T, got %T (%v)", ErrorMealFilterInvalid{}, err, err)
-		}
-
-		// End date should not be in the future
-		_, err = repo.Find(ctx, MealFilter{
-			UserId: 1,
-			DateRange: &DateRange{
-				End: &futureTime,
-			},
-		})
-
-		if err == nil {
-			t.Errorf("Expected error, got nil")
-		}
-
-		if !errors.As(err, &ErrorMealFilterInvalid{}) {
-			t.Errorf("Expected error of type %T, got %T (%v)", ErrorMealFilterInvalid{}, err, err)
-		}
-
-		// End date can't be before start date
-		_, err = repo.Find(ctx, MealFilter{
-			UserId: 1,
-			DateRange: &DateRange{
-				Start: toPtr(time.Date(2025, time.March, 10, 0, 0, 0, 0, time.UTC)),
-				End:   toPtr(time.Date(2024, time.March, 10, 0, 0, 0, 0, time.UTC)),
-			},
-		})
-
-		if err == nil {
-			t.Errorf("Expected error, got nil")
-		}
-
-		if !errors.As(err, &ErrorMealFilterInvalid{}) {
-			t.Errorf("Expected error of type %T, got %T (%v)", ErrorMealFilterInvalid{}, err, err)
-		}
-	})
-
-	t.Run("Can assign a meal to a given date and fetch meals from a range", func(t *testing.T) {
-		repo, closeDown := i.Repo()
-		defer closeDown()
-
-		ctx := context.Background()
-
-		chickenPie, _ := repo.Create(ctx, Meal{
-			Name:   "Chicken Pie",
-			UserId: 1,
-		})
-		pizza, _ := repo.Create(ctx, Meal{
-			Name:   "Pizza",
+		repo.Create(ctx, Meal{
 			UserId: 2,
-		})
-		pestoSalmon, _ := repo.Create(ctx, Meal{
-			Name:   "Pesto Salmon",
-			UserId: 1,
-		})
-
-		err := repo.AssignToDate(ctx, chickenPie.Id, time.Date(2025, time.March, 5, 0, 0, 0, 0, time.UTC))
-
-		if err != nil {
-			t.Errorf("Unexpected error when assigning date: %v", err)
-		}
-
-		err = repo.AssignToDate(ctx, pizza.Id, time.Date(2025, time.March, 5, 0, 0, 0, 0, time.UTC))
-
-		if err != nil {
-			t.Errorf("Unexpected error when assigning date: %v", err)
-		}
-
-		err = repo.AssignToDate(ctx, pestoSalmon.Id, time.Date(2025, time.March, 15, 0, 0, 0, 0, time.UTC))
-
-		if err != nil {
-			t.Errorf("Unexpected error when assigning date: %v", err)
-		}
-
-		dateRange := DateRange{
-			Start: toPtr(time.Date(2025, time.March, 1, 0, 0, 0, 0, time.UTC)),
-			End:   toPtr(time.Date(2025, time.March, 9, 0, 0, 0, 0, time.UTC)),
-		}
-
-		meals, err := repo.Find(ctx, MealFilter{
-			UserId:    1,
-			DateRange: &dateRange,
+			Ingredients: []Ingredient{
+				{
+					Id:   9,
+					Name: "Red Onion",
+				},
+				{
+					Id:   5,
+					Name: "Onion",
+				},
+				{
+					Id:   7,
+					Name: "Cheese",
+				},
+			},
 		})
 
+		searchString := "Onio"
+		ingredients, err := repo.FindIngredientNames(ctx, searchString)
+
 		if err != nil {
-			t.Errorf("Unexpected error: %v", err)
+			t.Errorf("List ingredients: Unexpected error: %v", err)
 		}
 
-		if len(meals) != 1 {
-			t.Errorf("Expected 1 meal, got %d", len(meals))
+		expectedResults := []string{"Onion", "Spring Onion", "Red Onion"}
+
+		if len(ingredients) != len(expectedResults) {
+			t.Errorf("Expected %d results, got %d", len(expectedResults), len(ingredients))
 		}
 
-		if meals[0].Id != chickenPie.Id {
-			t.Errorf("Expected Id %d, got %d (%s)", chickenPie.Id, meals[0].Id, meals[0].Name)
+		for _, name := range expectedResults {
+			if !slices.Contains(ingredients, name) {
+				t.Errorf("%s missing in the result set", name)
+			}
 		}
+
 	})
-
 }

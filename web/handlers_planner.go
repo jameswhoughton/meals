@@ -152,9 +152,9 @@ func GetEditDayHandler(templateFiles fs.FS, plannerRepo planner.Repository, meal
 			filterTags[i], _ = strconv.Atoi(r.Form["tags"][i])
 		}
 		filter := meals.MealFilter{
-			UserId:  userId,
-			Name:    &filterSearch,
-			HasTags: filterTags,
+			UserId: userId,
+			Name:   &filterSearch,
+			Tags:   filterTags,
 		}
 
 		filteredMeals, err := mealRepo.Find(r.Context(), filter)

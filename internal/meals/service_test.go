@@ -11,9 +11,8 @@ import (
 
 func TestValidationErrorsWhenCreatingAMeal(t *testing.T) {
 	mealRepository := memory.MealRepository{}
-	ingredientRepository := memory.IngredientRepository{}
 	tagRepository := memory.TagRepository{}
-	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
+	service := meals.NewService(&mealRepository, &tagRepository)
 
 	ctx := context.Background()
 
@@ -27,13 +26,13 @@ func TestValidationErrorsWhenCreatingAMeal(t *testing.T) {
 		{
 			name:           "Empty meal",
 			meal:           meals.Meal{},
-			expectedErrors: []string{"Name", "Ingredients"},
+			expectedErrors: []string{"Name"},
 		},
 		{
 			name: "Ingredient with zero quantity",
 			meal: meals.Meal{
 				Name: "test",
-				Ingredients: []meals.MealIngredient{
+				Ingredients: []meals.Ingredient{
 					{
 						Id:       43,
 						Name:     "ingredient 1",
@@ -42,24 +41,10 @@ func TestValidationErrorsWhenCreatingAMeal(t *testing.T) {
 					{
 						Name:     "ingredient 2",
 						Quantity: 20,
-						IsMain:   true,
 					},
 				},
 			},
 			expectedErrors: []string{"Ingredients.0"},
-		},
-		{
-			name: "No main ingredient",
-			meal: meals.Meal{
-				Name: "test",
-				Ingredients: []meals.MealIngredient{
-					{
-						Name:     "ingredient 1",
-						Quantity: 1,
-					},
-				},
-			},
-			expectedErrors: []string{"Ingredients"},
 		},
 	}
 
@@ -91,9 +76,8 @@ func TestValidationErrorsWhenCreatingAMeal(t *testing.T) {
 
 func TestServiceCanCreateAMeal(t *testing.T) {
 	mealRepository := memory.MealRepository{}
-	ingredientRepository := memory.IngredientRepository{}
 	tagRepository := memory.TagRepository{}
-	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
+	service := meals.NewService(&mealRepository, &tagRepository)
 
 	ctx := context.Background()
 
@@ -106,13 +90,12 @@ func TestServiceCanCreateAMeal(t *testing.T) {
 				Name: "Quick",
 			},
 		},
-		Ingredients: []meals.MealIngredient{
+		Ingredients: []meals.Ingredient{
 			{
 				Id:       1,
 				Name:     "Cheese",
 				Quantity: 25,
 				Unit:     "g",
-				IsMain:   true,
 			},
 		},
 	}
@@ -142,9 +125,8 @@ func TestServiceCanCreateAMeal(t *testing.T) {
 
 func TestValidationErrorsWhenUpdatingAMeal(t *testing.T) {
 	mealRepository := memory.MealRepository{}
-	ingredientRepository := memory.IngredientRepository{}
 	tagRepository := memory.TagRepository{}
-	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
+	service := meals.NewService(&mealRepository, &tagRepository)
 
 	ctx := context.Background()
 
@@ -158,13 +140,13 @@ func TestValidationErrorsWhenUpdatingAMeal(t *testing.T) {
 		{
 			name:           "Empty meal",
 			meal:           meals.Meal{},
-			expectedErrors: []string{"Name", "Ingredients"},
+			expectedErrors: []string{"Name"},
 		},
 		{
 			name: "Ingredient with zero quantity",
 			meal: meals.Meal{
 				Name: "test",
-				Ingredients: []meals.MealIngredient{
+				Ingredients: []meals.Ingredient{
 					{
 						Id:       43,
 						Name:     "ingredient 1",
@@ -173,24 +155,10 @@ func TestValidationErrorsWhenUpdatingAMeal(t *testing.T) {
 					{
 						Name:     "ingredient 2",
 						Quantity: 20,
-						IsMain:   true,
 					},
 				},
 			},
 			expectedErrors: []string{"Ingredients.0"},
-		},
-		{
-			name: "No main ingredient",
-			meal: meals.Meal{
-				Name: "test",
-				Ingredients: []meals.MealIngredient{
-					{
-						Name:     "ingredient 1",
-						Quantity: 1,
-					},
-				},
-			},
-			expectedErrors: []string{"Ingredients"},
 		},
 	}
 
@@ -228,9 +196,8 @@ func TestServiceCanUpdateAMeal(t *testing.T) {
 			},
 		},
 	}
-	ingredientRepository := memory.IngredientRepository{}
 	tagRepository := memory.TagRepository{}
-	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
+	service := meals.NewService(&mealRepository, &tagRepository)
 
 	ctx := context.Background()
 
@@ -243,13 +210,12 @@ func TestServiceCanUpdateAMeal(t *testing.T) {
 				Name: "Quick",
 			},
 		},
-		Ingredients: []meals.MealIngredient{
+		Ingredients: []meals.Ingredient{
 			{
 				Id:       1,
 				Name:     "Cheese",
 				Quantity: 25,
 				Unit:     "g",
-				IsMain:   true,
 			},
 		},
 	}
@@ -271,329 +237,4 @@ func TestServiceCanUpdateAMeal(t *testing.T) {
 	if mealRepository.Store[0].Name != mealToUpdate.Name {
 		t.Errorf("Name not updated in store: expected %s, found %s", mealToUpdate.Name, mealRepository.Store[0].Name)
 	}
-}
-
-func TestServiceCanUpdateAnIngredient(t *testing.T) {
-	mealRepository := memory.MealRepository{}
-	ingredientRepository := memory.IngredientRepository{
-		Store: []meals.Ingredient{
-			{
-				Id:   13,
-				Name: "Tomates",
-			},
-		},
-	}
-	tagRepository := memory.TagRepository{}
-	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
-
-	ingredientToUpdate := meals.Ingredient{
-		Id:   13,
-		Name: "Tomatoes",
-	}
-
-	ctx := context.Background()
-
-	err := service.UpdateIngredient(ctx, &ingredientToUpdate)
-
-	if err != nil {
-		t.Errorf("Unexpected error: %v", err)
-	}
-
-	if len(ingredientToUpdate.Errors) > 0 {
-		t.Errorf("Unexpected validation errors: %v", ingredientToUpdate.Errors)
-	}
-
-	if len(ingredientRepository.Store) != 1 {
-		t.Errorf("Expected 1 ingredient in the store, found %d", len(ingredientRepository.Store))
-	}
-
-	if ingredientRepository.Store[0].Name != ingredientToUpdate.Name {
-		t.Errorf("Name not updated in store: expected %s, found %s", ingredientToUpdate.Name, ingredientRepository.Store[0].Name)
-	}
-
-}
-func TestIngredientNameShouldBeUniquePerUser(t *testing.T) {
-	mealRepository := memory.MealRepository{
-		Store: []meals.Meal{
-			{
-				Id:     2,
-				Name:   "A",
-				UserId: 1,
-				Ingredients: []meals.MealIngredient{
-					{
-						Id:       23,
-						Name:     "Eggs",
-						Quantity: 3,
-						IsMain:   true,
-					},
-				},
-			},
-			{
-				Id:     12,
-				Name:   "B",
-				UserId: 2,
-				Ingredients: []meals.MealIngredient{
-					{
-						Id:       2,
-						Name:     "Eggs",
-						Quantity: 1,
-						IsMain:   true,
-					},
-				},
-			},
-			{
-				Id:     13,
-				Name:   "C",
-				UserId: 2,
-				Ingredients: []meals.MealIngredient{
-					{
-						Id:       24,
-						Name:     "Ham",
-						Quantity: 1,
-						IsMain:   true,
-					},
-				},
-			},
-		},
-	}
-	ingredientRepository := memory.IngredientRepository{
-		Store: []meals.Ingredient{
-			{
-				Id:     2,
-				UserId: 2,
-				Name:   "Eggs",
-			},
-			{
-				Id:     23,
-				UserId: 1,
-				Name:   "Eggs",
-			},
-			{
-				Id:     24,
-				UserId: 2,
-				Name:   "Ham",
-			},
-		},
-	}
-
-	mealA := mealRepository.Store[0]
-	mealB := mealRepository.Store[1]
-	tagRepository := memory.TagRepository{}
-	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
-
-	ctx := context.Background()
-
-	newMeal := meals.Meal{
-		Name:   "D",
-		UserId: 1,
-		Ingredients: []meals.MealIngredient{
-			{
-				Name:     "Eggs",
-				Quantity: 1,
-				IsMain:   true,
-			},
-		},
-	}
-
-	createdMeal, err := service.CreateMeal(ctx, &newMeal)
-
-	if err != nil {
-		t.Errorf("Unexpected error creating meal: %v", err)
-	}
-
-	// The id for eggs in the new meal should match the id for eggs in mealA as it is owned by the same user
-	if createdMeal.Ingredients[0].Id != mealA.Ingredients[0].Id {
-		t.Errorf("Ingredient Ids should match but they don't (%d - %d)", newMeal.Ingredients[0].Id, mealA.Ingredients[0].Id)
-	}
-
-	updateMeal := meals.Meal{
-		Id:     13,
-		Name:   "C",
-		UserId: 2,
-		Ingredients: []meals.MealIngredient{
-			{
-				Name:     "Eggs",
-				Quantity: 1,
-				IsMain:   true,
-			},
-		},
-	}
-
-	err = service.UpdateMeal(ctx, &updateMeal)
-
-	if err != nil {
-		t.Errorf("Unexpected error updating meal: %v", err)
-	}
-
-	updatedMeal, _ := mealRepository.Get(ctx, 13)
-
-	// The id for eggs in the updated meal should match the id for eggs in mealC as it is owned by the same user
-	if updatedMeal.Ingredients[0].Id != mealB.Ingredients[0].Id {
-		t.Errorf("Ingredient Ids should match but they don't (%d - %d)", updatedMeal.Ingredients[0].Id, mealB.Ingredients[0].Id)
-	}
-
-}
-
-func TestServiceCanUpdateATag(t *testing.T) {
-	mealRepository := memory.MealRepository{}
-	ingredientRepository := memory.IngredientRepository{}
-	tagRepository := memory.TagRepository{
-		Store: []meals.Tag{
-			{
-				Id:   224,
-				Name: "Quck",
-			},
-		},
-	}
-	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
-
-	tagToUpdate := meals.Tag{
-		Id:   224,
-		Name: "Quick",
-	}
-
-	ctx := context.Background()
-
-	err := service.UpdateTag(ctx, &tagToUpdate)
-
-	if err != nil {
-		t.Errorf("Unexpected error: %v", err)
-	}
-
-	if len(tagToUpdate.Errors) > 0 {
-		t.Errorf("Unexpected validation errors: %v", tagToUpdate.Errors)
-	}
-
-	if len(tagRepository.Store) != 1 {
-		t.Errorf("Expected 1 tag in the store, found %d", len(tagRepository.Store))
-	}
-
-	if tagRepository.Store[0].Name != tagToUpdate.Name {
-		t.Errorf("Name not updated in store: expected %s, found %s", tagToUpdate.Name, tagRepository.Store[0].Name)
-	}
-
-}
-
-func TestTagNameShouldBeUniquePerUser(t *testing.T) {
-	mealRepository := memory.MealRepository{
-		Store: []meals.Meal{
-			{
-				Id:     2,
-				Name:   "A",
-				UserId: 1,
-				Tags: []meals.Tag{
-					{
-						Id:   23,
-						Name: "Quick",
-					},
-				},
-			},
-			{
-				Id:     12,
-				Name:   "B",
-				UserId: 2,
-				Tags: []meals.Tag{
-					{
-						Id:   2,
-						Name: "Quick",
-					},
-				},
-			},
-			{
-				Id:     13,
-				Name:   "C",
-				UserId: 2,
-				Tags: []meals.Tag{
-					{
-						Id:   24,
-						Name: "Family",
-					},
-				},
-			},
-		},
-	}
-	tagRepository := memory.TagRepository{
-		Store: []meals.Tag{
-			{
-				Id:     2,
-				UserId: 2,
-				Name:   "Quick",
-			},
-			{
-				Id:     23,
-				UserId: 1,
-				Name:   "Quick",
-			},
-			{
-				Id:     24,
-				UserId: 2,
-				Name:   "Family",
-			},
-		},
-	}
-
-	mealA := mealRepository.Store[0]
-	mealB := mealRepository.Store[1]
-	ingredientRepository := memory.IngredientRepository{}
-	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
-
-	ctx := context.Background()
-
-	newMeal := meals.Meal{
-		Name:   "D",
-		UserId: 1,
-		Ingredients: []meals.MealIngredient{
-			{
-				Name:     "Potato",
-				Quantity: 1,
-				IsMain:   true,
-			},
-		},
-		Tags: []meals.Tag{
-			{
-				Name: "Quick",
-			},
-		},
-	}
-
-	createdMeal, err := service.CreateMeal(ctx, &newMeal)
-
-	if err != nil {
-		t.Errorf("Unexpected error creating meal: %v", err)
-	}
-
-	if createdMeal.Tags[0].Id != mealA.Tags[0].Id {
-		t.Errorf("Tag Ids should match but they don't (%d - %d)", newMeal.Tags[0].Id, mealA.Tags[0].Id)
-	}
-
-	updateMeal := meals.Meal{
-		Id:     13,
-		Name:   "C",
-		UserId: 2,
-		Ingredients: []meals.MealIngredient{
-			{
-				Name:     "Potato",
-				Quantity: 1,
-				IsMain:   true,
-			},
-		},
-		Tags: []meals.Tag{
-			{
-				Name: "Quick",
-			},
-		},
-	}
-
-	err = service.UpdateMeal(ctx, &updateMeal)
-
-	if err != nil {
-		t.Errorf("Unexpected error updating meal: %v", err)
-	}
-
-	updatedMeal, _ := mealRepository.Get(ctx, 13)
-
-	if updatedMeal.Tags[0].Id != mealB.Tags[0].Id {
-		t.Errorf("Tag Ids should match but they don't (%d - %d)", updatedMeal.Tags[0].Id, mealB.Tags[0].Id)
-	}
-
 }

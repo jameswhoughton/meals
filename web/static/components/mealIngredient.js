@@ -5,29 +5,20 @@ customElements.define(
                         super()
                 }
 
-                template(existingIngredient) {
+                template() {
                         const node = document.createElement('div')
 
                         node.classList.add('flex', 'items-center', 'gap-4', 'wrap')
 
-                        let body = ''
-
-                        if (existingIngredient) {
-                                body = `
+                        const body = `
                 <div class="flex flex-col gap-2">
                     <label class="text-sm text-slate-300" for="ingredientName">name</label>
-                    <span class="name | w-[250px] text-ellipsis overflow-hidden"></span>
-                    <input name="ingredientName" value="" type="hidden" />
-                </div>`
-                        } else {
-                                body = `
-                <div class="flex flex-col gap-2">
-                    <label class="text-sm text-slate-300" for="ingredientName">name</label>
-                    <input name="ingredientName" class="name | py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px] disabled:bg-zinc-500" />
-                </div>`
-                        }
-
-                        body += `
+                        <request-typeahead
+                            data-name="ingredientName"
+                            data-url="http://localhost:8000/api/ingredients"
+                        />
+                        <input type="hidden" name="ingredientId" value="0" />
+                </div>
             <input name="ingredientId" value="0" type="hidden" />
             <div class="flex flex-col gap-2">
                 <label class="text-sm text-slate-300" for="ingredientQuantity">quantity</label>
@@ -37,10 +28,6 @@ customElements.define(
                 <label class="text-sm text-slate-300" for="ingredientUnit">unit</label>
                 <input name="ingredientUnit" class="unit | py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" />
             </div>
-            <label class="flex gap-2 self-end">
-                <input type="radio" name="isMain" />
-                <span>Main Ingredient</span>
-            </label>
             <button class="remove-ingredient | py-2 px-1.5 rounded-md bg-cyan-800 hover:bg-cyan-900 transition-colors w-auto self-end">remove</button>
             `
 
@@ -53,22 +40,16 @@ customElements.define(
                         const id = this.getAttribute('data-id')
 
                         const existingIngredient = id !== null && id > 0
-                        const template = this.template(existingIngredient)
+                        const template = this.template()
 
                         const index = this.getAttribute('data-index')
 
-                        template.querySelector('[name="ingredientName"]').value = this.getAttribute('data-name')
+                        template.querySelector('[data-name="ingredientName"]').dataset.value = this.getAttribute('data-name')
                         template.querySelector('.quantity').value = this.getAttribute('data-quantity')
                         template.querySelector('.unit').value = this.getAttribute('data-unit')
-                        template.querySelector('[name="isMain"]').value = index
 
                         if (existingIngredient) {
                                 template.querySelector('[name="ingredientId"]').value = id
-                                template.querySelector('.name').innerText = this.getAttribute('data-name')
-                        }
-
-                        if (this.getAttribute('data-isMain') === 'true') {
-                                template.querySelector('[name="isMain"]').checked = true
                         }
 
                         template.querySelector('.remove-ingredient').onclick = () => {

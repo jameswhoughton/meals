@@ -84,9 +84,8 @@ func TestGetMealHandlerReturns403IfMealDoesNotBelongToUser(t *testing.T) {
 
 func TestPutMealHandlerReturns404IfMealDoesNotExist(t *testing.T) {
 	mealRepository := memory.MealRepository{}
-	ingredientRepository := memory.IngredientRepository{}
 	tagRepository := memory.TagRepository{}
-	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
+	service := meals.NewService(&mealRepository, &tagRepository)
 
 	handler := web.PutMealHandler(service, &mealRepository)
 
@@ -131,9 +130,8 @@ func TestPutMealHandlerReturns403IfMealDoesNotBelongToTheUser(t *testing.T) {
 			},
 		},
 	}
-	ingredientRepository := memory.IngredientRepository{}
 	tagRepository := memory.TagRepository{}
-	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
+	service := meals.NewService(&mealRepository, &tagRepository)
 
 	handler := web.PutMealHandler(service, &mealRepository)
 
@@ -169,9 +167,8 @@ func TestPutMealHandlerReturns403IfMealDoesNotBelongToTheUser(t *testing.T) {
 
 func TestPostMealHandlerCraetesAMeal(t *testing.T) {
 	mealRepository := memory.MealRepository{}
-	ingredientRepository := memory.IngredientRepository{}
 	tagRepository := memory.TagRepository{}
-	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
+	service := meals.NewService(&mealRepository, &tagRepository)
 
 	handler := web.PostMealHandler(service)
 
@@ -190,12 +187,11 @@ func TestPostMealHandlerCraetesAMeal(t *testing.T) {
 				Name: "Family",
 			},
 		},
-		Ingredients: []meals.MealIngredient{
+		Ingredients: []meals.Ingredient{
 			{
 				Id:       1,
 				Name:     "Chicken breast",
 				Quantity: 2,
-				IsMain:   true,
 			},
 			{
 				Id:       2,
@@ -221,15 +217,11 @@ func TestPostMealHandlerCraetesAMeal(t *testing.T) {
 		form.Add("tagName", tag.Name)
 	}
 
-	for i, ingredient := range mealToCreate.Ingredients {
+	for _, ingredient := range mealToCreate.Ingredients {
 		form.Add("ingredientId", strconv.Itoa(ingredient.Id))
 		form.Add("ingredientName", ingredient.Name)
 		form.Add("ingredientQuantity", strconv.Itoa(ingredient.Quantity))
 		form.Add("ingredientUnit", ingredient.Unit)
-
-		if ingredient.IsMain {
-			form.Add("isMain", strconv.Itoa(i))
-		}
 	}
 
 	postData := strings.NewReader(form.Encode())
@@ -268,7 +260,7 @@ func compareMeals(t *testing.T, a, b meals.Meal) {
 	}
 
 	if len(a.Ingredients) == len(b.Ingredients) {
-		sort := func(x, y meals.MealIngredient) int {
+		sort := func(x, y meals.Ingredient) int {
 			if x.Id > y.Id {
 				return 1
 			}
@@ -322,7 +314,7 @@ func TestPutMealHandlerWithCorrectFormUpdatesAMeal(t *testing.T) {
 						Name: "Old tag",
 					},
 				},
-				Ingredients: []meals.MealIngredient{
+				Ingredients: []meals.Ingredient{
 					{
 						Id:       12,
 						Name:     "Old ingredient",
@@ -333,9 +325,8 @@ func TestPutMealHandlerWithCorrectFormUpdatesAMeal(t *testing.T) {
 			},
 		},
 	}
-	ingredientRepository := memory.IngredientRepository{}
 	tagRepository := memory.TagRepository{}
-	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
+	service := meals.NewService(&mealRepository, &tagRepository)
 
 	handler := web.PutMealHandler(service, &mealRepository)
 
@@ -350,12 +341,11 @@ func TestPutMealHandlerWithCorrectFormUpdatesAMeal(t *testing.T) {
 				Name: "Easy",
 			},
 		},
-		Ingredients: []meals.MealIngredient{
+		Ingredients: []meals.Ingredient{
 			{
 				Id:       1,
 				Name:     "Chicken breast",
 				Quantity: 2,
-				IsMain:   true,
 			},
 		},
 	}
@@ -370,15 +360,11 @@ func TestPutMealHandlerWithCorrectFormUpdatesAMeal(t *testing.T) {
 		form.Add("tagName", tag.Name)
 	}
 
-	for i, ingredient := range mealToUpdate.Ingredients {
+	for _, ingredient := range mealToUpdate.Ingredients {
 		form.Add("ingredientId", strconv.Itoa(ingredient.Id))
 		form.Add("ingredientName", ingredient.Name)
 		form.Add("ingredientQuantity", strconv.Itoa(ingredient.Quantity))
 		form.Add("ingredientUnit", ingredient.Unit)
-
-		if ingredient.IsMain {
-			form.Add("isMain", strconv.Itoa(i))
-		}
 	}
 
 	postData := strings.NewReader(form.Encode())
@@ -493,193 +479,6 @@ func TestPostMealDeleteDeletesMeal(t *testing.T) {
 
 	if len(repository.Store) != 0 {
 		t.Errorf("Expected the store to be empty, found %d meals", len(repository.Store))
-	}
-}
-
-func TestGetIngredientHandlerReturns404IfTheIngredientDoesNotExist(t *testing.T) {
-	templateFiles := fstest.MapFS{
-		"templates/layout.gohtml":                 {Data: []byte{}},
-		"templates/navigation.gohtml":             {Data: []byte{}},
-		"templates/pages/ingredients/edit.gohtml": {Data: []byte{}},
-	}
-
-	repository := memory.IngredientRepository{}
-
-	handler := web.GetIngredientHandler(templateFiles, &repository)
-
-	ctx := context.WithValue(context.Background(), "userId", 1)
-
-	req := httptest.NewRequestWithContext(ctx, http.MethodGet, "/ingredient/1", nil)
-
-	req.SetPathValue("id", "1")
-
-	w := httptest.NewRecorder()
-
-	handler.ServeHTTP(w, req)
-
-	result := w.Result()
-	defer result.Body.Close()
-
-	if result.StatusCode != http.StatusNotFound {
-		t.Errorf("Expected status code: %d, got %d", http.StatusNotFound, result.StatusCode)
-	}
-}
-
-func TestGetIngredientHandlerReturns403IfIngredientDoesNotBelongToTheUser(t *testing.T) {
-	templateFiles := fstest.MapFS{
-		"templates/layout.gohtml":                 {Data: []byte{}},
-		"templates/navigation.gohtml":             {Data: []byte{}},
-		"templates/pages/ingredients/edit.gohtml": {Data: []byte{}},
-	}
-
-	repository := memory.IngredientRepository{
-		Store: []meals.Ingredient{
-			{
-				Id:     1,
-				UserId: 2,
-			},
-		},
-	}
-
-	handler := web.GetIngredientHandler(templateFiles, &repository)
-
-	ctx := context.WithValue(context.Background(), "userId", 1)
-
-	req := httptest.NewRequestWithContext(ctx, http.MethodGet, "/ingredients/1", nil)
-
-	req.SetPathValue("id", "1")
-
-	w := httptest.NewRecorder()
-
-	handler.ServeHTTP(w, req)
-
-	result := w.Result()
-	defer result.Body.Close()
-
-	if result.StatusCode != http.StatusForbidden {
-		t.Errorf("Expected status code: %d, got %d", http.StatusForbidden, result.StatusCode)
-	}
-}
-
-func TestPutIngredientHandlerReturns404IfIngredientDoesNotExist(t *testing.T) {
-	ingredientRepository := memory.IngredientRepository{}
-	mealRepository := memory.MealRepository{}
-	tagRepository := memory.TagRepository{}
-	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
-
-	handler := web.PutIngredientHandler(service, &ingredientRepository)
-
-	ctx := context.WithValue(context.Background(), "userId", 1)
-
-	form := url.Values{}
-	form.Add("name", "updated name")
-
-	postData := strings.NewReader(form.Encode())
-
-	req := httptest.NewRequestWithContext(ctx, http.MethodGet, "/ingredient/1", postData)
-
-	req.SetPathValue("id", "1")
-
-	w := httptest.NewRecorder()
-
-	handler.ServeHTTP(w, req)
-
-	result := w.Result()
-	defer result.Body.Close()
-
-	if result.StatusCode != http.StatusNotFound {
-		t.Errorf("Expected status code: %d, got %d", http.StatusNotFound, result.StatusCode)
-	}
-}
-
-func TestPutIngredientHandlerReturns403IfIngredientDoesNotBelongToUser(t *testing.T) {
-	mealRepository := memory.MealRepository{}
-	ingredientRepository := memory.IngredientRepository{
-		Store: []meals.Ingredient{
-			{
-				Id:   12,
-				Name: "Old name",
-			},
-		},
-	}
-	tagRepository := memory.TagRepository{}
-	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
-
-	handler := web.PutIngredientHandler(service, &ingredientRepository)
-
-	ctx := context.WithValue(context.Background(), "userId", 1)
-
-	form := url.Values{}
-	form.Add("name", "updated name")
-
-	postData := strings.NewReader(form.Encode())
-
-	req := httptest.NewRequestWithContext(ctx, http.MethodPost, "/ingredients/12", postData)
-
-	req.Header.Set("Content-type", "application/x-www-form-urlencoded")
-
-	req.SetPathValue("id", "12")
-
-	w := httptest.NewRecorder()
-
-	handler.ServeHTTP(w, req)
-
-	result := w.Result()
-	defer result.Body.Close()
-
-	if result.StatusCode != http.StatusForbidden {
-		t.Errorf("Expected status code: %d, got %d", http.StatusForbidden, result.StatusCode)
-	}
-}
-
-func TestPutIngredientHandlerWithCorrectFormUpdatesIngredient(t *testing.T) {
-	mealRepository := memory.MealRepository{}
-	ingredientRepository := memory.IngredientRepository{
-		Store: []meals.Ingredient{
-			{
-				Id:     12,
-				UserId: 2,
-				Name:   "Old name",
-			},
-		},
-	}
-	tagRepository := memory.TagRepository{}
-	service := meals.NewService(&mealRepository, &ingredientRepository, &tagRepository)
-
-	handler := web.PutIngredientHandler(service, &ingredientRepository)
-
-	ctx := context.WithValue(context.Background(), "userId", 2)
-
-	form := url.Values{}
-	form.Add("name", "updated name")
-
-	postData := strings.NewReader(form.Encode())
-
-	req := httptest.NewRequestWithContext(ctx, http.MethodPost, "/ingredients/12", postData)
-
-	req.Header.Set("Content-type", "application/x-www-form-urlencoded")
-
-	req.SetPathValue("id", "12")
-
-	w := httptest.NewRecorder()
-
-	handler.ServeHTTP(w, req)
-
-	result := w.Result()
-	defer result.Body.Close()
-
-	if result.StatusCode != http.StatusFound {
-		t.Errorf("Expected status code: %d, got %d", http.StatusFound, result.StatusCode)
-	}
-
-	fetchedIngredient, err := ingredientRepository.GetById(ctx, 12)
-
-	if err != nil {
-		t.Errorf("Unexpected error fetching ingredient: %v", err)
-	}
-
-	if fetchedIngredient.Name != form.Get("name") {
-		t.Errorf("Expected name to be %s, found %s", form.Get("name"), fetchedIngredient.Name)
 	}
 }
 

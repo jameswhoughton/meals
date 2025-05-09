@@ -26,7 +26,6 @@ func AddRoutes(
 	sessionService SessionService,
 	accountRepository account.Repository,
 	mealRepository meals.MealRepository,
-	ingredientRepository meals.IngredientRepository,
 	tagRepository meals.TagRepository,
 	sessionRepository SessionRepository,
 	plannerRepository planner.Repository,
@@ -75,11 +74,6 @@ func AddRoutes(
 	mux.Handle("POST /meals/{id}", isAuthed(PutMealHandler(mealService, mealRepository)))
 	mux.Handle("POST /meals/{id}/delete", isAuthed(PostDeleteMealHandler(mealRepository)))
 
-	// Ingredients
-	mux.Handle("GET /ingredients", isAuthed(GetIngredientsHandler(templateFiles, ingredientRepository)))
-	mux.Handle("GET /ingredients/{id}", isAuthed(GetIngredientHandler(templateFiles, ingredientRepository)))
-	mux.Handle("POST /ingredients/{id}", isAuthed(PutIngredientHandler(mealService, ingredientRepository)))
-
 	// Tags
 	mux.Handle("GET /tags", isAuthed(GetTagsHandler(templateFiles, tagRepository)))
 	mux.Handle("GET /tags/{id}", isAuthed(GetTagHandler(templateFiles, tagRepository)))
@@ -91,6 +85,6 @@ func AddRoutes(
 	mux.Handle("POST /planner/{date}", isAuthed(PostEditDayHandler(plannerRepository)))
 
 	// API
-	mux.Handle("GET /api/ingredients", isAuthed(GetSearchIngredientsHandler(ingredientRepository)))
+	mux.Handle("GET /api/ingredients", isAuthed(GetSearchIngredientsHandler(mealRepository)))
 	mux.Handle("GET /api/tags", isAuthed(GetSearchTagHandler(tagRepository)))
 }

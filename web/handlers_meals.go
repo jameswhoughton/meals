@@ -3,6 +3,7 @@ package web
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/fs"
 	"log"
 	"net/http"
@@ -179,7 +180,7 @@ func mealFromRequest(r http.Request) meals.Meal {
 
 	var (
 		id          int
-		ingredients []meals.MealIngredient
+		ingredients []meals.Ingredient
 		tags        []meals.Tag
 	)
 
@@ -187,19 +188,10 @@ func mealFromRequest(r http.Request) meals.Meal {
 		id, _ = strconv.Atoi(r.FormValue("id"))
 	}
 
-	mainIngredientIndex, err := strconv.Atoi(r.FormValue("isMain"))
-
-	if err != nil {
-		mainIngredientIndex = -1
-	}
-
 	for i := range len(r.Form["ingredientName"]) {
-		var ingredient meals.MealIngredient
+		var ingredient meals.Ingredient
 
 		quantity, _ := strconv.Atoi(r.Form["ingredientQuantity"][i])
-		var isMain bool
-
-		isMain = mainIngredientIndex == i
 
 		id, _ := strconv.Atoi(r.Form["ingredientId"][i])
 
@@ -207,7 +199,6 @@ func mealFromRequest(r http.Request) meals.Meal {
 		ingredient.Name = r.Form["ingredientName"][i]
 		ingredient.Quantity = quantity
 		ingredient.Unit = r.Form["ingredientUnit"][i]
-		ingredient.IsMain = isMain
 		ingredients = append(ingredients, ingredient)
 	}
 
@@ -359,62 +350,15 @@ func PostDeleteMealHandler(repo meals.MealRepository) http.Handler {
 	})
 }
 
-// Render the ingredients list page
-//
-// Ingredients can be filtered by name.
-// Only ingredients owned by the authed user are visible.
-func GetIngredientsHandler(templateFiles fs.FS, ingredients meals.IngredientRepository) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tmpl, err := template.ParseFS(
-			templateFiles,
-			"templates/layout.gohtml",
-			"templates/navigation.gohtml",
-			"templates/pages/ingredients/list.gohtml",
-		)
+// API endpoint to search for existing ingredient names
 
-		if err != nil {
-			w.Write([]byte("Template error: " + err.Error()))
-
-			return
-		}
-
-		userId := r.Context().Value("userId").(int)
-		queryString := r.URL.Query().Get("query")
-
-		ingredients, err := ingredients.Find(r.Context(), queryString, userId)
-
-		if err != nil {
-			log.Println(err)
-			http.Error(w, "server error", http.StatusInternalServerError)
-
-			return
-		}
-
-		type templateData struct {
-			Title       string
-			SearchQuery string
-			Ingredients []meals.Ingredient
-		}
-
-		tmpl.ExecuteTemplate(w, "layout", templateData{
-			Title:       "Ingredients",
-			SearchQuery: queryString,
-			Ingredients: ingredients,
-		})
-	})
-}
-
-// API endpoint to search for ingredient by name
-
-// Results are limited to the authenticated user.
 // Returns JSON.
-func GetSearchIngredientsHandler(ingredients meals.IngredientRepository) http.Handler {
+func GetSearchIngredientsHandler(mealRepo meals.MealRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userId := r.Context().Value("userId").(int)
-
 		queryString := r.URL.Query().Get("query")
 
-		results, err := ingredients.Find(r.Context(), queryString, userId)
+		results, err := mealRepo.FindIngredientNames(r.Context(), queryString)
+		fmt.Println(results)
 
 		if err != nil {
 			log.Println(err)
@@ -424,128 +368,6 @@ func GetSearchIngredientsHandler(ingredients meals.IngredientRepository) http.Ha
 		w.Header().Set("Content-Type", "application/json")
 
 		json.NewEncoder(w).Encode(results)
-	})
-}
-
-// Render the edit ingredient page
-//
-// Redirects to a 404 page if the ingredient does not exist.
-// Only the owner of an ingredient can access the page.
-// Expects the ingredient id to be provided as a path value with the name 'id'.
-func GetIngredientHandler(templateFiles fs.FS, ingredients meals.IngredientRepository) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tmpl, err := template.ParseFS(
-			templateFiles,
-			"templates/layout.gohtml",
-			"templates/navigation.gohtml",
-			"templates/pages/ingredients/edit.gohtml",
-		)
-
-		if err != nil {
-			w.Write([]byte("Template error: " + err.Error()))
-
-			return
-		}
-
-		userId := r.Context().Value("userId").(int)
-		ingredientId, _ := strconv.Atoi(r.PathValue("id"))
-
-		ingredient, err := ingredients.GetById(r.Context(), ingredientId)
-
-		if err != nil {
-			if errors.As(err, &meals.ErrorIngredientNotFound{Id: ingredientId}) {
-				http.Error(w, err.Error(), http.StatusNotFound)
-
-				return
-			}
-		}
-
-		if ingredient.UserId != userId {
-			http.Error(w, "You do not have permission to access this page", http.StatusForbidden)
-
-			return
-		}
-
-		formJson, err := getMessage(w, r, "formData")
-
-		if err != nil {
-			log.Println(err)
-			http.Error(w, "server error", http.StatusInternalServerError)
-
-			return
-		}
-
-		if formJson != "" {
-			json.Unmarshal([]byte(formJson), &ingredient)
-		}
-
-		type templateData struct {
-			Title string
-			Form  meals.Ingredient
-		}
-
-		tmpl.ExecuteTemplate(w, "layout", templateData{
-			Title: "Edit Ingredients",
-			Form:  ingredient,
-		})
-	})
-}
-
-// Handler to update an ingredient
-//
-// An ingredient can only be updated by it's owner.
-// Returns a 404 if the ingredient does not exist.
-// Redirects back to the ingredients list page on success.
-// If the form is invalid, redirect back to the edit ingredient page.
-func PutIngredientHandler(service meals.Service, repo meals.IngredientRepository) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r.ParseForm()
-
-		userId := r.Context().Value("userId").(int)
-
-		ingredientId, _ := strconv.Atoi(r.PathValue("id"))
-
-		existingIngredient, err := repo.GetById(r.Context(), ingredientId)
-
-		if err != nil {
-			if errors.As(err, &meals.ErrorIngredientNotFound{Id: ingredientId}) {
-				http.Error(w, err.Error(), http.StatusNotFound)
-
-				return
-			}
-		}
-
-		if existingIngredient.UserId != userId {
-			http.Error(w, "You do not have permission to access this page", http.StatusForbidden)
-
-			return
-		}
-
-		ingredient := meals.Ingredient{
-			Id:     ingredientId,
-			UserId: userId,
-			Name:   r.FormValue("name"),
-		}
-
-		err = service.UpdateIngredient(r.Context(), &ingredient)
-
-		if err != nil && errors.Is(err, meals.ErrorFormInvalid{}) {
-			formJson, _ := json.Marshal(ingredient)
-			setMessage(w, "formData", string(formJson))
-
-			http.Redirect(w, r, "/ingredients/"+r.PathValue("id"), http.StatusFound)
-
-			return
-		}
-
-		if err != nil {
-			log.Println(err)
-			http.Error(w, "server error", http.StatusInternalServerError)
-
-			return
-		}
-
-		http.Redirect(w, r, "/ingredients", http.StatusFound)
 	})
 }
 

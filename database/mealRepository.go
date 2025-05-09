@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/jameswhoughton/meals/internal/meals"
 )
@@ -21,16 +20,14 @@ type MealRepository struct {
 	db *sql.DB
 }
 
-func (mr *MealRepository) getIngredientsForMeal(ctx context.Context, id int) ([]meals.MealIngredient, error) {
+func (mr *MealRepository) getIngredientsForMeal(ctx context.Context, id int) ([]meals.Ingredient, error) {
 	query := `
-	SELECT ingredient_id, i.name, quantity, unit, is_main
-	FROM ingredients_meals im
-	LEFT JOIN ingredients i
-	ON im.ingredient_id = i.id
-	WHERE im.meal_id = ?
+	SELECT id, name, quantity, unit
+	FROM meal_ingredients
+	WHERE meal_id = ?
 	`
 
-	var ingredients []meals.MealIngredient
+	var ingredients []meals.Ingredient
 
 	rows, err := mr.db.QueryContext(ctx, query, id)
 
@@ -41,9 +38,9 @@ func (mr *MealRepository) getIngredientsForMeal(ctx context.Context, id int) ([]
 	defer rows.Close()
 
 	for rows.Next() {
-		var ingredient meals.MealIngredient
+		var ingredient meals.Ingredient
 
-		rows.Scan(&ingredient.Id, &ingredient.Name, &ingredient.Quantity, &ingredient.Unit, &ingredient.IsMain)
+		rows.Scan(&ingredient.Id, &ingredient.Name, &ingredient.Quantity, &ingredient.Unit)
 
 		ingredients = append(ingredients, ingredient)
 	}
@@ -146,10 +143,10 @@ func (mr *MealRepository) Find(ctx context.Context, filter meals.MealFilter) ([]
 		values = append(values, "%"+*filter.Name+"%")
 	}
 
-	if len(filter.HasTags) > 0 {
+	if len(filter.Tags) > 0 {
 		var params []string
 
-		for _, v := range filter.HasTags {
+		for _, v := range filter.Tags {
 			params = append(params, "?")
 			values = append(values, v)
 		}
@@ -162,44 +159,10 @@ func (mr *MealRepository) Find(ctx context.Context, filter meals.MealFilter) ([]
 		`
 	}
 
-	if len(filter.ExcludeMainIngredient) > 0 {
-		var params []string
-
-		for _, v := range filter.ExcludeMainIngredient {
-			params = append(params, "?")
-			values = append(values, v)
-		}
-
-		wheres = append(wheres, "AND (is_main = 1 AND ingredient_id NOT IN ("+strings.Join(params, ", ")+"))")
-
-		query += `
-		LEFT JOIN ingredients_meals i
-		ON m.id = i.meal_id
-		`
-	}
-
-	if filter.DateRange != nil {
-
-		if filter.DateRange.Start != nil && filter.DateRange.End != nil {
-			wheres = append(wheres, "AND (IFNULL(p.date, 0) > ? AND IFNULL(p.date, 0) < ?)")
-			values = append(values, *filter.DateRange.Start, *filter.DateRange.End)
-		} else if filter.DateRange.Start != nil {
-			wheres = append(wheres, "AND IFNULL(p.date, 0) > ?")
-			values = append(values, *filter.DateRange.Start)
-		} else {
-			wheres = append(wheres, "AND IFNULL(p.date, 0) < ?")
-			values = append(values, *filter.DateRange.End)
-		}
-		query += `
-		LEFT JOIN planner p
-		ON m.id = p.meal_id
-		`
-	}
-
 	query += "WHERE 1 = 1 " + strings.Join(wheres, " ")
 
-	if len(filter.HasTags) > 0 {
-		query += "GROUP BY m.id HAVING COUNT(DISTINCT tag_id) = " + strconv.Itoa(len(filter.HasTags))
+	if len(filter.Tags) > 0 {
+		query += "GROUP BY m.id HAVING COUNT(DISTINCT tag_id) = " + strconv.Itoa(len(filter.Tags))
 	}
 
 	rows, err := mr.db.QueryContext(ctx, query, values...)
@@ -227,8 +190,12 @@ func (mr *MealRepository) Find(ctx context.Context, filter meals.MealFilter) ([]
 	return mealList, nil
 }
 
-func createIngredient(ctx context.Context, tx *sql.Tx, userId int, name string) (int, error) {
-	result, err := tx.ExecContext(ctx, "INSERT INTO ingredients (user_id, name) VALUES (?, ?)", userId, name)
+func createIngredient(ctx context.Context, tx *sql.Tx, mealId int, ingredient meals.Ingredient) (int, error) {
+	result, err := tx.ExecContext(ctx, `
+		INSERT INTO meal_ingredients
+		(meal_id, name, quantity, unit)
+		VALUES (?, ?, ?, ?)
+	`, mealId, ingredient.Name, ingredient.Quantity, ingredient.Unit)
 
 	if err != nil {
 		return 0, err
@@ -243,21 +210,14 @@ func createIngredient(ctx context.Context, tx *sql.Tx, userId int, name string) 
 	return int(id), nil
 }
 
-func associateIngredientToMeal(ctx context.Context, tx *sql.Tx, mealId int, ingredient meals.MealIngredient) error {
-	insertUpdateQuery := `
-	REPLACE INTO ingredients_meals
-	(ingredient_id, meal_id, quantity, unit, is_main)
-	VALUES (?, ?, ?, ?, ?)
-	`
-	_, err := tx.ExecContext(
-		ctx,
-		insertUpdateQuery,
-		ingredient.Id,
-		mealId,
-		ingredient.Quantity,
-		ingredient.Unit,
-		ingredient.IsMain,
-	)
+func updateIngredient(ctx context.Context, tx *sql.Tx, ingredient meals.Ingredient) error {
+	_, err := tx.ExecContext(ctx, `
+		UPDATE meal_ingredients
+		SET name = ?,
+		quantity = ?,
+		unit = ?
+		WHERE id = ?
+	`, ingredient.Name, ingredient.Quantity, ingredient.Unit, ingredient.Id)
 
 	if err != nil {
 		return err
@@ -377,21 +337,13 @@ func (mr *MealRepository) Create(ctx context.Context, meal meals.Meal) (meals.Me
 	meal.Id = int(id)
 
 	for i, ingredient := range meal.Ingredients {
-		if ingredient.Id == 0 {
-			id, err := createIngredient(ctx, tx, meal.UserId, ingredient.Name)
-
-			if err != nil {
-				return meal, fmt.Errorf("MealRepository.Create: Error inserting new ingredient: %v", err)
-			}
-
-			meal.Ingredients[i].Id = id
-		}
-
-		err = associateIngredientToMeal(ctx, tx, meal.Id, meal.Ingredients[i])
+		id, err := createIngredient(ctx, tx, meal.UserId, ingredient)
 
 		if err != nil {
-			return meal, fmt.Errorf("MealRepository.Create: Error associating ingredient: %v", err)
+			return meal, fmt.Errorf("MealRepository.Create: Error inserting new ingredient: %v", err)
 		}
+
+		meal.Ingredients[i].Id = id
 	}
 
 	for i, tag := range meal.Tags {
@@ -452,42 +404,43 @@ func (mr *MealRepository) Update(ctx context.Context, meal meals.Meal) error {
 
 	for i, ingredient := range meal.Ingredients {
 		if ingredient.Id == 0 {
-			id, err := createIngredient(ctx, tx, meal.UserId, ingredient.Name)
+			id, err := createIngredient(ctx, tx, meal.UserId, ingredient)
 
 			if err != nil {
 				return fmt.Errorf("MealRepository.Update: Error inserting new ingredient: %v", err)
 			}
 
 			meal.Ingredients[i].Id = id
+
+			deleteParams = append(deleteParams, id)
+
+			continue
 		}
 
-		err = associateIngredientToMeal(ctx, tx, meal.Id, meal.Ingredients[i])
+		err := updateIngredient(ctx, tx, ingredient)
 
 		if err != nil {
-			return fmt.Errorf("MealRepository.Update: Error associating ingredient: %v", err)
+			return fmt.Errorf("MealRepository.Update: Error updating existing ingredient: %v", err)
 		}
 
-		deleteParams = append(deleteParams, meal.Ingredients[i].Id)
+		deleteParams = append(deleteParams, ingredient.Id)
 	}
 
 	// Remove any ingredients no longer associated with the meal
 	deleteIngredientsQuery := `
-	DELETE FROM ingredients_meals
+	DELETE FROM meal_ingredients
 	WHERE meal_id = ?
 	`
 
 	if len(deleteParams) > 1 {
-		deleteIngredientsQuery += `AND ingredient_id NOT IN (?` + strings.Repeat(",?", len(deleteParams)-2) + `)`
+		deleteIngredientsQuery += `AND id NOT IN (?` + strings.Repeat(",?", len(deleteParams)-2) + `)`
 	}
 
 	_, err = tx.ExecContext(ctx, deleteIngredientsQuery, deleteParams...)
 
 	if err != nil {
-		return fmt.Errorf("MealRepository.Update: Error disassociating ingredient: %v", err)
+		return fmt.Errorf("MealRepository.Update: Error deleting ingredient: %v", err)
 	}
-
-	// Remove any ingredients that are no longer associated with any meal
-	err = removeOrphanedIngredients(ctx, tx)
 
 	deleteParams = []any{meal.Id}
 
@@ -555,7 +508,7 @@ func (mr *MealRepository) Destroy(ctx context.Context, id int) error {
 		return fmt.Errorf("MealRepository.Destroy: Error removing meal (%d) from planner: %v", id, err)
 	}
 
-	if _, err := tx.ExecContext(ctx, "DELETE FROM ingredients_meals WHERE meal_id = ?", id); err != nil {
+	if _, err := tx.ExecContext(ctx, "DELETE FROM meal_ingredients WHERE meal_id = ?", id); err != nil {
 		return fmt.Errorf("MealRepository.Destroy: Error removing ingredients from meal (%d): %v", id, err)
 	}
 
@@ -567,8 +520,6 @@ func (mr *MealRepository) Destroy(ctx context.Context, id int) error {
 		return fmt.Errorf("MealRepository.Destroy: Error removing meal (%d): %v", id, err)
 	}
 
-	removeOrphanedIngredients(ctx, tx)
-
 	removeOrphanedTags(ctx, tx)
 
 	if err := tx.Commit(); err != nil {
@@ -578,18 +529,29 @@ func (mr *MealRepository) Destroy(ctx context.Context, id int) error {
 	return nil
 }
 
-func (mr *MealRepository) AssignToDate(ctx context.Context, id int, date time.Time) error {
-	query := `
-	INSERT OR REPLACE INTO planner 
-	(meal_id, date)
-	SELECT ?, ?
-	WHERE NOT EXISTS (SELECT * FROM planner WHERE meal_id = ? AND date = ?)
-	`
-	_, err := mr.db.ExecContext(ctx, query, id, date, id, date)
+func (mr *MealRepository) FindIngredientNames(ctx context.Context, searchString string) ([]string, error) {
+	ingredients := make([]string, 0)
 
+	rows, err := mr.db.QueryContext(
+		ctx,
+		`SELECT DISTINCT name FROM meal_ingredients WHERE name LIKE ?`,
+		"%"+searchString+"%",
+	)
 	if err != nil {
-		return fmt.Errorf("MealRepository.AssignToDate: Error assigning meal %d to date %v: %v", id, date, err)
+		return ingredients, fmt.Errorf("MealRepository.FindIngredientNames: query error: %v", err)
 	}
 
-	return nil
+	defer rows.Close()
+
+	for rows.Next() {
+		var name string
+
+		if err = rows.Scan(&name); err != nil {
+			return ingredients, fmt.Errorf("MealRepository.FindIngredientNames: row parse error: %v", err)
+		}
+
+		ingredients = append(ingredients, name)
+	}
+
+	return ingredients, nil
 }

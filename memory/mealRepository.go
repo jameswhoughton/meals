@@ -41,52 +41,17 @@ func (mr *MealRepository) Find(ctx context.Context, filter meals.MealFilter) ([]
 			continue
 		}
 
-		if len(filter.HasTags) > 0 {
-			var found bool
+		if len(filter.Tags) > 0 {
+			var foundCount int
 
 			for _, tag := range meal.Tags {
-				if slices.Contains(filter.HasTags, tag.Id) {
-					found = true
+				if slices.Contains(filter.Tags, tag.Id) {
+					foundCount++
 				}
 			}
 
-			if !found {
+			if len(filter.Tags) != foundCount {
 				continue
-			}
-		}
-
-		if filter.ExcludeMainIngredient != nil {
-			skip := false
-			for _, ingredient := range meal.Ingredients {
-				if ingredient.IsMain && slices.Contains(filter.ExcludeMainIngredient, ingredient.Id) {
-					skip = true
-					break
-				}
-			}
-			if skip {
-				continue
-			}
-		}
-
-		if filter.DateRange != nil {
-			if dates, ok := mr.Calendar[meal.Id]; ok {
-				skip := false
-				for _, date := range dates {
-					if filter.DateRange.Start != nil && date.Before(*filter.DateRange.Start) {
-						skip = true
-						break
-					}
-
-					if filter.DateRange.End != nil && date.After(*filter.DateRange.End) {
-						skip = true
-						break
-					}
-
-				}
-
-				if skip {
-					continue
-				}
 			}
 		}
 
@@ -210,4 +175,20 @@ func (mr *MealRepository) AssignToDate(ctx context.Context, id int, date time.Ti
 	}
 
 	return nil
+}
+
+func (mr *MealRepository) FindIngredientNames(ctx context.Context, searchString string) ([]string, error) {
+	names := make([]string, 0)
+
+	for _, meal := range mr.Store {
+		for _, ingredient := range meal.Ingredients {
+			if !strings.Contains(strings.ToLower(ingredient.Name), strings.ToLower(searchString)) || slices.Contains(names, ingredient.Name) {
+				continue
+			}
+
+			names = append(names, ingredient.Name)
+		}
+	}
+
+	return names, nil
 }

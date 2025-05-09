@@ -57,3 +57,4 @@
     - [ ] Configure mailhog/mailtrap with Docker
 - [ ] Meal import/export
 - [ ] Add default filters for days
+- [ ] User can delete their account and data
