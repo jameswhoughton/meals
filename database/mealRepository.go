@@ -163,8 +163,6 @@ func (mr *MealRepository) Find(ctx context.Context, filter meals.MealFilter) ([]
 		query += "GROUP BY m.id HAVING COUNT(DISTINCT t.name) = " + strconv.Itoa(len(filter.Tags))
 	}
 
-	fmt.Println(query, values)
-
 	rows, err := mr.db.QueryContext(ctx, query, values...)
 
 	if err != nil {
