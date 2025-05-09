@@ -43,22 +43,20 @@
 - [ ] Add test for SessionRepository.Refresh
 - [ ] Add validation to restrict user to assigning only their own meals
 - [ ] Review and polish UI
-
 - [x] Remove ingredients list/edit pages and handlers
 - [x] Remove the ingredients table
 - [x] Add name field to meal_ingredients table
 - [x] Update Find function in IR to search distinct ingredients in meal_ingredients
 - [x] Update meal_repository to remove createIngredient
 - [x] Update meals.Service to remove the populateIngredientIds function
-- [ ] Update meal form page to populate the name of an ingredient from the typeahead
-- [ ] Make the name editable for existinng ingredients from the meal page
-
+- [x] Update meal form page to populate the name of an ingredient from the typeahead
+- [x] Make the name editable for existinng ingredients from the meal page
+- [ ] Add typeahead search for units
 
 ## Bugs
 
 - [x] Main ingredient bug
 - [x] Checkboxes not checked when viewing a meal
-
 
 ## Roadmap
 
