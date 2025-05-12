@@ -62,40 +62,22 @@
 <script src="/static/components/mealTag.js"></script>
 <script src="/static/components/requestTypeahead.js"></script>
 <script>
-function addTag(tag) {
+function addTag() {
     const node = document.createElement('meal-tag')
     const tagCount = document.querySelectorAll('meal-tag').length
 
     node.dataset.index = tagCount
 
-    if (tag !== undefined) {
-        node.dataset.id = tag.id
-        node.dataset.name = tag.label
-    }
-
     document.getElementById('tags').append(node)
 }
 
-const tagTypeahead = document.getElementById('input-tag-search')
-
-tagTypeahead.addEventListener('selected', (e) => addTag(e.detail))
-
-function addIngredient(ingredient) {
+function addIngredient() {
     const node = document.createElement('meal-ingredient')
     const ingredientCount = document.querySelectorAll('meal-ingredient').length
 
     node.dataset.index = ingredientCount
 
-    if (ingredient !== undefined) {
-        node.dataset.id = ingredient.id
-        node.dataset.name = ingredient.label
-    }
-
     document.getElementById('ingredients').append(node)
 }
-
-const ingredientTypeahead = document.getElementById('input-ingredient-search')
-
-ingredientTypeahead.addEventListener('selected', (e) => addIngredient(e.detail))
 </script>
 {{end}}

@@ -110,9 +110,9 @@ customElements.define(
 
                         input.addEventListener('keyup', (e) => this.debounceSearch(e.target.value))
 
-                        input.placeholder = this.getAttribute('data-placeholder')
+                        input.placeholder = this.getAttribute('data-placeholder') ?? ''
 
-                        input.value = this.getAttribute('data-value')
+                        input.value = this.getAttribute('data-value') !== 'null' ? this.getAttribute('data-value') : ''
                         input.name = this.getAttribute('data-name')
 
                         this.appendChild(template)
