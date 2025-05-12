@@ -10,11 +10,7 @@ This is not meant to be used in production (although I plan to use it personally
 
 ## Architecture Overview
 
-The project is split across multiple packages (In some you will find additional README files). 
-
-### internal/
-
-The business logic is all contained within the internal packages, split by domain. Here you will find the the repository interfaces and domain services.
+The project is split across multiple packages with the business logic located in internal/*. I have used the service/repository pattern where the repositories are solely responsible for saving to the data store and the services are responsible for ensuring the data passed to and from the repository is valid.
 
 ### internal/account
 
@@ -30,15 +26,17 @@ Contains the methods to assign meals to a date.
 
 ### database
 
-The database package contains implementations of the internal repositories using SQLite as a store. I decided to use SQLite for this project as it is lightweight and more than capable of supporting a small/personal web application such as this.
+The database package contains implementations of the `internal/*` repositories using SQLite as a store. Also contained here are the migrations files used to build the database schema. 
+
+I decided to use SQLite for this project as it is lightweight and more than capable of supporting a small/personal web application such as this.
 
 ### memory
 
-This package contains in memory implementations of the repositories defined in internal/*, these are intended for use in tests only. Each repository has it's own contract test which is used to ensure consistent behaviour between the memory and SQLite implimentations. This allows them to be confidently used when testing other layers of the application (e.g. services and handlers).
+This package contains in memory implementations of the repositories defined in `internal/*`, these are intended for use in tests only. Each repository has it's own contract test which is used to ensure consistent behaviour between the memory and SQLite implimentations, allowing them to be confidently used when testing other layers of the application (e.g. services and handlers).
 
 ### web
 
-In the web package the handlers are defined which use the services/repositorys defined in internal/* to create a web interface for the application. Also contained in this package are html template files along with non-go assets (e.g. JS, CSS and images).
+In the web package the handlers are defined, which use the services/repositories defined in `internal/*` to create a web interface for the application. Also contained in this package are html template files along with non-go assets (e.g. JS, CSS and images).
 
 ### cmd/server
 
