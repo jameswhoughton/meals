@@ -16,29 +16,33 @@ The project is split across multiple packages (In some you will find additional 
 
 The business logic is all contained within the internal packages, split by domain. Here you will find the the repository interfaces and domain services.
 
-### internal/auth
+### internal/account
 
-This package contains all business logic related to interacting with a user and session management.
+Contains methods to create and update users.
 
 ### internal/meals
 
-The meals package contains all logic related to interacting with a meal.
+Contains methods to create and update meals.
+
+### internal/planner
+
+Contains the methods to assign meals to a date.
 
 ### database
 
-The database package contains implementations of the internal repositories using SQLite as a store.
+The database package contains implementations of the internal repositories using SQLite as a store. I decided to use SQLite for this project as it is lightweight and more than capable of supporting a small/personal web application such as this.
 
 ### memory
 
-The memory package contains in memory implementations of the repositories defined in internal, these are intended for use in tests only.
+This package contains in memory implementations of the repositories defined in internal/*, these are intended for use in tests only. Each repository has it's own contract test which is used to ensure consistent behaviour between the memory and SQLite implimentations. This allows them to be confidently used when testing other layers of the application (e.g. services and handlers).
 
 ### web
 
-This package contains all handlers, frontend assets and templates to build the UI. As the UI is fairly straight forward, I have decided to not reach for a frontend framework, instead using a few custom web components where necessary.
+In the web package the handlers are defined which use the services/repositorys defined in internal/* to create a web interface for the application. Also contained in this package are html template files along with non-go assets (e.g. JS, CSS and images).
 
 ### cmd/server
 
-This is the main web app executeable.
+This is the main web app executeable. Here the repositories/services and web server are created and the server is started. The graceful shutdown process is also handled here.
 
 ## Status
 

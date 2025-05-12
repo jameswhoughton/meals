@@ -38,7 +38,7 @@
 - [ ] Prevent user updating name of ingredient/tag to one that already exists
 - [ ] Add tests for tag handlers
 - [x] Move auth handlers to web
-- [ ] Add tests for auth handlers
+- [ ] Add tests for account handlers
 - [ ] Add confirmation modal for deletion
 - [ ] Add test for SessionRepository.Refresh
 - [ ] Add validation to restrict user to assigning only their own meals
