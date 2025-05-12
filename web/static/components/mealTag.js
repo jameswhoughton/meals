@@ -35,7 +35,9 @@ customElements.define(
 
             const index = this.getAttribute('data-index')
 
-            template.querySelector('[data-name="tagName"]').dataset.value = this.getAttribute('data-name')
+            if (this.hasAttribute('data-name')) {
+                    template.querySelector('[data-name="tagName"]').dataset.value = this.getAttribute('data-name')
+            }
 
             if (existingTag) {
                 template.querySelector('[name="tagId"]').value = id

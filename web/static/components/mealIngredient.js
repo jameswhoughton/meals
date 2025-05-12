@@ -44,7 +44,9 @@ customElements.define(
 
                         const index = this.getAttribute('data-index')
 
-                        template.querySelector('[data-name="ingredientName"]').dataset.value = this.getAttribute('data-name')
+                        if (this.hasAttribute('data-name')) {
+                                template.querySelector('[data-name="ingredientName"]').dataset.value = this.getAttribute('data-name')
+                        }
                         template.querySelector('.quantity').value = this.getAttribute('data-quantity')
                         template.querySelector('.unit').value = this.getAttribute('data-unit')
 

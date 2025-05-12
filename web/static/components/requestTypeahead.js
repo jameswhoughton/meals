@@ -112,7 +112,7 @@ customElements.define(
 
                         input.placeholder = this.getAttribute('data-placeholder') ?? ''
 
-                        input.value = this.getAttribute('data-value') !== 'null' ? this.getAttribute('data-value') : ''
+                        input.value = this.getAttribute('data-value')
                         input.name = this.getAttribute('data-name')
 
                         this.appendChild(template)
