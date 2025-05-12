@@ -3,7 +3,6 @@ package web
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/fs"
 	"log"
 	"net/http"
@@ -358,7 +357,6 @@ func GetSearchIngredientsHandler(mealRepo meals.Repository) http.Handler {
 		queryString := r.URL.Query().Get("query")
 
 		results, err := mealRepo.FindIngredientNames(r.Context(), queryString)
-		fmt.Println(results)
 
 		if err != nil {
 			log.Println(err)
