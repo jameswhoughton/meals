@@ -53,9 +53,9 @@
 - [x] Make the name editable for existinng ingredients from the meal page
 - [ ] Add typeahead search for units
 - [ ] Update readme
-- [ ] Add meal seeder to planner test
-- [ ] Add seeders to in memory tests
-- [ ] Remove sqlite directory once everything is working
+- [x] Add meal seeder to planner test
+- [x] Add seeders to in memory tests
+- [x] Remove sqlite directory once everything is working
 - [ ] Move DB details to env file and setup parsing in main.go
 - [ ] Create Dockerfile to build application
 - [ ] Manually deploy to AWS

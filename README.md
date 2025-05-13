@@ -28,8 +28,6 @@ Contains the methods to assign meals to a date.
 
 The database package contains implementations of the `internal/*` repositories using SQLite as a store. Also contained here are the migrations files used to build the database schema. 
 
-I decided to use SQLite for this project as it is lightweight and more than capable of supporting a small/personal web application such as this.
-
 ### memory
 
 This package contains in memory implementations of the repositories defined in `internal/*`, these are intended for use in tests only. Each repository has it's own contract test which is used to ensure consistent behaviour between the memory and SQLite implimentations, allowing them to be confidently used when testing other layers of the application (e.g. services and handlers).
@@ -62,6 +60,8 @@ This is the main web app executeable. Here the repositories/services and web ser
 - Install Go.
 - Install Node (required to build Tailwind assets).
 - Install Make.
+- Install Docker.
 - Navigate to the root of the project and run `make build`.
+- Run `docker compose up -d` to spin up the dev and testing MySQL servers.
 - Run `./meals_server`. This should create and migrate a SQLite DB (`meals.db`) in the same directory.
 - Navigate to `localhost:8000` in your browser.
