@@ -3,16 +3,16 @@ package database_test
 import (
 	"database/sql"
 	"log"
-	"os"
 	"testing"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/jameswhoughton/meals/database"
 	"github.com/jameswhoughton/meals/internal/planner"
 )
 
 func TestDatabasePlannerRepository(t *testing.T) {
-	init := func(meals []planner.Meal) (planner.Repository, func()) {
-		conn, err := sql.Open("sqlite3", "meals.db")
+	init := func() (planner.Repository, func(meal planner.Meal), func()) {
+		conn, err := sql.Open("mysql", "root@tcp(127.0.0.1:8002)/meals")
 
 		if err != nil {
 			log.Fatal(err)
@@ -24,18 +24,14 @@ func TestDatabasePlannerRepository(t *testing.T) {
 			log.Fatal(err)
 		}
 
-		for _, meal := range meals {
-			_, err := conn.Exec("INSERT INTO meals (id, user_id, name) VALUES (?, ?, ?)", meal.Id, meal.UserId, meal.Name)
+		closeDown := func() {
+			err := database.Rollback(conn)
 
 			if err != nil {
-				log.Fatalf("Error inserting test data: %v", err)
+				log.Fatal(err)
 			}
 		}
-
-		closeDown := func() {
-			os.Remove("meals.db")
-		}
-		return database.NewPlannerRepository(conn), closeDown
+		return database.NewPlannerRepository(conn), func(meal planner.Meal) { seedPlannerMeal(conn, meal) }, closeDown
 	}
 
 	contract := planner.RepositoryContract{

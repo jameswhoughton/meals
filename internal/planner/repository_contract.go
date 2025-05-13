@@ -9,7 +9,7 @@ import (
 )
 
 type RepositoryContract struct {
-	Repo func([]Meal) (Repository, func())
+	Repo func() (Repository, func(meal Meal), func())
 }
 
 func (i RepositoryContract) Test(t *testing.T) {
@@ -25,11 +25,11 @@ func (i RepositoryContract) Test(t *testing.T) {
 			UserId: 2,
 			Name:   "Lamb Curry",
 		}
-		repo, closeDown := i.Repo([]Meal{
-			meal1,
-			meal2,
-		})
+		repo, seeder, closeDown := i.Repo()
 		defer closeDown()
+
+		seeder(meal1)
+		seeder(meal2)
 
 		ctx := context.Background()
 
@@ -79,13 +79,14 @@ func (i RepositoryContract) Test(t *testing.T) {
 	})
 
 	t.Run("The time should be ignored when interacting with the planner", func(t *testing.T) {
-		repo, closeDown := i.Repo([]Meal{
-			{
-				Id:     23,
-				UserId: 4,
-			},
-		})
+		repo, seeder, closeDown := i.Repo()
 		defer closeDown()
+
+		seeder(Meal{
+			Id:     23,
+			UserId: 4,
+			Name:   "Salmon stir-fry",
+		})
 
 		ctx := context.Background()
 

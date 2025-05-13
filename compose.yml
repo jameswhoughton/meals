@@ -1,0 +1,24 @@
+services:
+  db-dev:
+    image: mysql
+    restart: always
+    ports:
+      - "8001:3306"
+    environment:
+      MYSQL_DATABASE: meals
+      MYSQL_ALLOW_EMPTY_PASSWORD: yes
+    volumes:
+      - db_dev_data:/var/lib/mysql
+  db-testing:
+    image: mysql
+    restart: always
+    ports:
+      - "8002:3306"
+    environment:
+      MYSQL_DATABASE: meals
+      MYSQL_ALLOW_EMPTY_PASSWORD: yes
+    volumes:
+      - db_testing_data:/var/lib/mysql
+volumes:
+  db_dev_data:
+  db_testing_data:

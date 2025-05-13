@@ -25,10 +25,14 @@ func (c *RepositoryContract) Test(t *testing.T) {
 
 		// Add a new user
 		form := User{
-			Email:    newUserEmail,
-			Password: newUserPassword,
-			Name:     newName,
+			Email:     newUserEmail,
+			Password:  newUserPassword,
+			Name:      newName,
+			CreatedAt: time.Now(),
 		}
+
+		form.UpdatedAt = form.CreatedAt
+
 		user, err := repo.Create(ctx, form)
 
 		if err != nil {

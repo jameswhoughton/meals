@@ -15,15 +15,17 @@ type toPtrValue interface {
 func toPtr[T toPtrValue](v T) *T { return &v }
 
 type RepositoryContract struct {
-	Repo func() (Repository, func())
+	Repo func() (Repository, func(userId int), func())
 }
 
 func (i RepositoryContract) Test(t *testing.T) {
 	t.Run("Can create get update and delete a meal", func(t *testing.T) {
-		repo, closeDown := i.Repo()
+		repo, seedUser, closeDown := i.Repo()
 		defer closeDown()
 
 		ctx := context.Background()
+
+		seedUser(1)
 
 		newMeal := Meal{
 			Name:   "Bolognese",
@@ -162,10 +164,13 @@ func (i RepositoryContract) Test(t *testing.T) {
 	})
 
 	t.Run("Can filter a list of meals", func(t *testing.T) {
-		repo, closeDown := i.Repo()
+		repo, seedUser, closeDown := i.Repo()
 		defer closeDown()
 
 		ctx := context.Background()
+
+		seedUser(1)
+		seedUser(2)
 
 		mealA, _ := repo.Create(ctx, Meal{
 			UserId: 1,
@@ -285,7 +290,7 @@ func (i RepositoryContract) Test(t *testing.T) {
 	})
 
 	t.Run("Must include UserId when filtering meals", func(t *testing.T) {
-		repo, closeDown := i.Repo()
+		repo, _, closeDown := i.Repo()
 		defer closeDown()
 
 		ctx := context.Background()
@@ -302,10 +307,13 @@ func (i RepositoryContract) Test(t *testing.T) {
 
 	})
 	t.Run("Can filter a list of distinct ingredient names", func(t *testing.T) {
-		repo, closeDown := i.Repo()
+		repo, seedUser, closeDown := i.Repo()
 		defer closeDown()
 
 		ctx := context.Background()
+
+		seedUser(1)
+		seedUser(2)
 
 		repo.Create(ctx, Meal{
 			UserId: 1,
@@ -360,10 +368,13 @@ func (i RepositoryContract) Test(t *testing.T) {
 
 	})
 	t.Run("Can filter a list of distinct tag names", func(t *testing.T) {
-		repo, closeDown := i.Repo()
+		repo, seedUser, closeDown := i.Repo()
 		defer closeDown()
 
 		ctx := context.Background()
+
+		seedUser(1)
+		seedUser(2)
 
 		repo.Create(ctx, Meal{
 			UserId: 1,
@@ -418,10 +429,12 @@ func (i RepositoryContract) Test(t *testing.T) {
 
 	})
 	t.Run("Can list distinct tag names for a user", func(t *testing.T) {
-		repo, closeDown := i.Repo()
+		repo, seedUser, closeDown := i.Repo()
 		defer closeDown()
 
 		ctx := context.Background()
+
+		seedUser(1)
 
 		repo.Create(ctx, Meal{
 			UserId: 1,

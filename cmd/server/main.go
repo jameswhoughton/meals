@@ -9,15 +9,15 @@ import (
 	"syscall"
 	"time"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/jameswhoughton/meals/database"
 	"github.com/jameswhoughton/meals/internal/account"
 	"github.com/jameswhoughton/meals/internal/meals"
 	"github.com/jameswhoughton/meals/web"
-	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
-	conn, err := sql.Open("sqlite3", "meals.db")
+	conn, err := sql.Open("mysql", "root@tcp(127.0.0.1:8001)/meals?parseTime=true")
 	defer conn.Close()
 
 	if err != nil {

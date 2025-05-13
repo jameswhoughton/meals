@@ -3,16 +3,16 @@ package database_test
 import (
 	"database/sql"
 	"log"
-	"os"
 	"testing"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/jameswhoughton/meals/database"
 	"github.com/jameswhoughton/meals/internal/meals"
 )
 
-func TestDatabaseRepository(t *testing.T) {
-	init := func() (meals.Repository, func()) {
-		conn, err := sql.Open("sqlite3", "db")
+func TestDatabaseMealRepository(t *testing.T) {
+	init := func() (meals.Repository, func(userId int), func()) {
+		conn, err := sql.Open("mysql", "root@tcp(127.0.0.1:8002)/meals")
 
 		if err != nil {
 			log.Fatal(err)
@@ -25,9 +25,13 @@ func TestDatabaseRepository(t *testing.T) {
 		}
 
 		closeDown := func() {
-			os.Remove("db")
+			err := database.Rollback(conn)
+
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
-		return database.NewMealRepository(conn), closeDown
+		return database.NewMealRepository(conn), func(userId int) { seedUser(conn, userId) }, closeDown
 	}
 
 	contract := meals.RepositoryContract{
