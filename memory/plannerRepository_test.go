@@ -8,13 +8,14 @@ import (
 )
 
 func TestMemoryPlannerRepository(t *testing.T) {
-	init := func(meals []planner.Meal) (planner.Repository, func()) {
+	init := func() (planner.Repository, func(m planner.Meal), func()) {
 		store := make(map[string]int)
 
-		return &memory.PlannerRepository{
+		repo := &memory.PlannerRepository{
 			Planner: store,
-			Meals:   meals,
-		}, func() {}
+		}
+
+		return repo, func(m planner.Meal) { repo.Meals = append(repo.Meals, m) }, func() {}
 	}
 
 	contract := planner.RepositoryContract{

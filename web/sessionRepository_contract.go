@@ -8,15 +8,17 @@ import (
 )
 
 type SessionRepositoryContract struct {
-	Repo func() (SessionRepository, func())
+	Repo func() (SessionRepository, func(id int), func())
 }
 
 func (rc *SessionRepositoryContract) Test(t *testing.T) {
 	t.Run("Can create get and destroy a session", func(t *testing.T) {
-		repo, closeDown := rc.Repo()
+		repo, userSeeder, closeDown := rc.Repo()
 		defer closeDown()
 
 		ctx := context.Background()
+
+		userSeeder(1)
 
 		newSession := Session{
 			SessionId: "NEW_SESSION_01",
@@ -79,26 +81,33 @@ func (rc *SessionRepositoryContract) Test(t *testing.T) {
 	})
 
 	t.Run("Can delete sessions that have exceeded the given lifetime", func(t *testing.T) {
-		repo, closeDown := rc.Repo()
+		repo, userSeeder, closeDown := rc.Repo()
 		defer closeDown()
 
 		ctx := context.Background()
 
+		userSeeder(1)
+		userSeeder(2)
+		userSeeder(3)
+
 		repo.Create(ctx, Session{
 			UserId:    1,
 			SessionId: "AA",
+			CreatedAt: time.Now(),
 			UpdatedAt: time.Date(2025, time.March, 5, 12, 30, 0, 0, time.UTC),
 		})
 
 		repo.Create(ctx, Session{
 			UserId:    2,
 			SessionId: "BB",
+			CreatedAt: time.Now(),
 			UpdatedAt: time.Date(2025, time.March, 5, 12, 45, 0, 0, time.UTC),
 		})
 
 		repo.Create(ctx, Session{
 			UserId:    3,
 			SessionId: "CC",
+			CreatedAt: time.Now(),
 			UpdatedAt: time.Date(2025, time.March, 5, 13, 31, 0, 0, time.UTC),
 		})
 

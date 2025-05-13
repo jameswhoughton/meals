@@ -11,8 +11,8 @@ import (
 )
 
 func TestDatabaseSessionService(t *testing.T) {
-	init := func() (web.SessionRepository, func()) {
-		conn, err := sql.Open("mysql", "root@tcp(127.0.0.1:8002)/meals")
+	init := func() (web.SessionRepository, func(id int), func()) {
+		conn, err := sql.Open("mysql", "root@tcp(127.0.0.1:8002)/meals?parseTime=true")
 
 		if err != nil {
 			log.Fatal(err)
@@ -31,7 +31,7 @@ func TestDatabaseSessionService(t *testing.T) {
 				log.Fatal(err)
 			}
 		}
-		return database.NewSessionRepository(conn), closeDown
+		return database.NewSessionRepository(conn), func(id int) { seedUser(conn, id) }, closeDown
 	}
 
 	contract := web.SessionRepositoryContract{

@@ -63,14 +63,11 @@ func (pr *PlannerRepository) Get(ctx context.Context, date time.Time, userId int
 
 func (pr *PlannerRepository) Clear(ctx context.Context, date time.Time, userId int) error {
 	_, err := pr.db.ExecContext(ctx, `
-		DELETE FROM planner
-		WHERE id IN (
-			SELECT p.id FROM planner p
-			LEFT JOIN meals m
-			ON m.id = p.meal_id
-			WHERE date = ?
-			AND user_id = ?
-		)
+		DELETE p FROM planner p
+		LEFT JOIN meals m
+		ON m.id = p.meal_id
+		WHERE date = ?
+		AND user_id = ?
 	`, normaliseDate(date), userId)
 
 	if err != nil {
