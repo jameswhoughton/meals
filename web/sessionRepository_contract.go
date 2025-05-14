@@ -148,3 +148,32 @@ func (rc *SessionRepositoryContract) Test(t *testing.T) {
 }
 
 // Test that Refresh updates the UpdatedAt field
+func (rc *SessionRepositoryContract) TestRefreshChangesUpdatedAt(t *testing.T) {
+	repo, userSeeder, closeDown := rc.Repo()
+	defer closeDown()
+
+	ctx := context.Background()
+
+	userSeeder(1)
+
+	updatedAt := time.Now().Add(time.Hour * -48)
+
+	repo.Create(ctx, Session{
+		SessionId: "A",
+		UserId:    1,
+		UpdatedAt: updatedAt,
+	})
+
+	repo.Refresh(ctx, "A")
+
+	fetchedSession, err := repo.Get(ctx, "A")
+
+	if err != nil {
+		t.Errorf("Unexpected error fetching session: %v", err)
+	}
+
+	if fetchedSession.UpdatedAt.Day() == updatedAt.Day() {
+		t.Errorf("Session has not been refreshed, old date: %s, new date: %s", updatedAt, fetchedSession.UpdatedAt)
+	}
+
+}
