@@ -17,8 +17,5 @@ services:
     environment:
       MYSQL_DATABASE: meals
       MYSQL_ALLOW_EMPTY_PASSWORD: yes
-    volumes:
-      - db_testing_data:/var/lib/mysql
 volumes:
   db_dev_data:
-  db_testing_data:
