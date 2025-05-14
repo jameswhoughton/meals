@@ -389,7 +389,6 @@ func NewIsAuthenticatedMiddleware(accountService account.Service, sessionService
 				Name:     "session",
 				Value:    session.Value,
 				Path:     "/",
-				MaxAge:   3600,
 				HttpOnly: true,
 				Secure:   true,
 				SameSite: http.SameSiteStrictMode,
