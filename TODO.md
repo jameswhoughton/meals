@@ -25,16 +25,16 @@
 - [x] Ensure session cookie refreshes on request
 - [ ] Add background pattern
 - [x] Remove requirement to provide a unit
-- [ ] Show success messages when creating/updating meals
+- [x] Show success messages when creating/updating meals
 - [ ] Meal pagination
 - [x] Add meal handler tests
 - [x] Add meal service tests
-- [ ] Remove id from update meal form
+- [x] Remove id from update meal form
 - [x] Add required labels
 - [x] Ensure ingredients are unique per user
 - [x] Ensure tags are unique per user
 - [ ] Method to seed the DB for dev/testing
-- [ ] Replace old alerts with alert-message component
+- [x] Replace old alerts with alert-message component
 - [x] Move auth handlers to web
 - [ ] Add tests for account handlers
 - [ ] Add confirmation modal for deletion

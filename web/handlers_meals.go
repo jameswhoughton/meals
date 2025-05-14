@@ -46,14 +46,18 @@ func GetMealsHandler(templateFiles fs.FS, repo meals.Repository) http.Handler {
 			http.Error(w, "server error", http.StatusInternalServerError)
 		}
 
+		success, err := getMessage(w, r, "success")
+
 		type templateData struct {
 			Title       string
+			Success     string
 			SearchQuery string
 			Meals       []meals.Meal
 		}
 
 		tmpl.ExecuteTemplate(w, "layout", templateData{
 			Title:       "Meals",
+			Success:     success,
 			SearchQuery: queryString,
 			Meals:       results,
 		})

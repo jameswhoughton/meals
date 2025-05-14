@@ -4,6 +4,11 @@
 		<h1 class="text-2xl">My Meals</h1>
 		<a class="py-2 px-4 rounded-md bg-cyan-800 hover:bg-cyan-900 transition-colors w-auto" href="/meals/create">Create</a>
 	</div>
+	{{if .Success}}
+	<div class="px-6">
+		<alert-message class="mb-6" data-variation="success">{{.Success}}</alert-message>
+	</div>
+	{{end}}
 	<div class="px-6">
 		<div class="flex justify-end mb-4">
 			<form action="/meals" method="get" class="mb-0 flex gap-3">
@@ -52,4 +57,5 @@
 		{{end}}
 	</div>
 </div>
+<script src="/static/components/alertMessage.js"></script>
 {{end}}

@@ -3,12 +3,14 @@ package web
 import (
 	"encoding/base64"
 	"net/http"
+	"time"
 )
 
 func setMessage(w http.ResponseWriter, name, value string) {
 	mesageCookie := http.Cookie{
 		Name:  name,
 		Value: base64.StdEncoding.EncodeToString([]byte(value)),
+		Path:  "/",
 	}
 
 	http.SetCookie(w, &mesageCookie)
@@ -26,8 +28,10 @@ func getMessage(w http.ResponseWriter, r *http.Request, name string) (string, er
 	}
 
 	clearCookie := http.Cookie{
-		Name:   name,
-		MaxAge: -1,
+		Name:    name,
+		MaxAge:  -1,
+		Expires: time.Unix(1, 0),
+		Path:    "/",
 	}
 
 	http.SetCookie(w, &clearCookie)
