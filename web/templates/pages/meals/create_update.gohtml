@@ -1,60 +1,61 @@
 {{define "body"}}
-<div class="bg-zinc-800 p-6 rounded-md shadow-md w-full h-full">
-    <h1 class="text-xl mb-6">{{.Title}}</h1>
+<div class="bg-zinc-800 rounded-md shadow-md w-full h-full">
+    <h1 class="text-2xl p-6 border-b border-zinc-700 mb-8">{{.Title}}</h1>
     <form method="post" action="{{.Action}}" class="mb-0">
-        {{if gt .Form.Id 0}}
-        <input type="hidden" name="id" value="{{.Form.Id}}" />
-        {{end}}
-        <div class="flex flex-col gap-2 mb-4">
-            <label class="text-sm text-slate-300" for="name">name</label>
-            <input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" type="text" name="name"
-                value="{{.Form.Name}}" />
-            {{if .Form.Errors.Name}}<div class="text-sm text-red-400">{{.Form.Errors.Name}}</div>{{end}}
-        </div>
-        <div class="flex flex-col gap-2 mb-4">
-            <label class="text-sm text-slate-300" for="notes">notes</label>
-            <textarea class="rounded bg-zinc-700 ring-1 ring-zinc-400 w-[400px] min-h-[100px]" name="notes">{{.Form.Notes}}</textarea>
-        </div>
-        <div id="tags" class="flex flex-col gap-3 mb-4">
-            <div class="border-b flex items-center justify-between">
-                <h2 class="text-lg py-3">Tags</h2>
-                <div class="flex gap-4 items-center mb-2">
-                    <button 
-                        class="py-2 px-1.5 rounded-md bg-cyan-800 hover:bg-cyan-900 transition-colors w-auto"
-                        type="button"
-                        onclick="addTag()"
-                    >Add new</button>
-                </div>
-            </div>
-            {{if .Form.Errors.Tags}}<div class="text-sm text-red-400">{{.Form.Errors.Tags}}</div>{{end}}
-            {{range $i, $tag := .Form.Tags}}
-            <meal-tag data-index="{{$i}}" data-id="{{$tag.Id}}" data-name="{{$tag.Name}}"></meal-tag>
+        <div class="px-6">
+            {{if gt .Form.Id 0}}
+            <input type="hidden" name="id" value="{{.Form.Id}}" />
             {{end}}
-        </div>
-        <div id="ingredients" class="flex flex-col gap-3 mb-4">
-            <div class="border-b flex items-center justify-between">
-                <h2 class="text-lg py-3">Ingredients</h2>
-                <div class="flex gap-4 items-center mb-2">
-                    <button 
-                        class="py-2 px-1.5 rounded-md bg-cyan-800 hover:bg-cyan-900 transition-colors w-auto"
-                        type="button"
-                        onclick="addIngredient()"
-                    >Add new</button>
-                </div>
+            <div class="flex flex-col gap-2 mb-4">
+                <label class="text-sm text-slate-300" for="name">name</label>
+                <input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" type="text" name="name"
+                    value="{{.Form.Name}}" />
+                {{if .Form.Errors.Name}}<div class="text-sm text-red-400">{{.Form.Errors.Name}}</div>{{end}}
             </div>
-            {{if .Form.Errors.Ingredients}}<div class="text-sm text-red-400">{{.Form.Errors.Ingredients}}</div>{{end}}
-            {{range $i, $ingredient := .Form.Ingredients}}
-            <meal-ingredient
-                data-index="{{$i}}"
-                data-id="{{$ingredient.Id}}"
-                data-name="{{$ingredient.Name}}"
-                data-quantity="{{$ingredient.Quantity}}"
-                data-unit="{{$ingredient.Unit}}"
-            ></meal-ingredient>
-            {{end}}
+            <div class="flex flex-col gap-2 mb-4">
+                <label class="text-sm text-slate-300" for="notes">notes</label>
+                <textarea class="rounded bg-zinc-700 ring-1 ring-zinc-400 w-[400px] min-h-[100px]" name="notes">{{.Form.Notes}}</textarea>
+            </div>
+            <div id="tags" class="flex flex-col gap-3 mb-4">
+                <h2 class="text-lg pt-8">Tags</h2>
+                {{if .Form.Errors.Tags}}<div class="text-sm text-red-400">{{.Form.Errors.Tags}}</div>{{end}}
+                {{range $i, $tag := .Form.Tags}}
+                <meal-tag data-index="{{$i}}" data-id="{{$tag.Id}}" data-name="{{$tag.Name}}"></meal-tag>
+                {{end}}
+            </div>
+            <div class="flex gap-4 items-center mb-2">
+                <button 
+                    class="py-2 px-4 rounded-md text-cyan-600 hover:text-slate-300 hover:bg-cyan-900 transition-colors w-auto border border-cyan-600 hover:border-cyan-900"
+                    type="button"
+                    onclick="addTag()"
+                >Add</button>
+            </div>
+            <div id="ingredients" class="flex flex-col gap-3 mb-4">
+                <h2 class="text-lg pt-8">Ingredients</h2>
+                {{if .Form.Errors.Ingredients}}<div class="text-sm text-red-400">{{.Form.Errors.Ingredients}}</div>{{end}}
+                {{range $i, $ingredient := .Form.Ingredients}}
+                <meal-ingredient
+                    data-index="{{$i}}"
+                    data-id="{{$ingredient.Id}}"
+                    data-name="{{$ingredient.Name}}"
+                    data-quantity="{{$ingredient.Quantity}}"
+                    data-unit="{{$ingredient.Unit}}"
+                ></meal-ingredient>
+                {{end}}
+            </div>
+            <div class="flex gap-4 items-center mb-2">
+                <button 
+                    class="py-2 px-4 rounded-md text-cyan-600 hover:text-slate-300 hover:bg-cyan-900 transition-colors w-auto border border-cyan-600 hover:border-cyan-900"
+                    type="button"
+                    onclick="addIngredient()"
+                >Add</button>
+            </div>
         </div>
-        <button class="py-2 px-1.5 rounded-md bg-cyan-800 hover:bg-cyan-900 transition-colors w-auto"
-            type="submit">{{if eq .Form.Id 0}}Create{{else}}Update{{end}}</button>
+        <div class="flex justify-end px-6 py-6 border-t border-zinc-700 mt-12 gap-3">
+            <a href="/meals" class="py-2 px-4 rounded-md bg-slate-500 hover:bg-slate-600 transition-colors">Cancel</a>
+            <button class="py-2 px-4 rounded-md bg-cyan-800 hover:bg-cyan-900 transition-colors w-auto"
+                type="submit">{{if eq .Form.Id 0}}Create{{else}}Update{{end}}</button>
+        </div>
     </form>
 </div>
 

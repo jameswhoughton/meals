@@ -65,7 +65,7 @@ func GetMealsHandler(templateFiles fs.FS, repo meals.Repository) http.Handler {
 // Only the owner of a meal can access this page.
 // If a meal does not exist a 404 is returned.
 // Expects the meal Id as a url path value with the name 'id'.
-func GetMealHandler(templateFiles fs.FS, repo meals.Repository) http.Handler {
+func GetMealEditHandler(templateFiles fs.FS, repo meals.Repository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
 			templateFiles,
@@ -124,6 +124,57 @@ func GetMealHandler(templateFiles fs.FS, repo meals.Repository) http.Handler {
 			Title:  meal.Name,
 			Form:   formData,
 			Action: "/meals/" + r.PathValue("id"),
+		})
+	})
+}
+
+// Render the view meal page
+//
+// Only the owner of a meal can access this page.
+// If a meal does not exist a 404 is returned.
+// Expects the meal Id as a url path value with the name 'id'.
+func GetMealHandler(templateFiles fs.FS, repo meals.Repository) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tmpl, err := template.ParseFS(
+			templateFiles,
+			"templates/layout.gohtml",
+			"templates/navigation.gohtml",
+			"templates/pages/meals/view.gohtml",
+		)
+
+		if err != nil {
+			w.Write([]byte("Template error: " + err.Error()))
+
+			return
+		}
+
+		userId := r.Context().Value("userId").(int)
+		mealId, _ := strconv.Atoi(r.PathValue("id"))
+
+		meal, err := repo.Get(r.Context(), mealId)
+
+		if err != nil {
+			if errors.As(err, &meals.ErrorMealNotFound{Id: mealId}) {
+				http.Error(w, err.Error(), http.StatusNotFound)
+
+				return
+			}
+		}
+
+		if meal.UserId != userId {
+			http.Error(w, "You do not have permission to access this page", http.StatusForbidden)
+
+			return
+		}
+
+		type templateData struct {
+			Title string
+			Meal  meals.Meal
+		}
+
+		tmpl.ExecuteTemplate(w, "layout", templateData{
+			Title: meal.Name,
+			Meal:  meal,
 		})
 	})
 }

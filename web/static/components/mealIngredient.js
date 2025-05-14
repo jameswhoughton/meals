@@ -28,7 +28,7 @@ customElements.define(
                 <label class="text-sm text-slate-300" for="ingredientUnit">unit</label>
                 <input name="ingredientUnit" class="unit | py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" />
             </div>
-            <button class="remove-ingredient | py-2 px-1.5 rounded-md bg-cyan-800 hover:bg-cyan-900 transition-colors w-auto self-end">remove</button>
+            <button class="remove-ingredient | py-2 px-4 rounded-md text-red-400 hover:text-slate-300 hover:bg-red-900 transition-colors border border-red-400 hover:border-red-900 self-end">Remove</button>
             `
 
                         node.innerHTML = body

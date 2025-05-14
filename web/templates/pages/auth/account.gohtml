@@ -1,48 +1,52 @@
 {{define "body"}}
-<div class="bg-zinc-800 p-6 rounded-md shadow-md w-full h-full">
-    <h1 class="text-xl mb-6">Update Your Details</h1>
+<div class="bg-zinc-800 rounded-md shadow-md w-full h-full">
+    <h1 class="text-2xl p-6 border-b border-zinc-700 mb-8">Update Your Details</h1>
     {{if .Success}}
     <div class="py-2 px-3 bg-green-200 text-slate-900">{{.Success}}</div>
     {{end}}
     <form method="post" action="/account" class="mb-0">
-        <div class="flex flex-col gap-2 mb-4">
-            <label class="text-sm text-slate-300" for="name">name</label>
-            <input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" type="text" name="name"
-                value="{{.Form.Name}}" />
-            {{if .Form.Errors.Name}}<div class="text-sm text-red-400">{{.Form.Errors.Name}}</div>{{end}}
+        <div class="px-6">
+            <div class="flex flex-col gap-2 mb-4">
+                <label class="text-sm text-slate-300" for="name">name</label>
+                <input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" type="text" name="name"
+                    value="{{.Form.Name}}" />
+                {{if .Form.Errors.Name}}<div class="text-sm text-red-400">{{.Form.Errors.Name}}</div>{{end}}
+            </div>
+            <div class="flex flex-col gap-2 mb-4">
+                <label class="text-sm text-slate-300" for="email">email</label>
+                <input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" type="text" name="email"
+                    value="{{.Form.Email}}" />
+                {{if .Form.Errors.Email}}<div class="text-sm text-red-400">{{.Form.Errors.Email}}</div>{{end}}
+            </div>
+            <div class="flex flex-col gap-2 mb-4">
+                <label class="text-sm text-slate-300" for="email">start day for planner</label>
+                <select class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" name="mealStartDay">
+                    <option value="1" {{if eq .Form.MealStartDay 1}}selected{{end}}>Monday</option>
+                    <option value="2" {{if eq .Form.MealStartDay 2}}selected{{end}}>Tuesday</option>
+                    <option value="3" {{if eq .Form.MealStartDay 3}}selected{{end}}>Wednesday</option>
+                    <option value="4" {{if eq .Form.MealStartDay 4}}selected{{end}}>Thursday</option>
+                    <option value="5" {{if eq .Form.MealStartDay 5}}selected{{end}}>Friday</option>
+                    <option value="6" {{if eq .Form.MealStartDay 6}}selected{{end}}>Saturday</option>
+                    <option value="0" {{if eq .Form.MealStartDay 0}}selected{{end}}>Sunday</option>
+                </select>
+                {{if .Form.Errors.MealStartDay}}<div class="text-sm text-red-400">{{.Form.Errors.MealStartDay}}</div>{{end}}
+            </div>
+            <div class="flex flex-col gap-2 mb-4">
+                <label class="text-sm text-slate-300" for="password">password</label>
+                <input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" type="password"
+                    name="password" />
+                {{if .Form.Errors.Password}}<div class="text-sm text-red-400">{{.Form.Errors.Password}}</div>{{end}}
+            </div>
+            <div class="flex flex-col gap-2 mb-4">
+                <label class="text-sm text-slate-300" for="passwordConfirm">confirm password</label>
+                <input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" type="password"
+                    name="passwordConfirm" />
+            </div>
         </div>
-        <div class="flex flex-col gap-2 mb-4">
-            <label class="text-sm text-slate-300" for="email">email</label>
-            <input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" type="text" name="email"
-                value="{{.Form.Email}}" />
-            {{if .Form.Errors.Email}}<div class="text-sm text-red-400">{{.Form.Errors.Email}}</div>{{end}}
+        <div class="flex justify-end px-6 py-6 border-t border-zinc-700 mt-12 gap-3">
+            <button class="py-2 px-4 rounded-md bg-cyan-800 hover:bg-cyan-900 transition-colors w-auto"
+                type="submit">Save</button>
         </div>
-        <div class="flex flex-col gap-2 mb-4">
-            <label class="text-sm text-slate-300" for="email">start day for planner</label>
-            <select class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" name="mealStartDay">
-                <option value="1" {{if eq .Form.MealStartDay 1}}selected{{end}}>Monday</option>
-                <option value="2" {{if eq .Form.MealStartDay 2}}selected{{end}}>Tuesday</option>
-                <option value="3" {{if eq .Form.MealStartDay 3}}selected{{end}}>Wednesday</option>
-                <option value="4" {{if eq .Form.MealStartDay 4}}selected{{end}}>Thursday</option>
-                <option value="5" {{if eq .Form.MealStartDay 5}}selected{{end}}>Friday</option>
-                <option value="6" {{if eq .Form.MealStartDay 6}}selected{{end}}>Saturday</option>
-                <option value="0" {{if eq .Form.MealStartDay 0}}selected{{end}}>Sunday</option>
-            </select>
-            {{if .Form.Errors.MealStartDay}}<div class="text-sm text-red-400">{{.Form.Errors.MealStartDay}}</div>{{end}}
-        </div>
-        <div class="flex flex-col gap-2 mb-4">
-            <label class="text-sm text-slate-300" for="password">password</label>
-            <input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" type="password"
-                name="password" />
-            {{if .Form.Errors.Password}}<div class="text-sm text-red-400">{{.Form.Errors.Password}}</div>{{end}}
-        </div>
-        <div class="flex flex-col gap-2 mb-4">
-            <label class="text-sm text-slate-300" for="passwordConfirm">confirm password</label>
-            <input class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" type="password"
-                name="passwordConfirm" />
-        </div>
-        <button class="py-2 px-1.5 rounded-md bg-cyan-800 hover:bg-cyan-900 transition-colors w-auto"
-            type="submit">Update</button>
     </form>
 </div>
 {{end}}

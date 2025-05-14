@@ -70,6 +70,7 @@ func AddRoutes(
 	mux.Handle("POST /meals/create", isAuthed(PostMealHandler(mealService)))
 	mux.Handle("GET /meals", isAuthed(GetMealsHandler(templateFiles, mealRepository)))
 	mux.Handle("GET /meals/{id}", isAuthed(GetMealHandler(templateFiles, mealRepository)))
+	mux.Handle("GET /meals/{id}/edit", isAuthed(GetMealEditHandler(templateFiles, mealRepository)))
 	mux.Handle("POST /meals/{id}", isAuthed(PutMealHandler(mealService, mealRepository)))
 	mux.Handle("POST /meals/{id}/delete", isAuthed(PostDeleteMealHandler(mealRepository)))
 

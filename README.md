@@ -48,10 +48,9 @@ This is the main web app executeable. Here the repositories/services and web ser
     - [x] Add a meal
     - [x] Edit a meal
     - [x] Delete a meal
-    - [x] Edit ingredients
-    - [x] Edit tags
     - [x] Assign a meal to a day
     - [ ] Generate an ingredients list
+    - [ ] Export/Import meals
 
 ## Build and run
 

@@ -16,11 +16,77 @@ import (
 	"github.com/jameswhoughton/meals/web"
 )
 
-func TestGetMealHandlerReturns404IfMealDoesNotExist(t *testing.T) {
+func TestGetMealEditHandlerReturns404IfMealDoesNotExist(t *testing.T) {
 	templateFiles := fstest.MapFS{
 		"templates/layout.gohtml":                    {Data: []byte{}},
 		"templates/navigation.gohtml":                {Data: []byte{}},
 		"templates/pages/meals/create_update.gohtml": {Data: []byte{}},
+	}
+
+	repository := memory.MealRepository{}
+
+	handler := web.GetMealEditHandler(templateFiles, &repository)
+
+	ctx := context.WithValue(context.Background(), "userId", 1)
+
+	req := httptest.NewRequestWithContext(ctx, http.MethodGet, "/meals/1/edit", nil)
+
+	req.SetPathValue("id", "1")
+
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	result := w.Result()
+	defer result.Body.Close()
+
+	if result.StatusCode != http.StatusNotFound {
+		t.Errorf("Expected status code: %d, got %d", http.StatusNotFound, result.StatusCode)
+	}
+}
+
+func TestGetMealEditHandlerReturns403IfMealDoesNotBelongToUser(t *testing.T) {
+	templateFiles := fstest.MapFS{
+		"templates/layout.gohtml":                    {Data: []byte{}},
+		"templates/navigation.gohtml":                {Data: []byte{}},
+		"templates/pages/meals/create_update.gohtml": {Data: []byte{}},
+	}
+
+	repository := memory.MealRepository{
+		Store: []meals.Meal{
+			{
+				Id:     1,
+				UserId: 2,
+			},
+		},
+	}
+
+	handler := web.GetMealEditHandler(templateFiles, &repository)
+
+	ctx := context.WithValue(context.Background(), "userId", 1)
+
+	req := httptest.NewRequestWithContext(ctx, http.MethodGet, "/meals/1/edit", nil)
+
+	req.SetPathValue("id", "1")
+
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	result := w.Result()
+	defer result.Body.Close()
+
+	if result.StatusCode != http.StatusForbidden {
+		t.Errorf("Expected status code: %d, got %d", http.StatusForbidden, result.StatusCode)
+	}
+
+}
+
+func TestGetMealHandlerReturns404IfMealDoesNotExist(t *testing.T) {
+	templateFiles := fstest.MapFS{
+		"templates/layout.gohtml":           {Data: []byte{}},
+		"templates/navigation.gohtml":       {Data: []byte{}},
+		"templates/pages/meals/view.gohtml": {Data: []byte{}},
 	}
 
 	repository := memory.MealRepository{}
@@ -47,9 +113,9 @@ func TestGetMealHandlerReturns404IfMealDoesNotExist(t *testing.T) {
 
 func TestGetMealHandlerReturns403IfMealDoesNotBelongToUser(t *testing.T) {
 	templateFiles := fstest.MapFS{
-		"templates/layout.gohtml":                    {Data: []byte{}},
-		"templates/navigation.gohtml":                {Data: []byte{}},
-		"templates/pages/meals/create_update.gohtml": {Data: []byte{}},
+		"templates/layout.gohtml":           {Data: []byte{}},
+		"templates/navigation.gohtml":       {Data: []byte{}},
+		"templates/pages/meals/view.gohtml": {Data: []byte{}},
 	}
 
 	repository := memory.MealRepository{
@@ -65,7 +131,7 @@ func TestGetMealHandlerReturns403IfMealDoesNotBelongToUser(t *testing.T) {
 
 	ctx := context.WithValue(context.Background(), "userId", 1)
 
-	req := httptest.NewRequestWithContext(ctx, http.MethodGet, "/meals/", nil)
+	req := httptest.NewRequestWithContext(ctx, http.MethodGet, "/meals/1", nil)
 
 	req.SetPathValue("id", "1")
 
