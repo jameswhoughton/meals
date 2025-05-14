@@ -26,17 +26,15 @@
 - [ ] Add background pattern
 - [x] Remove requirement to provide a unit
 - [ ] Show success messages when creating/updating meals
-- [ ] Meal/ingredient/tag pagination
+- [ ] Meal pagination
 - [x] Add meal handler tests
 - [x] Add meal service tests
-- [ ] Remove id from update meal form (and others)
+- [ ] Remove id from update meal form
 - [ ] Add required labels
 - [x] Ensure ingredients are unique per user
 - [x] Ensure tags are unique per user
 - [ ] Method to seed the DB for dev/testing
 - [ ] Replace old alerts with alert-message component
-- [ ] Prevent user updating name of ingredient/tag to one that already exists
-- [ ] Add tests for tag handlers
 - [x] Move auth handlers to web
 - [ ] Add tests for account handlers
 - [ ] Add confirmation modal for deletion
@@ -52,7 +50,7 @@
 - [x] Update meal form page to populate the name of an ingredient from the typeahead
 - [x] Make the name editable for existinng ingredients from the meal page
 - [ ] Add typeahead search for units
-- [ ] Update readme
+- [x] Update readme
 - [x] Add meal seeder to planner test
 - [x] Add seeders to in memory tests
 - [x] Remove sqlite directory once everything is working

@@ -6,8 +6,6 @@ This is a learning project which is currently in progress, as such some features
 
 The aim of the application is to simplify the process of planning the weekly food shop by providing a single recipe store, a way to assign meals to days and generate a shopping list.
 
-This is not meant to be used in production (although I plan to use it personally).
-
 ## Architecture Overview
 
 The project is split across multiple packages with the business logic located in internal/*. I have used the service/repository pattern where the repositories are solely responsible for saving to the data store and the services are responsible for ensuring the data passed to and from the repository is valid.
@@ -26,11 +24,11 @@ Contains the methods to assign meals to a date.
 
 ### database
 
-The database package contains implementations of the `internal/*` repositories using SQLite as a store. Also contained here are the migrations files used to build the database schema. 
+The database package contains implementations of the `internal/*` repositories using MySQL as a store. Also contained here are the migrations files used to build the database schema. 
 
 ### memory
 
-This package contains in memory implementations of the repositories defined in `internal/*`, these are intended for use in tests only. Each repository has it's own contract test which is used to ensure consistent behaviour between the memory and SQLite implimentations, allowing them to be confidently used when testing other layers of the application (e.g. services and handlers).
+This package contains in memory implementations of the repositories defined in `internal/*`, these are intended for use in tests only. Each repository has it's own contract test which is used to ensure consistent behaviour between the memory and MySQL implimentations, allowing them to be confidently used when testing other layers of the application (e.g. services and handlers).
 
 ### web
 
@@ -63,5 +61,5 @@ This is the main web app executeable. Here the repositories/services and web ser
 - Install Docker.
 - Navigate to the root of the project and run `make build`.
 - Run `docker compose up -d` to spin up the dev and testing MySQL servers.
-- Run `./meals_server`. This should create and migrate a SQLite DB (`meals.db`) in the same directory.
+- Run `./meals_server`.
 - Navigate to `localhost:8000` in your browser.
