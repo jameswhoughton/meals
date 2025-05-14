@@ -12,7 +12,7 @@ customElements.define(
 
                         const body = `
                 <div class="flex flex-col gap-2">
-                    <label class="text-sm text-slate-300" for="ingredientName">name</label>
+                    <label class="text-sm text-slate-300" for="ingredientName"><span class="text-red-400">*</span> name</label>
                         <request-typeahead
                             data-name="ingredientName"
                             data-url="http://localhost:8000/api/ingredients"
@@ -21,7 +21,7 @@ customElements.define(
                 </div>
             <input name="ingredientId" value="0" type="hidden" />
             <div class="flex flex-col gap-2">
-                <label class="text-sm text-slate-300" for="ingredientQuantity">quantity</label>
+                <label class="text-sm text-slate-300" for="ingredientQuantity"><span class="text-red-400">*</span> quantity</label>
                 <input name="ingredientQuantity" class="quantity | py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" />
             </div>
             <div class="flex flex-col gap-2">

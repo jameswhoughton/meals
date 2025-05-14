@@ -30,7 +30,7 @@
 - [x] Add meal handler tests
 - [x] Add meal service tests
 - [ ] Remove id from update meal form
-- [ ] Add required labels
+- [x] Add required labels
 - [x] Ensure ingredients are unique per user
 - [x] Ensure tags are unique per user
 - [ ] Method to seed the DB for dev/testing
@@ -38,9 +38,9 @@
 - [x] Move auth handlers to web
 - [ ] Add tests for account handlers
 - [ ] Add confirmation modal for deletion
-- [ ] Add test for SessionRepository.Refresh
+- [x] Add test for SessionRepository.Refresh
 - [ ] Add validation to restrict user to assigning only their own meals
-- [ ] Review and polish UI
+- [x] Review and polish UI
 - [x] Remove ingredients list/edit pages and handlers
 - [x] Remove the ingredients table
 - [x] Add name field to meal_ingredients table

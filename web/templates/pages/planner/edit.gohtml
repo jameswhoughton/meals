@@ -7,7 +7,7 @@
             {{if .Meal.Id}}
             <p class="mb-2"><strong>Currently Selected Meal:</strong> {{.Meal.Name}}</p>
             {{end}}
-            <form class="flex items-center gap-2 justify-end mb-4" action="/planner/{{.Date}}" method="get">
+            <form class="flex items-center gap-3 justify-end mb-4" action="/planner/{{.Date}}" method="get">
                 {{range .Tags}}
                 <label><input type="checkbox" name="tags" value="{{.}}" {{if contains $.FilterTags .}}checked{{end}}/> {{.}}</label>
                 {{end}}
