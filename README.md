@@ -62,3 +62,5 @@ This is the main web app executeable. Here the repositories/services and web ser
 - Run `docker compose up -d` to spin up the dev and testing MySQL servers.
 - Run `./meals_server`.
 - Navigate to `localhost:8000` in your browser.
+
+**NOTE** If you want to use `make watch` you will also need to install [wgo](https://github.com/bokwoon95/wgo)
