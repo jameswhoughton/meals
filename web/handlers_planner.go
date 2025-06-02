@@ -183,7 +183,7 @@ func GetEditDayHandler(templateFiles fs.FS, plannerRepo planner.Repository, meal
 	})
 }
 
-func PostEditDayHandler(plannerRepo planner.Repository) http.Handler {
+func PostEditDayHandler(plannerRepo planner.Repository, mealRepo meals.Repository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userId := r.Context().Value("userId").(int)
 
@@ -208,6 +208,19 @@ func PostEditDayHandler(plannerRepo planner.Repository) http.Handler {
 
 				return
 			}
+
+			meal, err := mealRepo.Get(r.Context(), mealId)
+
+			if err != nil {
+				http.Error(w, "Meal not found", http.StatusNotFound)
+
+				return
+			}
+
+			if meal.UserId != userId {
+				http.Error(w, "You do not have permission to assign this meal", http.StatusForbidden)
+			}
+
 			err = plannerRepo.Add(r.Context(), parsedDate, mealId)
 
 			if err != nil {

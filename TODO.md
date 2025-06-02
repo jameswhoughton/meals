@@ -39,7 +39,7 @@
 - [ ] Add tests for account handlers
 - [ ] Add confirmation modal for deletion
 - [x] Add test for SessionRepository.Refresh
-- [ ] Add validation to restrict user to assigning only their own meals
+- [x] Add validation to restrict user to assigning only their own meals
 - [x] Review and polish UI
 - [x] Remove ingredients list/edit pages and handlers
 - [x] Remove the ingredients table
@@ -49,7 +49,7 @@
 - [x] Update meals.Service to remove the populateIngredientIds function
 - [x] Update meal form page to populate the name of an ingredient from the typeahead
 - [x] Make the name editable for existinng ingredients from the meal page
-- [ ] Add typeahead search for units
+- [x] Add typeahead search for units
 - [x] Update readme
 - [x] Add meal seeder to planner test
 - [x] Add seeders to in memory tests
