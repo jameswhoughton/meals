@@ -367,6 +367,67 @@ func (i RepositoryContract) Test(t *testing.T) {
 		}
 
 	})
+	t.Run("Can filter a list of distinct unit names", func(t *testing.T) {
+		repo, seedUser, closeDown := i.Repo()
+		defer closeDown()
+
+		ctx := context.Background()
+
+		seedUser(1)
+		seedUser(2)
+
+		repo.Create(ctx, Meal{
+			UserId: 1,
+			Ingredients: []Ingredient{
+				{
+					Id:   2,
+					Name: "tomatoes",
+					Unit: "cans",
+				},
+				{
+					Id:   1,
+					Name: "Spring Onion",
+					Unit: "Bunches",
+				},
+				{
+					Id:   100,
+					Name: "Diced Chicken",
+					Unit: "KG",
+				},
+			},
+		})
+
+		repo.Create(ctx, Meal{
+			UserId: 2,
+			Ingredients: []Ingredient{
+				{
+					Id:   7,
+					Name: "Cheese",
+					Unit: "Grams",
+				},
+			},
+		})
+
+		searchString := "S"
+		units, err := repo.FindUnitNames(ctx, searchString)
+
+		if err != nil {
+			t.Errorf("List units: Unexpected error: %v", err)
+		}
+
+		expectedResults := []string{"cans", "Bunches", "Grams"}
+
+		if len(units) != len(expectedResults) {
+			t.Errorf("Expected %d results, got %d", len(expectedResults), len(units))
+		}
+
+		for _, name := range expectedResults {
+			if !slices.Contains(units, name) {
+				t.Errorf("%s missing in the result set", name)
+			}
+		}
+
+	})
 	t.Run("Can filter a list of distinct tag names", func(t *testing.T) {
 		repo, seedUser, closeDown := i.Repo()
 		defer closeDown()

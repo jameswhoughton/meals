@@ -82,4 +82,5 @@ func AddRoutes(
 	// API
 	mux.Handle("GET /api/ingredients", isAuthed(GetSearchIngredientsHandler(mealRepository)))
 	mux.Handle("GET /api/tags", isAuthed(GetSearchTagHandler(mealRepository)))
+	mux.Handle("GET /api/units", isAuthed(GetSearchUnitHandler(mealRepository)))
 }

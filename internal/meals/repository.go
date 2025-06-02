@@ -94,5 +94,6 @@ type Repository interface {
 	Destroy(ctx context.Context, id int) error
 	FindIngredientNames(ctx context.Context, searchString string) ([]string, error)
 	FindTagNames(ctx context.Context, searchString string) ([]string, error)
+	FindUnitNames(ctx context.Context, searchString string) ([]string, error)
 	TagNamesForUser(ctx context.Context, userId int) ([]string, error)
 }

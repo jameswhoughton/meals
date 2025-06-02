@@ -209,6 +209,22 @@ func (mr *MealRepository) FindTagNames(ctx context.Context, searchString string)
 	return names, nil
 }
 
+func (mr *MealRepository) FindUnitNames(ctx context.Context, searchString string) ([]string, error) {
+	names := make([]string, 0)
+
+	for _, meal := range mr.Store {
+		for _, ingredient := range meal.Ingredients {
+			if !strings.Contains(strings.ToLower(ingredient.Unit), strings.ToLower(searchString)) || slices.Contains(names, ingredient.Unit) {
+				continue
+			}
+
+			names = append(names, ingredient.Unit)
+		}
+	}
+
+	return names, nil
+}
+
 func (mr *MealRepository) TagNamesForUser(ctx context.Context, userId int) ([]string, error) {
 	tags := make([]string, 0)
 

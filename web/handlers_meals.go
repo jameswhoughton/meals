@@ -405,7 +405,7 @@ func PostDeleteMealHandler(repo meals.Repository) http.Handler {
 }
 
 // API endpoint to search for existing ingredient names
-
+//
 // Returns JSON.
 func GetSearchIngredientsHandler(mealRepo meals.Repository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -426,13 +426,32 @@ func GetSearchIngredientsHandler(mealRepo meals.Repository) http.Handler {
 
 // API handler to search for tags by name
 //
-// Limited to tags belonging to the authed user.
 // Returns JSON.
 func GetSearchTagHandler(mealRepo meals.Repository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		queryString := r.URL.Query().Get("query")
 
 		results, err := mealRepo.FindTagNames(r.Context(), queryString)
+
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "server error", http.StatusInternalServerError)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+
+		json.NewEncoder(w).Encode(results)
+	})
+}
+
+// API handler to search for units by name
+//
+// Returns JSON.
+func GetSearchUnitHandler(mealRepo meals.Repository) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		queryString := r.URL.Query().Get("query")
+
+		results, err := mealRepo.FindUnitNames(r.Context(), queryString)
 
 		if err != nil {
 			log.Println(err)

@@ -521,6 +521,33 @@ func (mr *MealRepository) FindTagNames(ctx context.Context, searchString string)
 	return tags, nil
 }
 
+func (mr *MealRepository) FindUnitNames(ctx context.Context, searchString string) ([]string, error) {
+	units := make([]string, 0)
+
+	rows, err := mr.db.QueryContext(
+		ctx,
+		`SELECT DISTINCT unit FROM meal_ingredients WHERE unit  <> '' AND unit LIKE ?`,
+		"%"+searchString+"%",
+	)
+	if err != nil {
+		return units, fmt.Errorf("MealRepository.FindUnitNames: query error: %v", err)
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var name string
+
+		if err = rows.Scan(&name); err != nil {
+			return units, fmt.Errorf("MealRepository.FindUnitNames: row parse error: %v", err)
+		}
+
+		units = append(units, name)
+	}
+
+	return units, nil
+}
+
 func (mr *MealRepository) TagNamesForUser(ctx context.Context, userId int) ([]string, error) {
 	tags := make([]string, 0)
 

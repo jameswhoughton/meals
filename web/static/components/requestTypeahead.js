@@ -153,6 +153,11 @@ customElements.define(
                 }
 
                 async search(query) {
+
+                        if (query === '') {
+                                return
+                        }
+
                         if (this.requestController !== null) {
                                 this.requestController.abort()
                         }

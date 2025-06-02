@@ -543,13 +543,3 @@ func TestPostMealDeleteDeletesMeal(t *testing.T) {
 		t.Errorf("Expected the store to be empty, found %d meals", len(repository.Store))
 	}
 }
-
-// GetTagHandler returns 404 if the tag does not exist
-
-// GetTagHandler returns 403 if the tag does belong to the user
-
-// PutTagHandler returns 404 if tag does not exist
-
-// PutTagHandler returns 403 if tag does not belong to the user
-
-// PutTagHandler with the correct form, updates the correct tag

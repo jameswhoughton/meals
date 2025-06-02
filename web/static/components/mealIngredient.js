@@ -15,7 +15,7 @@ customElements.define(
                     <label class="text-sm text-slate-300" for="ingredientName"><span class="text-red-400">*</span> name</label>
                         <request-typeahead
                             data-name="ingredientName"
-                            data-url="http://localhost:8000/api/ingredients"
+                            data-url="/api/ingredients"
                         />
                         <input type="hidden" name="ingredientId" value="0" />
                 </div>
@@ -26,7 +26,10 @@ customElements.define(
             </div>
             <div class="flex flex-col gap-2">
                 <label class="text-sm text-slate-300" for="ingredientUnit">unit</label>
-                <input name="ingredientUnit" class="unit | py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" />
+                <request-typeahead
+                    data-name="ingredientUnit"
+                    data-url="/api/units"
+                />
             </div>
             <button class="remove-ingredient | py-2 px-4 rounded-md text-red-400 hover:text-slate-300 hover:bg-red-900 transition-colors border border-red-400 hover:border-red-900 self-end">Remove</button>
             `
@@ -48,7 +51,10 @@ customElements.define(
                                 template.querySelector('[data-name="ingredientName"]').dataset.value = this.getAttribute('data-name')
                         }
                         template.querySelector('.quantity').value = this.getAttribute('data-quantity')
-                        template.querySelector('.unit').value = this.getAttribute('data-unit')
+
+                        if (this.hasAttribute('data-unit')) {
+                                template.querySelector('[data-name="ingredientUnit"]').dataset.value = this.getAttribute('data-unit')
+                        }
 
                         if (existingIngredient) {
                                 template.querySelector('[name="ingredientId"]').value = id
