@@ -233,3 +233,54 @@ func PostEditDayHandler(plannerRepo planner.Repository, mealRepo meals.Repositor
 		http.Redirect(w, r, "/planner?date="+r.PathValue("date"), http.StatusFound)
 	})
 }
+
+func GetPlannedIngredientsHandler(plannerSerivce planner.Service, accountRepo account.Repository) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tmpl, err := template.ParseFS(
+			templateFiles,
+			"templates/layout.gohtml",
+			"templates/navigation.gohtml",
+			"templates/pages/planner/ingredients.gohtml",
+		)
+
+		if err != nil {
+			w.Write([]byte("Template error: " + err.Error()))
+
+			return
+		}
+
+		userId := r.Context().Value("userId").(int)
+		parsedDate, err := time.Parse("2006-01-02", r.PathValue("date"))
+
+		if err != nil {
+			http.Error(w, "Invalid date", http.StatusBadRequest)
+
+			return
+		}
+
+		user, err := accountRepo.Get(r.Context(), account.GetForm{Id: &userId})
+
+		startDate := calculateStartDate(parsedDate, user.MealStartDay)
+
+		// At the momeent we limit to a 7 day window, this could in future be user configurable.
+		endDate := startDate.AddDate(0, 0, 7)
+
+		ingredients, err := plannerSerivce.GetIngredients(r.Context(), startDate, endDate, userId)
+
+		if err != nil {
+			http.Error(w, "Internal error", http.StatusInternalServerError)
+
+			return
+		}
+
+		type templateData struct {
+			Title       string
+			Ingredients []planner.Ingredient
+		}
+
+		tmpl.ExecuteTemplate(w, "layout", templateData{
+			Title:       dateLabel(parsedDate),
+			Ingredients: ingredients,
+		})
+	})
+}

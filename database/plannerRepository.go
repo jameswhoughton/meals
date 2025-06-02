@@ -26,7 +26,7 @@ func normaliseDate(date time.Time) time.Time {
 func (pr *PlannerRepository) Add(ctx context.Context, date time.Time, mealId int) error {
 	_, err := pr.db.ExecContext(ctx, `
 		INSERT INTO planner 
-		(meal_id, date)
+		(meal_id, meal_date)
 		VALUES (?, ?)
 	`, mealId, normaliseDate(date))
 
@@ -45,7 +45,7 @@ func (pr *PlannerRepository) Get(ctx context.Context, date time.Time, userId int
 		FROM planner p 
 		LEFT JOIN meals m 
 		ON p.meal_id = m.id
-		WHERE p.date = ?
+		WHERE p.meal_date = ?
 		AND m.user_id = ?
 		AND m.id IS NOT NULL
 	`, normaliseDate(date), userId).Scan(&meal.Id, &meal.UserId, &meal.Name)
@@ -66,7 +66,7 @@ func (pr *PlannerRepository) Clear(ctx context.Context, date time.Time, userId i
 		DELETE p FROM planner p
 		LEFT JOIN meals m
 		ON m.id = p.meal_id
-		WHERE date = ?
+		WHERE meal_date = ?
 		AND user_id = ?
 	`, normaliseDate(date), userId)
 
@@ -75,4 +75,45 @@ func (pr *PlannerRepository) Clear(ctx context.Context, date time.Time, userId i
 	}
 
 	return nil
+}
+
+func (pr *PlannerRepository) GetIngredients(ctx context.Context, startDate, endDate time.Time, userId int) ([]planner.Ingredient, error) {
+	var totals []planner.Ingredient
+
+	rows, err := pr.db.QueryContext(ctx, `
+		SELECT i.name, SUM(i.quantity), i.unit
+		FROM planner p
+		LEFT JOIN meal_ingredients i
+		ON p.meal_id = i.meal_id
+		LEFT JOIN meals m
+		ON p.meal_id = m.id
+		WHERE p.meal_date >= ?
+		AND p.meal_date <= ?
+		AND m.user_id = ?
+		GROUP BY name, unit
+	`, startDate, endDate, userId)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return totals, nil
+		}
+
+		return totals, fmt.Errorf("Planner Repository: unable to get ingredients: %v", err)
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var ingredient planner.Ingredient
+
+		err := rows.Scan(&ingredient.Name, &ingredient.Quantity, &ingredient.Unit)
+
+		if err != nil {
+			return totals, fmt.Errorf("Planner Repository: Unable to scan row: %v", err)
+		}
+
+		totals = append(totals, ingredient)
+	}
+
+	return totals, nil
 }

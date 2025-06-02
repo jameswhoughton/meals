@@ -16,6 +16,7 @@ func NewServer(
 	accountService *account.Service,
 	mealService *meals.Service,
 	sessionService *SessionService,
+	plannerService *planner.Service,
 	accountRepository account.Repository,
 	mealRepository meals.Repository,
 	sessionRepository SessionRepository,
@@ -23,7 +24,7 @@ func NewServer(
 ) *http.Server {
 	mux := http.NewServeMux()
 
-	AddRoutes(mux, *accountService, *mealService, *sessionService, accountRepository, mealRepository, sessionRepository, plannerRepository)
+	AddRoutes(mux, *accountService, *mealService, *sessionService, *plannerService, accountRepository, mealRepository, sessionRepository, plannerRepository)
 
 	return &http.Server{
 		Addr:        ":" + port,

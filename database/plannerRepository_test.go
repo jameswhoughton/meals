@@ -11,7 +11,7 @@ import (
 )
 
 func TestDatabasePlannerRepository(t *testing.T) {
-	init := func() (planner.Repository, func(meal planner.Meal), func()) {
+	init := func() (planner.Repository, func(meal planner.Meal, ingredients []planner.Ingredient), func()) {
 		conn, err := sql.Open("mysql", "root@tcp(127.0.0.1:8002)/meals")
 
 		if err != nil {
@@ -31,7 +31,7 @@ func TestDatabasePlannerRepository(t *testing.T) {
 				log.Fatal(err)
 			}
 		}
-		return database.NewPlannerRepository(conn), func(meal planner.Meal) { seedPlannerMeal(conn, meal) }, closeDown
+		return database.NewPlannerRepository(conn), func(meal planner.Meal, ingredients []planner.Ingredient) { seedPlannerMeal(conn, meal, ingredients) }, closeDown
 	}
 
 	contract := planner.RepositoryContract{

@@ -13,6 +13,7 @@ import (
 	"github.com/jameswhoughton/meals/database"
 	"github.com/jameswhoughton/meals/internal/account"
 	"github.com/jameswhoughton/meals/internal/meals"
+	"github.com/jameswhoughton/meals/internal/planner"
 	"github.com/jameswhoughton/meals/web"
 )
 
@@ -42,6 +43,7 @@ func main() {
 	accountService := account.NewService(accountRepository)
 	mealService := meals.NewService(mealRepository)
 	sessionService := web.NewSessionService(accountRepository, sessionRepsoitory, 3600)
+	plannerSerivce := planner.NewService(plannerRepository)
 
 	ongoingCtx, stopOngoningGracefully := context.WithCancel(context.Background())
 	port := "8000"
@@ -51,6 +53,7 @@ func main() {
 		&accountService,
 		&mealService,
 		sessionService,
+		plannerSerivce,
 		accountRepository,
 		mealRepository,
 		sessionRepsoitory,

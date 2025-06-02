@@ -3,6 +3,8 @@ package memory
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"strconv"
 	"time"
 
@@ -18,8 +20,9 @@ func NewPlannerRepository() *PlannerRepository {
 }
 
 type PlannerRepository struct {
-	Meals   []planner.Meal
-	Planner map[string]int
+	Meals       []planner.Meal
+	Ingredients map[int][]planner.Ingredient
+	Planner     map[string]int
 }
 
 func (pr *PlannerRepository) findMeal(_ context.Context, id int) (planner.Meal, error) {
@@ -72,4 +75,42 @@ func (pr *PlannerRepository) Clear(ctx context.Context, date time.Time, userId i
 	delete(pr.Planner, key)
 
 	return nil
+}
+
+func (pr *PlannerRepository) GetIngredients(ctx context.Context, startDate, endDate time.Time, userId int) ([]planner.Ingredient, error) {
+	key := startDate.Format("2006-01-02") + "|" + strconv.Itoa(userId)
+
+	totals := make(map[string]planner.Ingredient)
+
+	for !startDate.Equal(endDate.Add(24 * time.Hour)) {
+		mealId, ok := pr.Planner[key]
+		startDate = startDate.Add(24 * time.Hour)
+		key = startDate.Format("2006-01-02") + "|" + strconv.Itoa(userId)
+
+		if !ok {
+			continue
+		}
+
+		ingredients := pr.Ingredients[mealId]
+
+		for _, ingredient := range ingredients {
+			totalsKey := ingredient.Name + "|" + ingredient.Unit
+
+			total, ok := totals[totalsKey]
+
+			if !ok {
+				totals[totalsKey] = ingredient
+
+				continue
+			}
+
+			total.Quantity += ingredient.Quantity
+
+			totals[totalsKey] = total
+		}
+
+	}
+	fmt.Println(totals, pr.Planner)
+
+	return slices.Collect(maps.Values(totals)), nil
 }

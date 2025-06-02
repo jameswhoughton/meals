@@ -2,6 +2,8 @@ package planner
 
 import (
 	"context"
+	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -9,7 +11,7 @@ import (
 )
 
 type RepositoryContract struct {
-	Repo func() (Repository, func(meal Meal), func())
+	Repo func() (Repository, func(meal Meal, ingredients []Ingredient), func())
 }
 
 func (i RepositoryContract) Test(t *testing.T) {
@@ -28,8 +30,8 @@ func (i RepositoryContract) Test(t *testing.T) {
 		repo, seeder, closeDown := i.Repo()
 		defer closeDown()
 
-		seeder(meal1)
-		seeder(meal2)
+		seeder(meal1, []Ingredient{})
+		seeder(meal2, []Ingredient{})
 
 		ctx := context.Background()
 
@@ -86,7 +88,7 @@ func (i RepositoryContract) Test(t *testing.T) {
 			Id:     23,
 			UserId: 4,
 			Name:   "Salmon stir-fry",
-		})
+		}, []Ingredient{})
 
 		ctx := context.Background()
 
@@ -109,5 +111,140 @@ func (i RepositoryContract) Test(t *testing.T) {
 			t.Errorf("Expected meal %d, found %d", 23, fetchedMeal.Id)
 		}
 
+	})
+
+	t.Run("Can fetch list of ingredients for meals assigned between a date range", func(t *testing.T) {
+		repo, seeder, closeDown := i.Repo()
+		defer closeDown()
+
+		seeder(Meal{
+			Id:     1,
+			UserId: 1,
+			Name:   "Salmon stir-fry",
+		}, []Ingredient{
+			{
+				Name:     "Salmon",
+				Quantity: 400,
+				Unit:     "g",
+			},
+			{
+				Name:     "Bell Pepper",
+				Quantity: 2,
+			},
+			{
+				Name:     "Onion",
+				Quantity: 1,
+			},
+		})
+
+		// Another user, should be ignored
+		seeder(Meal{
+			Id:     2,
+			UserId: 2,
+			Name:   "Salmon",
+		}, []Ingredient{
+			{
+				Name:     "Salmon",
+				Quantity: 200,
+				Unit:     "g",
+			},
+		})
+
+		seeder(Meal{
+			Id:     3,
+			UserId: 1,
+			Name:   "Salmon curry",
+		}, []Ingredient{
+			{
+				Name:     "Salmon",
+				Quantity: 400,
+				Unit:     "g",
+			},
+			{
+				Name:     "Bell Pepper",
+				Quantity: 1,
+			},
+			{
+				Name:     "Onion",
+				Quantity: 1,
+			},
+			{
+				Name:     "Ginger",
+				Quantity: 3,
+				Unit:     "cm",
+			},
+		})
+
+		startDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+		endDate := time.Date(2025, 1, 5, 0, 0, 0, 0, time.UTC)
+
+		err := repo.Add(context.Background(), startDate, 1)
+
+		if err != nil {
+			t.Errorf("Enexpected error adding meal to date: %v", err)
+		}
+
+		err = repo.Add(context.Background(), startDate.Add(48*time.Hour), 2)
+
+		if err != nil {
+			t.Errorf("Enexpected error adding meal to date: %v", err)
+		}
+
+		// Add the same meal to multiple days
+		err = repo.Add(context.Background(), startDate.Add(48*time.Hour), 1)
+
+		if err != nil {
+			t.Errorf("Enexpected error adding meal to date: %v", err)
+		}
+
+		err = repo.Add(context.Background(), endDate, 3)
+
+		if err != nil {
+			t.Errorf("Enexpected error adding meal to date: %v", err)
+		}
+
+		ingredients, err := repo.GetIngredients(context.Background(), startDate, endDate, 1)
+
+		if err != nil {
+			t.Errorf("Unexpected error fetching ingredients: %v", err)
+		}
+
+		expectedIngredients := []Ingredient{
+			{
+				Name:     "Salmon",
+				Quantity: 1200,
+				Unit:     "g",
+			},
+			{
+				Name:     "Bell Pepper",
+				Quantity: 5,
+			},
+			{
+				Name:     "Onion",
+				Quantity: 3,
+			},
+			{
+				Name:     "Ginger",
+				Quantity: 3,
+				Unit:     "cm",
+			},
+		}
+
+		if len(ingredients) != len(expectedIngredients) {
+			t.Errorf("The number of ingredients (%d) doesn't match the expected: %d", len(ingredients), len(expectedIngredients))
+		}
+
+		sort := func(a, b Ingredient) int {
+			return strings.Compare(a.Name, b.Name)
+		}
+
+		slices.SortFunc(ingredients, sort)
+		slices.SortFunc(expectedIngredients, sort)
+
+		for i, ingredient := range ingredients {
+			if ingredient != expectedIngredients[i] {
+				t.Errorf("Ingredients do not match, expected: %+v, got %+v", expectedIngredients[i], ingredient)
+			}
+		}
 	})
 }
