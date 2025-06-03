@@ -69,7 +69,7 @@ customElements.define(
 
                         node.innerHTML = `
             <input 
-                class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]"
+                    class="py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400"
                 aria-autocomplete="list"
                 aria-expanded="false"
                 autocomplete="off"

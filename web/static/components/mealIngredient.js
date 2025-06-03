@@ -8,10 +8,10 @@ customElements.define(
                 template() {
                         const node = document.createElement('div')
 
-                        node.classList.add('flex', 'items-center', 'gap-4', 'wrap')
+                        node.classList.add('flex', 'items-center', 'gap-4', 'flex-wrap')
 
                         const body = `
-                <div class="flex flex-col gap-2">
+                <div class="flex flex-col gap-2 w-full md:w-[250px]">
                     <label class="text-sm text-slate-300" for="ingredientName"><span class="text-red-400">*</span> name</label>
                         <request-typeahead
                             data-name="ingredientName"
@@ -22,13 +22,14 @@ customElements.define(
             <input name="ingredientId" value="0" type="hidden" />
             <div class="flex flex-col gap-2">
                 <label class="text-sm text-slate-300" for="ingredientQuantity"><span class="text-red-400">*</span> quantity</label>
-                <input name="ingredientQuantity" class="quantity | py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[250px]" />
+                <input name="ingredientQuantity" class="quantity | py-2 px-1.5 rounded bg-zinc-700 ring-1 ring-zinc-400 w-[80px]" type="number" />
             </div>
             <div class="flex flex-col gap-2">
                 <label class="text-sm text-slate-300" for="ingredientUnit">unit</label>
                 <request-typeahead
                     data-name="ingredientUnit"
                     data-url="/api/units"
+                    class="w-[75px]"
                 />
             </div>
             <button class="remove-ingredient | py-2 px-4 rounded-md text-red-400 hover:text-slate-300 hover:bg-red-900 transition-colors border border-red-400 hover:border-red-900 self-end">Remove</button>

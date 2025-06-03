@@ -15,7 +15,8 @@ customElements.define(
                             <label class="text-sm text-slate-300" for="tagName">name</label>
                             <request-typeahead
                                 data-name="tagName"
-                                data-url="http://localhost:8000/api/tags"
+                                data-url="/api/tags"
+                                class="w-[250px]"
                             />
                             <input type="hidden" name="tagId" value="0" />
                         </div>

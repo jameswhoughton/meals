@@ -11,9 +11,9 @@
             </div>
             <div class="flex flex-col gap-2 mb-4">
                 <label class="text-sm text-slate-300" for="notes">notes</label>
-                <textarea class="rounded bg-zinc-700 ring-1 ring-zinc-400 w-[400px] min-h-[100px]" name="notes">{{.Form.Notes}}</textarea>
+                <textarea class="rounded bg-zinc-700 ring-1 ring-zinc-400 w-full md:w-[400px] min-h-[100px]" name="notes">{{.Form.Notes}}</textarea>
             </div>
-            <div id="tags" class="flex flex-col gap-3 mb-4">
+            <div id="tags" class="flex flex-col gap-6 mb-4">
                 <h2 class="text-lg pt-8">Tags</h2>
                 {{if .Form.Errors.Tags}}<div class="text-sm text-red-400">{{.Form.Errors.Tags}}</div>{{end}}
                 {{range $i, $tag := .Form.Tags}}
@@ -27,7 +27,7 @@
                     onclick="addTag()"
                 >Add</button>
             </div>
-            <div id="ingredients" class="flex flex-col gap-3 mb-4">
+            <div id="ingredients" class="flex flex-col gap-6 mb-4">
                 <h2 class="text-lg pt-8">Ingredients</h2>
                 {{if .Form.Errors.Ingredients}}<div class="text-sm text-red-400">{{.Form.Errors.Ingredients}}</div>{{end}}
                 {{range $i, $ingredient := .Form.Ingredients}}
