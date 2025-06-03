@@ -315,7 +315,7 @@ func PostLoginHandler(accountService account.Service, sessionService SessionServ
 
 		http.SetCookie(w, &sessionCookie)
 
-		http.Redirect(w, r, "/account", http.StatusFound)
+		http.Redirect(w, r, "/planner", http.StatusFound)
 	})
 }
 
