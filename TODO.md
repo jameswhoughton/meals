@@ -54,7 +54,7 @@
 - [x] Add meal seeder to planner test
 - [x] Add seeders to in memory tests
 - [x] Remove sqlite directory once everything is working
-- [ ] Add Page to view ingredient list for the week
+- [x] Add Page to view ingredient list for the week
 - [ ] Move DB details to env file and setup parsing in main.go
 - [ ] Create Dockerfile to build application
 - [ ] Manually deploy to AWS

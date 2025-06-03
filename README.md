@@ -43,13 +43,14 @@ This is the main web app executeable. Here the repositories/services and web ser
 - [x] New user can register
 - [ ] Existing user can:
     - [x] Log in
+    - [x] Log out
     - [x] Udate their account information
     - [ ] Reset their password
     - [x] Add a meal
     - [x] Edit a meal
     - [x] Delete a meal
     - [x] Assign a meal to a day
-    - [ ] Generate an ingredients list
+    - [x] Generate an ingredients list
     - [ ] Export/Import meals
 
 ## Build and run

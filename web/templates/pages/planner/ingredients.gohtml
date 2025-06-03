@@ -2,7 +2,11 @@
 <div class="bg-zinc-800 pb-12 rounded-md shadow-md w-full h-full">
     <h1 class="text-2xl p-6 border-b border-zinc-700 mb-8">{{.Title}}</h1>
     <div class="px-6">
-        {{.Ingredients}}
+        <ul class="md:max-w-64">
+            {{range .Ingredients}}
+            <li class="py-2 flex justify-between border-b border-zinv-700"><span>{{.Name}}</span><span>{{.Quantity}}{{.Unit}}</span></li>
+            {{end}}
+        </ul>
     </div>
 </div>
 {{end}}

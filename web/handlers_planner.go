@@ -56,9 +56,11 @@ func GetPlannerHandler(templateFiles fs.FS, plannerRepo planner.Repository, acco
 		}
 
 		type day struct {
-			Date  string
-			Label string
-			Meal  planner.Meal
+			Date      string
+			Label     string
+			Meal      planner.Meal
+			IsWeekend bool
+			IsToday   bool
 		}
 
 		var startDate time.Time
@@ -86,9 +88,11 @@ func GetPlannerHandler(templateFiles fs.FS, plannerRepo planner.Repository, acco
 			meal, _ := plannerRepo.Get(r.Context(), date, userId)
 
 			day := day{
-				Date:  date.Format("2006-01-02"),
-				Label: dateLabel(date),
-				Meal:  meal,
+				Date:      date.Format("2006-01-02"),
+				Label:     dateLabel(date),
+				Meal:      meal,
+				IsWeekend: slices.Contains([]string{time.Saturday.String(), time.Sunday.String()}, date.Weekday().String()),
+				IsToday:   date.Format("2006-01-02") == time.Now().Format("2006-01-02"),
 			}
 
 			days[i] = day
@@ -97,17 +101,19 @@ func GetPlannerHandler(templateFiles fs.FS, plannerRepo planner.Repository, acco
 		}
 
 		type templateData struct {
-			Title    string
-			Days     []day
-			Previous string
-			Next     string
+			Title      string
+			Days       []day
+			Previous   string
+			Next       string
+			ChosenDate string
 		}
 
 		tmpl.ExecuteTemplate(w, "layout", templateData{
-			Title:    "Week Planner",
-			Days:     days,
-			Previous: startDate.Add(-time.Duration(7*24) * time.Hour).Format("2006-01-02"),
-			Next:     startDate.Add(time.Duration(7*24) * time.Hour).Format("2006-01-02"),
+			Title:      "Week Planner",
+			Days:       days,
+			Previous:   startDate.Add(-time.Duration(7*24) * time.Hour).Format("2006-01-02"),
+			Next:       startDate.Add(time.Duration(7*24) * time.Hour).Format("2006-01-02"),
+			ChosenDate: startDate.Format("2006-01-02"),
 		})
 	})
 }
@@ -279,7 +285,7 @@ func GetPlannedIngredientsHandler(plannerSerivce planner.Service, accountRepo ac
 		}
 
 		tmpl.ExecuteTemplate(w, "layout", templateData{
-			Title:       dateLabel(parsedDate),
+			Title:       fmt.Sprintf("Ingredients for week %s - %s", startDate.Format("02/01"), endDate.Format("02/01")),
 			Ingredients: ingredients,
 		})
 	})
