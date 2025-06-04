@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -53,6 +54,22 @@ func main() {
 
 	if err != nil {
 		panic(err)
+	}
+
+	// Ping the database to ensure it is ready to receive queries.
+	for i := range 10 {
+		err = conn.Ping()
+
+		if err == nil {
+			break
+		}
+
+		fmt.Printf("Waiting for DB... attempt %d\n", i)
+		time.Sleep(2 * time.Second)
+	}
+
+	if err != nil {
+		panic("Database inactive: " + err.Error())
 	}
 
 	err = database.Migrate(conn)
