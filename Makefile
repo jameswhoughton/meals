@@ -23,3 +23,7 @@ build-tw:
 .PHONY: build
 build:
 	make build-tw && go build -o=$(binary_name) $(main_package_path)
+	
+.PHONY: build-image
+build-image:
+	docker build -t meals .

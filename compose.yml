@@ -1,4 +1,15 @@
 services:
+  app:
+    image: meals
+    build:
+      context: .
+    ports:
+      - "8005:8000"
+    environment:
+      MEALS_PORT: "8000"
+      MEALS_DSN: "root@tcp(db-dev)/meals?parseTime=true"
+    depends_on:
+      - db-dev
   db-dev:
     image: mysql
     restart: always
