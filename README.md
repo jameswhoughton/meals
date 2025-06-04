@@ -53,15 +53,22 @@ This is the main web app executeable. Here the repositories/services and web ser
     - [x] Generate an ingredients list
     - [ ] Export/Import meals
 
+## Dev Dependencies
+
+- Go
+- Node
+- Make
+- Docker
+
 ## Build and run
 
-- Install Go.
-- Install Node (required to build Tailwind assets).
-- Install Make.
-- Install Docker.
-- Navigate to the root of the project and run `make build`.
-- Run `docker compose up -d` to spin up the dev and testing MySQL servers.
-- Run `./meals_server`.
-- Navigate to `localhost:8000` in your browser.
+- Run `docker compose up -d --build` to spin up the dev and testing MySQL servers and build the app image.
+- Navigate to `localhost:8005` in your browser.
 
-**NOTE** If you want to use `make watch` you will also need to install [wgo](https://github.com/bokwoon95/wgo)
+## Active development
+
+- Install [wgo](https://github.com/bokwoon95/wgo)
+- Run `docker compose up -d`.
+- Run `make watch` this will start the server and restart on any file changes.
+- Run `make watch-tw` this will start the tailwind server and automatically restart on any file changes.
+- Navigate to `localhost:8000` in your browser.
