@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -17,18 +18,47 @@ import (
 	"github.com/jameswhoughton/meals/web"
 )
 
+type config struct {
+	port string
+	dsn  string
+}
+
+// Retrieve environment configuration.
+//
+// Either returns valid config or will panic.
+func getConfig() config {
+	port := os.Getenv("MEALS_PORT")
+
+	if port == "" {
+		panic("MEALS_PORT environment variable is missing or blank")
+	}
+
+	dsn := os.Getenv("MEALS_DSN")
+
+	if dsn == "" {
+		panic("MEALS_DSN environment variable is missing or blank")
+	}
+
+	return config{
+		port: port,
+		dsn:  dsn,
+	}
+}
+
 func main() {
-	conn, err := sql.Open("mysql", "root@tcp(127.0.0.1:8001)/meals?parseTime=true")
+	config := getConfig()
+
+	conn, err := sql.Open("mysql", config.dsn)
 	defer conn.Close()
 
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	err = database.Migrate(conn)
 
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	// Signal context to detext an interupt (Ctrl + c) or terminate signal
@@ -46,10 +76,9 @@ func main() {
 	plannerSerivce := planner.NewService(plannerRepository)
 
 	ongoingCtx, stopOngoningGracefully := context.WithCancel(context.Background())
-	port := "8000"
 	server := web.NewServer(
 		ongoingCtx,
-		port,
+		config.port,
 		&accountService,
 		&mealService,
 		sessionService,
@@ -61,7 +90,7 @@ func main() {
 	)
 
 	go func() {
-		log.Printf("Server starting on port :%s\n", port)
+		log.Printf("Server starting on port :%s\n", config.port)
 
 		// Ignore ErrServerClosed as this happens when the server is expectedly shutdown
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
