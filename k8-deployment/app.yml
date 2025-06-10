@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: meals-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: meals
+  template:
+    metadata:
+      labels:
+        app: meals
+    spec:
+      containers:
+      - name: meals-container
+        image: ghcr.io/jameswhoughton/meals:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: MEALS_PORT
+          value: "8000"
+        - name: MEALS_DB_HOST
+          value: mysql-service
+        - name: MEALS_DB_USERNAME
+          value: root
+        - name: MEALS_PASSWORD
+          value: ""
+        - name: MEALS_DB_PORT
+          value: "3306"
+      imagePullSecrets:
+      - name: regcred
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: meals-service
+spec:
+  type: NodePort
+  selector:
+    app: meals  # Selects which pods this service will route traffic to
+  ports:
+    - port: 8000  # The port that the service will expose
+      targetPort: 8000 # The port that the application listens on
+      nodePort: 30000
