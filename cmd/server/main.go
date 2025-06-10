@@ -34,11 +34,18 @@ func getConfig() config {
 		panic("MEALS_PORT environment variable is missing or blank")
 	}
 
-	dsn := os.Getenv("MEALS_DSN")
+	dsn := os.Getenv("MEALS_DB_USERNAME")
 
-	if dsn == "" {
-		panic("MEALS_DSN environment variable is missing or blank")
+	if os.Getenv("MEALS_BD_PASSWORD") != "" {
+		dsn += ":" + os.Getenv("MEALS_DB_PASSWORD")
 	}
+
+	dsn = fmt.Sprintf(
+		"%s@tcp(%s:%s)/meals?parseTime=true",
+		dsn,
+		os.Getenv("MEALS_DB_HOST"),
+		os.Getenv("MEALS_DB_PORT"),
+	)
 
 	return config{
 		port: port,
