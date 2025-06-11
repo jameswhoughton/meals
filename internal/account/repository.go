@@ -46,4 +46,5 @@ type Repository interface {
 	Get(ctx context.Context, form GetForm) (User, error)
 	Create(ctx context.Context, user User) (User, error)
 	Update(ctx context.Context, form UserUpdate) error
+	Delete(ctx context.Context, userId int) error
 }

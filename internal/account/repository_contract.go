@@ -13,7 +13,7 @@ type RepositoryContract struct {
 }
 
 func (c *RepositoryContract) Test(t *testing.T) {
-	t.Run("Can add, update and retrieve a user", func(t *testing.T) {
+	t.Run("Can add, update, retrieve and delete a user", func(t *testing.T) {
 		repo, closeDown := c.Repo()
 		defer closeDown()
 
@@ -116,6 +116,18 @@ func (c *RepositoryContract) Test(t *testing.T) {
 
 		if newStartDay != updatedUser.MealStartDay {
 			t.Errorf("Expected start day %d found %d", newStartDay, updatedUser.MealStartDay)
+		}
+
+		err = repo.Delete(ctx, updatedUser.Id)
+
+		if err != nil {
+			t.Errorf("Unexpected error deleting user: %v", err)
+		}
+
+		_, err = repo.Get(ctx, GetForm{Id: &update.Id})
+
+		if !errors.As(err, &ErrorUserNotFound{}) {
+			t.Errorf("Expected user not found error, got %T: %v", err, err)
 		}
 	})
 

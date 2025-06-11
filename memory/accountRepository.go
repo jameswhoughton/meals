@@ -74,3 +74,19 @@ func (ar *AccountRepository) Update(ctx context.Context, form account.UserUpdate
 
 	return nil
 }
+
+func (ar *AccountRepository) Delete(ctx context.Context, userId int) error {
+	var store []account.User
+
+	for _, user := range ar.Store {
+		if user.Id == userId {
+			continue
+		}
+
+		store = append(store, user)
+	}
+
+	ar.Store = store
+
+	return nil
+}

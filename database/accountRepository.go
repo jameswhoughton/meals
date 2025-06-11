@@ -113,3 +113,13 @@ func (us *AccountRepository) Update(ctx context.Context, user account.UserUpdate
 
 	return nil
 }
+
+func (us *AccountRepository) Delete(ctx context.Context, userId int) error {
+	_, err := us.db.ExecContext(ctx, `DELETE FROM users WHERE id = ?`, userId)
+
+	if err != nil {
+		return fmt.Errorf("error deleting user: %v", err)
+	}
+
+	return nil
+}
