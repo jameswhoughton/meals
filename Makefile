@@ -30,3 +30,12 @@ build:
 .PHONY: build-image
 build-image:
 	docker build -t meals .
+
+.PHONY: seed
+seed:
+	MEALS_DB_HOST="127.0.0.1" \
+	MEALS_DB_PORT="8001" \
+	MEALS_DB_USERNAME="root" \
+	MEALS_DB_PASSWORD="" \
+	MEALS_PORT="8000" \
+	go run ./cmd/seeder/main.go -user-count=5
