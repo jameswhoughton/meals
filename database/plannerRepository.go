@@ -52,7 +52,7 @@ func (pr *PlannerRepository) Get(ctx context.Context, date time.Time, userId int
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return meal, fmt.Errorf("Planner Repository: No meal set for user %d on date %s: %w", userId, date, err)
+			return meal, planner.ErrMealNotSet
 		}
 
 		return meal, fmt.Errorf("PlannerRepository: Unable to fetch meal for date: %v", err)

@@ -2,8 +2,11 @@ package planner
 
 import (
 	"context"
+	"errors"
 	"time"
 )
+
+var ErrMealNotSet = errors.New("No meal set on date")
 
 type Meal struct {
 	Id     int

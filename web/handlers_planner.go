@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"io/fs"
+	"log"
 	"net/http"
 	"slices"
 	"strconv"
@@ -72,6 +73,13 @@ func GetPlannerHandler(templateFiles fs.FS, plannerService planner.Service, acco
 		}
 
 		days, err := plannerService.GetMeals(r.Context(), startDate, 7, userId)
+
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "Server error: unable to fetch days", http.StatusInternalServerError)
+
+			return
+		}
 
 		type templateData struct {
 			Title      string

@@ -34,7 +34,7 @@ func (s *Service) GetMeals(ctx context.Context, startDate time.Time, numberOfDay
 	for i := range days {
 		meal, err := s.repo.Get(ctx, date, userId)
 
-		if err != nil {
+		if err != nil && !errors.Is(err, ErrMealNotSet) {
 			return days, fmt.Errorf("PlannerService.GetMeals: Error fetching meal: %v", err)
 		}
 

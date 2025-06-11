@@ -2,6 +2,7 @@ package planner
 
 import (
 	"context"
+	"errors"
 	"slices"
 	"strings"
 	"testing"
@@ -245,6 +246,21 @@ func (i RepositoryContract) Test(t *testing.T) {
 			if ingredient != expectedIngredients[i] {
 				t.Errorf("Ingredients do not match, expected: %+v, got %+v", expectedIngredients[i], ingredient)
 			}
+		}
+	})
+
+	t.Run("Returns expected error if no meal is set", func(t *testing.T) {
+		repo, _, closeDown := i.Repo()
+		defer closeDown()
+
+		_, err := repo.Get(context.Background(), time.Now(), 0)
+
+		if err == nil {
+			t.Errorf("Expected error, got none")
+		}
+
+		if !errors.Is(err, ErrMealNotSet) {
+			t.Errorf("Expected error %v, got %v", ErrMealNotSet, err)
 		}
 	})
 }

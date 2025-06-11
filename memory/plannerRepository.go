@@ -2,7 +2,6 @@ package memory
 
 import (
 	"context"
-	"fmt"
 	"maps"
 	"slices"
 	"strconv"
@@ -36,7 +35,7 @@ func (pr *PlannerRepository) findMeal(_ context.Context, id int) (planner.Meal, 
 	}
 
 	if meal.Id == 0 {
-		return meal, fmt.Errorf("Meal with the id %d not found", id)
+		return meal, planner.ErrMealNotSet
 	}
 
 	return meal, nil
@@ -110,7 +109,6 @@ func (pr *PlannerRepository) GetIngredients(ctx context.Context, startDate, endD
 		}
 
 	}
-	fmt.Println(totals, pr.Planner)
 
 	return slices.Collect(maps.Values(totals)), nil
 }
