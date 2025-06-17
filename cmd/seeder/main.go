@@ -167,7 +167,7 @@ func main() {
 	for i := range *userCountPtr {
 		email := "user-" + strconv.Itoa(i) + "@example.com"
 
-		existingUser, _ := accountRepository.Get(context.Background(), account.GetForm{Email: &email})
+		existingUser, _ := accountRepository.GetByEmail(context.Background(), email)
 
 		if existingUser.Id > 0 {
 			log.Printf("Deleting user %s\n", email)

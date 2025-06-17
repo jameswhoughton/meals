@@ -70,7 +70,7 @@ func PostRegistrationHandler(service account.Service) http.Handler {
 
 		_, err := service.CreateUser(r.Context(), &form)
 
-		if err != nil && errors.Is(err, account.ErrorFormInvalid{}) {
+		if err != nil && errors.Is(err, account.ErrUserFormInvalid) {
 			formJson, _ := json.Marshal(form)
 			setMessage(w, "formData", string(formJson))
 
@@ -213,7 +213,7 @@ func PutAccountHandler(accountService account.Service, sessionService SessionSer
 
 		err = accountService.UpdateUser(r.Context(), &form)
 
-		if err != nil && errors.Is(err, account.ErrorFormInvalid{}) {
+		if err != nil && errors.Is(err, account.ErrUserFormInvalid) {
 			formJson, _ := json.Marshal(form)
 			setMessage(w, "formData", string(formJson))
 

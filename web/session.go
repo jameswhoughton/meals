@@ -78,7 +78,7 @@ func (ss *SessionService) UserFromSession(ctx context.Context, sessionId string)
 		return account.User{}, fmt.Errorf("Session has expired")
 	}
 
-	user, err := ss.AccountRepo.Get(ctx, account.GetForm{Id: &session.UserId})
+	user, err := ss.AccountRepo.GetById(ctx, session.UserId)
 
 	if err != nil {
 		return account.User{}, fmt.Errorf("error fetching user: %w", err)

@@ -3,7 +3,6 @@ package account
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 	"time"
 )
@@ -52,7 +51,7 @@ func (c *RepositoryContract) Test(t *testing.T) {
 		}
 
 		// Fetch an existing user by ID
-		fetchedUsers, err := repo.Get(ctx, GetForm{Id: &user.Id})
+		fetchedUsers, err := repo.GetById(ctx, user.Id)
 
 		if err != nil {
 			t.Error(err)
@@ -63,7 +62,7 @@ func (c *RepositoryContract) Test(t *testing.T) {
 		}
 
 		// Fetch an existing user by email
-		fetchedUser, err := repo.Get(ctx, GetForm{Email: &user.Email})
+		fetchedUser, err := repo.GetByEmail(ctx, user.Email)
 
 		if err != nil {
 			t.Error(err)
@@ -96,7 +95,7 @@ func (c *RepositoryContract) Test(t *testing.T) {
 			t.Error(err)
 		}
 
-		updatedUser, err := repo.Get(ctx, GetForm{Email: &newEmail})
+		updatedUser, err := repo.GetByEmail(ctx, newEmail)
 
 		if err != nil {
 			t.Error(err)
@@ -124,9 +123,9 @@ func (c *RepositoryContract) Test(t *testing.T) {
 			t.Errorf("Unexpected error deleting user: %v", err)
 		}
 
-		_, err = repo.Get(ctx, GetForm{Id: &update.Id})
+		_, err = repo.GetById(ctx, update.Id)
 
-		if !errors.As(err, &ErrorUserNotFound{}) {
+		if !errors.Is(err, ErrUserNotFound) {
 			t.Errorf("Expected user not found error, got %T: %v", err, err)
 		}
 	})
@@ -135,36 +134,36 @@ func (c *RepositoryContract) Test(t *testing.T) {
 		repo, closeDown := c.Repo()
 		defer closeDown()
 
-		id := 1
 		ctx := context.Background()
 
-		_, err := repo.Get(ctx, GetForm{Id: &id})
+		_, err := repo.GetById(ctx, 1)
 
 		if err == nil {
 			t.Errorf("Expected error got nil")
 		}
 
-		if !errors.Is(err, ErrorUserNotFound{}) {
+		if !errors.Is(err, ErrUserNotFound) {
 			t.Errorf("Expected UserNotFoundError, got %T", err)
 		}
-	})
 
-	t.Run("Returns expected error if no search parameters passed to Get", func(t *testing.T) {
-		repo, closeDown := c.Repo()
-		defer closeDown()
-
-		ctx := context.Background()
-
-		_, err := repo.Get(ctx, GetForm{})
+		_, err = repo.GetByEmail(ctx, "test@example.com")
 
 		if err == nil {
-			t.Errorf("Expected error, got nil")
+			t.Errorf("Expected error got nil")
 		}
 
-		if !errors.Is(err, ErrorGetFormInvalid{}) {
-			fmt.Printf("%v, %T", err, err)
-			t.Errorf("Expected ErrorGetFormInvalid, got %T", err)
+		if !errors.Is(err, ErrUserNotFound) {
+			t.Errorf("Expected UserNotFoundError, got %T", err)
 		}
 
+		err = repo.Update(ctx, UserUpdate{Id: 1})
+
+		if err == nil {
+			t.Errorf("Expected error got nil")
+		}
+
+		if !errors.Is(err, ErrUserNotFound) {
+			t.Errorf("Expected UserNotFoundError, got %T", err)
+		}
 	})
 }

@@ -46,7 +46,7 @@ func GetPlannerHandler(templateFiles fs.FS, plannerService planner.Service, acco
 		}
 		userId := r.Context().Value("userId").(int)
 
-		user, err := accountRepo.Get(r.Context(), account.GetForm{Id: &userId})
+		user, err := accountRepo.GetById(r.Context(), userId)
 
 		if err != nil {
 			http.Error(w, "Server error: unable to fetch user", http.StatusInternalServerError)
@@ -245,7 +245,7 @@ func GetPlannedIngredientsHandler(plannerSerivce planner.Service, accountRepo ac
 			return
 		}
 
-		user, err := accountRepo.Get(r.Context(), account.GetForm{Id: &userId})
+		user, err := accountRepo.GetById(r.Context(), userId)
 
 		startDate := calculateStartDate(parsedDate, user.MealStartDay)
 
