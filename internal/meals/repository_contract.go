@@ -158,8 +158,8 @@ func (i RepositoryContract) Test(t *testing.T) {
 			t.Error("Expected error, got none")
 		}
 
-		if !errors.Is(err, ErrorMealNotFound{Id: fetchedMeal.Id}) {
-			t.Errorf("Expected error of type %T, got %T (%v)", ErrorMealNotFound{}, err, err)
+		if !errors.Is(err, ErrMealNotFound) {
+			t.Errorf("Expected error of type %T, got %T (%v)", ErrMealNotFound, err, err)
 		}
 	})
 
@@ -289,23 +289,6 @@ func (i RepositoryContract) Test(t *testing.T) {
 		}
 	})
 
-	t.Run("Must include UserId when filtering meals", func(t *testing.T) {
-		repo, _, closeDown := i.Repo()
-		defer closeDown()
-
-		ctx := context.Background()
-
-		_, err := repo.Find(ctx, MealFilter{})
-
-		if err == nil {
-			t.Errorf("Expected error, got nil")
-		}
-
-		if !errors.As(err, &ErrorMealFilterInvalid{}) {
-			t.Errorf("Expected error of type %T, got %T (%v)", ErrorMealFilterInvalid{}, err, err)
-		}
-
-	})
 	t.Run("Can filter a list of distinct ingredient names", func(t *testing.T) {
 		repo, seedUser, closeDown := i.Repo()
 		defer closeDown()

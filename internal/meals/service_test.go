@@ -55,8 +55,8 @@ func TestValidationErrorsWhenCreatingAMeal(t *testing.T) {
 				t.Error("Expected validation error got none")
 			}
 
-			if !errors.Is(err, meals.ErrorFormInvalid{}) {
-				t.Errorf("Expected error of type %T, got %T (%v)", meals.ErrorFormInvalid{}, err, err)
+			if !errors.Is(err, meals.ErrMealFormInvalid) {
+				t.Errorf("Expected error %s, got %s", meals.ErrMealFormInvalid, err)
 			}
 
 			if len(testCase.meal.Errors) != len(testCase.expectedErrors) {
@@ -167,8 +167,8 @@ func TestValidationErrorsWhenUpdatingAMeal(t *testing.T) {
 				t.Error("Expected validation error got none")
 			}
 
-			if !errors.Is(err, meals.ErrorFormInvalid{}) {
-				t.Errorf("Expected error of type %T, got %T (%v)", meals.ErrorFormInvalid{}, err, err)
+			if !errors.Is(err, meals.ErrMealFormInvalid) {
+				t.Errorf("Expected error %s, got %s", meals.ErrMealFormInvalid, err)
 			}
 
 			if len(testCase.meal.Errors) != len(testCase.expectedErrors) {
@@ -233,4 +233,35 @@ func TestServiceCanUpdateAMeal(t *testing.T) {
 	if mealRepository.Store[0].Name != mealToUpdate.Name {
 		t.Errorf("Name not updated in store: expected %s, found %s", mealToUpdate.Name, mealRepository.Store[0].Name)
 	}
+}
+
+func TestMustIncludeUserIdWhenFilteringMeals(t *testing.T) {
+	mealRepository := memory.MealRepository{
+		Store: []meals.Meal{
+			{
+				Id:   23,
+				Name: "Old name",
+			},
+		},
+	}
+	service := meals.NewService(&mealRepository)
+
+	ctx := context.Background()
+
+	form := meals.MealFilterForm{}
+
+	_, err := service.FilterMeals(ctx, &form)
+
+	if err == nil {
+		t.Errorf("Expected error, got nil")
+	}
+
+	if !errors.Is(err, meals.ErrMealFilterFormInvalid) {
+		t.Errorf("Expected error %s, got %s", meals.ErrMealFilterFormInvalid, err)
+	}
+
+	if _, ok := form.Errors["user_id"]; !ok {
+		t.Errorf("Expected validation message for user_id missing")
+	}
+
 }

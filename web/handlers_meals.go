@@ -90,7 +90,7 @@ func GetMealEditHandler(templateFiles fs.FS, repo meals.Repository) http.Handler
 		meal, err := repo.Get(r.Context(), mealId)
 
 		if err != nil {
-			if errors.As(err, &meals.ErrorMealNotFound{Id: mealId}) {
+			if errors.Is(err, meals.ErrMealNotFound) {
 				http.Error(w, err.Error(), http.StatusNotFound)
 
 				return
@@ -158,7 +158,7 @@ func GetMealHandler(templateFiles fs.FS, repo meals.Repository) http.Handler {
 		meal, err := repo.Get(r.Context(), mealId)
 
 		if err != nil {
-			if errors.As(err, &meals.ErrorMealNotFound{Id: mealId}) {
+			if errors.Is(err, meals.ErrMealNotFound) {
 				http.Error(w, err.Error(), http.StatusNotFound)
 
 				return
@@ -290,7 +290,7 @@ func PostMealHandler(service meals.Service) http.Handler {
 
 		_, err := service.CreateMeal(r.Context(), &meal)
 
-		if err != nil && errors.Is(err, meals.ErrorFormInvalid{}) {
+		if err != nil && errors.Is(err, meals.ErrMealFormInvalid) {
 			formJson, _ := json.Marshal(meal)
 			setMessage(w, "formData", string(formJson))
 
@@ -330,7 +330,7 @@ func PutMealHandler(service meals.Service, repo meals.Repository) http.Handler {
 		existingMeal, err := repo.Get(r.Context(), meal.Id)
 
 		if err != nil {
-			if errors.As(err, &meals.ErrorMealNotFound{Id: meal.Id}) {
+			if errors.Is(err, meals.ErrMealNotFound) {
 				http.Error(w, err.Error(), http.StatusNotFound)
 
 				return
@@ -347,7 +347,7 @@ func PutMealHandler(service meals.Service, repo meals.Repository) http.Handler {
 
 		err = service.UpdateMeal(r.Context(), &meal)
 
-		if err != nil && errors.Is(err, meals.ErrorFormInvalid{}) {
+		if err != nil && errors.Is(err, meals.ErrMealFormInvalid) {
 			formJson, _ := json.Marshal(meal)
 			setMessage(w, "formData", string(formJson))
 
@@ -379,7 +379,7 @@ func PostDeleteMealHandler(repo meals.Repository) http.Handler {
 		mealToDelete, err := repo.Get(r.Context(), mealId)
 
 		if err != nil {
-			if errors.As(err, &meals.ErrorMealNotFound{Id: mealId}) {
+			if errors.Is(err, meals.ErrMealNotFound) {
 				http.Error(w, err.Error(), http.StatusNotFound)
 
 				return

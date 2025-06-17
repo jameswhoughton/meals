@@ -158,13 +158,13 @@ func (us *Service) GetUserFromCredentials(ctx context.Context, email, password s
 	user, err := us.account.GetByEmail(ctx, email)
 
 	if err != nil {
-		return User{}, err
+		return User{}, fmt.Errorf("failed to get user with email=%s: %w", email, err)
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 
 	if err != nil {
-		return User{}, fmt.Errorf("Credentials invalid: %v", err)
+		return User{}, fmt.Errorf("credentials invalid: %v", err)
 	}
 
 	return user, nil
@@ -186,7 +186,7 @@ func (us *Service) CreateUser(ctx context.Context, form *UserFormCreate) (User, 
 	createdUser, err := us.account.Create(ctx, user)
 
 	if err != nil {
-		return User{}, fmt.Errorf("failed to create user: %v", err)
+		return User{}, fmt.Errorf("failed to create user: %w", err)
 	}
 
 	return createdUser, nil

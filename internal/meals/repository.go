@@ -2,7 +2,7 @@ package meals
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"strconv"
 	"time"
 )
@@ -19,11 +19,12 @@ type Tag struct {
 	Name string `json:"name"`
 }
 
+var ErrMealNotFound = errors.New("meal not found")
+
 /*
 Specification:
 - Has a single owner
-- Has atleast one ingredient
-- Has one main ingredient
+- Has at least one ingredient
 - Can have one or more tags
 - Meal names are not unique
 - Associated ingredients must have a non-zero quantity
@@ -76,14 +77,6 @@ func (mf MealFilter) Validate() error {
 	}
 
 	return nil
-}
-
-type ErrorMealNotFound struct {
-	Id int
-}
-
-func (e ErrorMealNotFound) Error() string {
-	return fmt.Sprintf("Meal with the id: %d does not exist.", e.Id)
 }
 
 type Repository interface {
