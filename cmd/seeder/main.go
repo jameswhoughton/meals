@@ -1,3 +1,17 @@
+// This is a seeder script for the application, it will seed a given number of users
+// with a set number of meals, each meal will have a random selection of ingredients and
+// tags.
+//
+// While the meal and ingredient names are real, they are combined randomly, each meal has 1 main
+// ingredient (e.g. meat/fish) and a random number of additional ingredients.
+//
+// The script has an optional flag `user-count` to set the number of users to create. If omitted,
+// only 1 user will be created.
+//
+// Each user has an email address of `user-N@example.com` where N is the index of the user
+// and a password of `password123`.
+//
+// If a seeded user already exists they will be deleted and re-seeded.
 package main
 
 import (
