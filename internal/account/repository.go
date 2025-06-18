@@ -2,8 +2,11 @@ package account
 
 import (
 	"context"
+	"errors"
 	"time"
 )
+
+var ErrUserNotFound = errors.New("user not found")
 
 type User struct {
 	Id           int
@@ -24,26 +27,30 @@ type UserUpdate struct {
 	UpdatedAt    time.Time
 }
 
-type ErrorUserNotFound struct {
-}
-
-func (e ErrorUserNotFound) Error() string {
-	return "User not found"
-}
-
-type ErrorGetFormInvalid struct{}
-
-func (e ErrorGetFormInvalid) Error() string {
-	return "Expects at least 1 param, none provided"
-}
-
-type GetForm struct {
-	Id    *int
-	Email *string
-}
-
 type Repository interface {
-	Get(ctx context.Context, form GetForm) (User, error)
+
+	// Get a user that matches the given id
+	//
+	// Returns ErrUserNotFound if the id does not match any users
+	GetById(ctx context.Context, id int) (User, error)
+
+	// Get a user that matches the given email
+	//
+	// Returns ErrUserNotFound if the email does not match any users
+	GetByEmail(ctx context.Context, email string) (User, error)
+
+	// Create a new user
+	//
+	// Returns the new user if created successfully.
 	Create(ctx context.Context, user User) (User, error)
-	Update(ctx context.Context, form UserUpdate) error
+
+	// Updates an existing user
+	//
+	// Returns ErrUserNotFound if the given user.Id does not exist.
+	Update(ctx context.Context, user UserUpdate) error
+
+	// Deletes an existing user
+	//
+	// Does nothing if the userId does not exist.
+	Delete(ctx context.Context, userId int) error
 }

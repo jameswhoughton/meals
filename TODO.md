@@ -55,10 +55,11 @@
 - [x] Add seeders to in memory tests
 - [x] Remove sqlite directory once everything is working
 - [x] Add Page to view ingredient list for the week
-- [ ] Move DB details to env file and setup parsing in main.go
-- [ ] Create Dockerfile to build application
-- [ ] Manually deploy to AWS
-- [ ] Setup github actions for CI/CD
+- [x] Move DB details to env file and setup parsing in main.go
+- [x] Create Dockerfile to build application
+- [x] Manually deploy to AWS
+- [x] Setup github actions for CI/CD
+- [ ] Create service for Planner
 
 ## Bugs
 

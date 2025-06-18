@@ -2,6 +2,7 @@ package account
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -58,6 +59,8 @@ func validateMealStartDay(day int) (bool, string) {
 	return true, ""
 }
 
+var ErrUserFormInvalid = errors.New("form has validation errors")
+
 type UserFormUpdate struct {
 	Id              int
 	Password        *string `json:"-"`
@@ -86,7 +89,7 @@ func (f *UserFormUpdate) Validate(ctx context.Context, currentUser User, repo Re
 			f.Errors["Email"] = message
 		}
 
-		existingUser, err := repo.Get(ctx, GetForm{Email: &f.Email})
+		existingUser, err := repo.GetByEmail(ctx, f.Email)
 
 		if err == nil && existingUser.Id != currentUser.Id {
 			f.Errors["Email"] = "email already in use"
@@ -124,7 +127,7 @@ func (f *UserFormCreate) Validate(ctx context.Context, repo Repository) bool {
 		f.Errors["Email"] = message
 	}
 
-	user, _ := repo.Get(ctx, GetForm{Email: &f.Email})
+	user, _ := repo.GetByEmail(ctx, f.Email)
 
 	if user.Id > 0 {
 		f.Errors["Email"] = "email already in use"
@@ -152,16 +155,16 @@ type Service struct {
 }
 
 func (us *Service) GetUserFromCredentials(ctx context.Context, email, password string) (User, error) {
-	user, err := us.account.Get(ctx, GetForm{Email: &email})
+	user, err := us.account.GetByEmail(ctx, email)
 
 	if err != nil {
-		return User{}, err
+		return User{}, fmt.Errorf("failed to get user with email=%s: %w", email, err)
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 
 	if err != nil {
-		return User{}, fmt.Errorf("Credentials invalid: %v", err)
+		return User{}, fmt.Errorf("credentials invalid: %v", err)
 	}
 
 	return user, nil
@@ -169,7 +172,7 @@ func (us *Service) GetUserFromCredentials(ctx context.Context, email, password s
 
 func (us *Service) CreateUser(ctx context.Context, form *UserFormCreate) (User, error) {
 	if !form.Validate(ctx, us.account) {
-		return User{}, ErrorFormInvalid{}
+		return User{}, ErrUserFormInvalid
 	}
 
 	var user User
@@ -183,28 +186,21 @@ func (us *Service) CreateUser(ctx context.Context, form *UserFormCreate) (User, 
 	createdUser, err := us.account.Create(ctx, user)
 
 	if err != nil {
-		return User{}, fmt.Errorf("failed to create user: %v", err)
+		return User{}, fmt.Errorf("failed to create user: %w", err)
 	}
 
 	return createdUser, nil
 }
 
-type ErrorFormInvalid struct {
-}
-
-func (e ErrorFormInvalid) Error() string {
-	return "The form contains errors"
-}
-
 func (us *Service) UpdateUser(ctx context.Context, form *UserFormUpdate) error {
-	currentUser, err := us.account.Get(ctx, GetForm{Id: &form.Id})
+	currentUser, err := us.account.GetById(ctx, form.Id)
 
 	if err != nil {
-		return fmt.Errorf("User update - error fetching current user model: %w", err)
+		return fmt.Errorf("unable to update user with id=%d: %w", form.Id, err)
 	}
 
 	if !form.Validate(ctx, currentUser, us.account) {
-		return ErrorFormInvalid{}
+		return ErrUserFormInvalid
 	}
 
 	toUpdate := UserUpdate{

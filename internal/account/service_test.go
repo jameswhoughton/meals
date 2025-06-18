@@ -83,7 +83,7 @@ func TestCreateUserFailsIfFormIsInvalid(t *testing.T) {
 				t.Error("Expected error, got none")
 			}
 
-			if !errors.Is(err, account.ErrorFormInvalid{}) {
+			if !errors.Is(err, account.ErrUserFormInvalid) {
 				t.Errorf("Expected validation error, got: %v", err)
 			}
 
@@ -142,6 +142,7 @@ func TestUpdateUserFailsIfFormIsInvalid(t *testing.T) {
 		{
 			description: "Meal start day invalid",
 			form: account.UserFormUpdate{
+				Id:              1,
 				Name:            "Paul",
 				Password:        strPtr("aaabbbcccd"),
 				PasswordConfirm: "aaabbbcccd",
@@ -174,7 +175,7 @@ func TestUpdateUserFailsIfFormIsInvalid(t *testing.T) {
 				t.Error("Expected error, got none")
 			}
 
-			if !errors.Is(err, account.ErrorFormInvalid{}) {
+			if !errors.Is(err, account.ErrUserFormInvalid) {
 				t.Errorf("Expected validation error, got: %v", err)
 			}
 
@@ -286,7 +287,7 @@ func TestReturnExpectedErrorIfUserDoesNotExist(t *testing.T) {
 		t.Error("Expected error, got nil")
 	}
 
-	if !errors.Is(err, account.ErrorUserNotFound{}) {
+	if !errors.Is(err, account.ErrUserNotFound) {
 		t.Errorf("Expected ErrorUserNotFound, got %v", err)
 	}
 }

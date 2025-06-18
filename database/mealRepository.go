@@ -92,7 +92,7 @@ func (mr *MealRepository) Get(ctx context.Context, id int) (meals.Meal, error) {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return meals.Meal{}, meals.ErrorMealNotFound{Id: id}
+			return meals.Meal{}, meals.ErrMealNotFound
 		}
 
 		return meals.Meal{}, fmt.Errorf("MealRepository.Get: query error: %v", err)
@@ -117,12 +117,6 @@ func (mr *MealRepository) Get(ctx context.Context, id int) (meals.Meal, error) {
 	return meal, nil
 }
 func (mr *MealRepository) Find(ctx context.Context, filter meals.MealFilter) ([]meals.Meal, error) {
-	err := filter.Validate()
-
-	if err != nil {
-		return []meals.Meal{}, err
-	}
-
 	wheres := []string{
 		"AND m.user_id = ?",
 	}

@@ -21,16 +21,11 @@ func (mr *MealRepository) Get(ctx context.Context, id int) (meals.Meal, error) {
 		}
 	}
 
-	return meals.Meal{}, meals.ErrorMealNotFound{Id: id}
+	return meals.Meal{}, meals.ErrMealNotFound
 }
 
 func (mr *MealRepository) Find(ctx context.Context, filter meals.MealFilter) ([]meals.Meal, error) {
 	var meals []meals.Meal
-	err := filter.Validate()
-
-	if err != nil {
-		return meals, err
-	}
 
 	for _, meal := range mr.Store {
 		if meal.UserId != filter.UserId {

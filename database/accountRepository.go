@@ -18,36 +18,39 @@ func NewAccountRespository(db *sql.DB) *AccountRepository {
 	return &AccountRepository{db}
 }
 
-func (us *AccountRepository) Get(ctx context.Context, form account.GetForm) (account.User, error) {
+func (us *AccountRepository) GetById(ctx context.Context, id int) (account.User, error) {
 	var user account.User
-	var wheres []string
 
-	if form.Id == nil && form.Email == nil {
-		return account.User{}, account.ErrorGetFormInvalid{}
-	}
-
-	var values []any
-
-	if form.Id != nil {
-		wheres = append(wheres, "id = ?")
-		values = append(values, *form.Id)
-	}
-
-	if form.Email != nil {
-		wheres = append(wheres, "email = ?")
-		values = append(values, *form.Email)
-	}
-
-	query := "SELECT id, name, email, meal_start_day, password FROM users WHERE 1 = 1 AND " + strings.Join(wheres, " AND ")
-
-	err := us.db.QueryRowContext(ctx, query, values...).Scan(&user.Id, &user.Name, &user.Email, &user.MealStartDay, &user.Password)
+	err := us.db.QueryRowContext(
+		ctx,
+		`SELECT id, name, email, meal_start_day, password FROM users WHERE id = ?`,
+		id).Scan(&user.Id, &user.Name, &user.Email, &user.MealStartDay, &user.Password)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return account.User{}, account.ErrorUserNotFound{}
+			return account.User{}, account.ErrUserNotFound
 		}
 
-		return account.User{}, fmt.Errorf("AccountRepository.Get: error getting user: %v", err)
+		return account.User{}, fmt.Errorf("failed to query user with id=%d: %w", id, err)
+	}
+
+	return user, nil
+}
+
+func (us *AccountRepository) GetByEmail(ctx context.Context, email string) (account.User, error) {
+	var user account.User
+
+	err := us.db.QueryRowContext(
+		ctx,
+		`SELECT id, name, email, meal_start_day, password FROM users WHERE email = ?`,
+		email).Scan(&user.Id, &user.Name, &user.Email, &user.MealStartDay, &user.Password)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return account.User{}, account.ErrUserNotFound
+		}
+
+		return account.User{}, fmt.Errorf("failed to query user with email=%s: %w", email, err)
 	}
 
 	return user, nil
@@ -76,7 +79,7 @@ func (us *AccountRepository) Create(ctx context.Context, user account.User) (acc
 }
 
 func (us *AccountRepository) Update(ctx context.Context, user account.UserUpdate) error {
-	_, err := us.Get(ctx, account.GetForm{Id: &user.Id})
+	_, err := us.GetById(ctx, user.Id)
 
 	if err != nil {
 		return err
@@ -109,6 +112,16 @@ func (us *AccountRepository) Update(ctx context.Context, user account.UserUpdate
 
 	if err != nil {
 		return fmt.Errorf("error updating user: %v", err)
+	}
+
+	return nil
+}
+
+func (us *AccountRepository) Delete(ctx context.Context, userId int) error {
+	_, err := us.db.ExecContext(ctx, `DELETE FROM users WHERE id = ?`, userId)
+
+	if err != nil {
+		return fmt.Errorf("error deleting user: %v", err)
 	}
 
 	return nil

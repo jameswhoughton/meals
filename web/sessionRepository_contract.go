@@ -75,8 +75,8 @@ func (rc *SessionRepositoryContract) Test(t *testing.T) {
 			t.Error("Expected error when fetching destroyed session, got none")
 		}
 
-		if !errors.Is(err, ErrorSessionNotFound{}) {
-			t.Errorf("Expected error of type %T, got %T (%v)", ErrorSessionNotFound{}, err, err)
+		if !errors.Is(err, ErrSessionNotFound) {
+			t.Errorf("Expected error %s, got %s", ErrSessionNotFound, err)
 		}
 	})
 
@@ -125,8 +125,8 @@ func (rc *SessionRepositoryContract) Test(t *testing.T) {
 			t.Error("Expected error when fetching destroyed session, got none")
 		}
 
-		if !errors.Is(err, ErrorSessionNotFound{}) {
-			t.Errorf("Expected error of type %T, got %T (%v)", ErrorSessionNotFound{}, err, err)
+		if !errors.Is(err, ErrSessionNotFound) {
+			t.Errorf("Expected error %s, got %s", ErrSessionNotFound, err)
 		}
 
 		_, err = repo.Get(ctx, "CC")
@@ -141,8 +141,8 @@ func (rc *SessionRepositoryContract) Test(t *testing.T) {
 			t.Error("Expected error when fetching destroyed session, got none")
 		}
 
-		if !errors.Is(err, ErrorSessionNotFound{}) {
-			t.Errorf("Expected error of type %T, got %T (%v)", ErrorSessionNotFound{}, err, err)
+		if !errors.Is(err, ErrSessionNotFound) {
+			t.Errorf("Expected error %s, got %s", ErrSessionNotFound, err)
 		}
 	})
 }

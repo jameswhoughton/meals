@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"time"
 
@@ -18,18 +19,29 @@ type Session struct {
 	UpdatedAt time.Time
 }
 
-type ErrorSessionNotFound struct {
-}
-
-func (e ErrorSessionNotFound) Error() string {
-	return "Session not found"
-}
+var ErrSessionNotFound = errors.New("session not found")
 
 type SessionRepository interface {
+
+	// Create a new session
 	Create(ctx context.Context, session Session) (Session, error)
+
+	// Delete an existing sessionId
+	//
+	// If the sessionId does not exist, does nothing
 	Destroy(ctx context.Context, sessionId string) error
+
+	// Gets the session that matches the sessionId
+	//
+	// Returns ErrSessionNotFound if the sessionId does not exist.
 	Get(ctx context.Context, sessionId string) (Session, error)
+
+	// Deletes any sessions that have an UpdatedAt time older than expiredTime
 	DestroyExpired(ctx context.Context, expiredTime time.Time) error
+
+	// Updates the session UpdatedAt time.
+	//
+	// If the session does not exist does nothing
 	Refresh(ctx context.Context, sessionId string) error
 }
 
@@ -78,7 +90,7 @@ func (ss *SessionService) UserFromSession(ctx context.Context, sessionId string)
 		return account.User{}, fmt.Errorf("Session has expired")
 	}
 
-	user, err := ss.AccountRepo.Get(ctx, account.GetForm{Id: &session.UserId})
+	user, err := ss.AccountRepo.GetById(ctx, session.UserId)
 
 	if err != nil {
 		return account.User{}, fmt.Errorf("error fetching user: %w", err)

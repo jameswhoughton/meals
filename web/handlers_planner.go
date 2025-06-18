@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"io/fs"
+	"log"
 	"net/http"
 	"slices"
 	"strconv"
@@ -30,11 +31,7 @@ func calculateStartDate(date time.Time, startDay int) time.Time {
 	return time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
 }
 
-func dateLabel(date time.Time) string {
-	return fmt.Sprintf("%s (%s)", date.Weekday().String(), date.Format("02/01"))
-}
-
-func GetPlannerHandler(templateFiles fs.FS, plannerRepo planner.Repository, accountRepo account.Repository) http.Handler {
+func GetPlannerHandler(templateFiles fs.FS, plannerService planner.Service, accountRepo account.Repository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
 			templateFiles,
@@ -49,22 +46,15 @@ func GetPlannerHandler(templateFiles fs.FS, plannerRepo planner.Repository, acco
 		}
 		userId := r.Context().Value("userId").(int)
 
-		user, err := accountRepo.Get(r.Context(), account.GetForm{Id: &userId})
+		user, err := accountRepo.GetById(r.Context(), userId)
 
 		if err != nil {
+			http.Error(w, "Server error: unable to fetch user", http.StatusInternalServerError)
 
-		}
-
-		type day struct {
-			Date      string
-			Label     string
-			Meal      planner.Meal
-			IsWeekend bool
-			IsToday   bool
+			return
 		}
 
 		var startDate time.Time
-		days := make([]day, 7)
 
 		dateFromUrl := r.FormValue("date")
 
@@ -82,27 +72,18 @@ func GetPlannerHandler(templateFiles fs.FS, plannerRepo planner.Repository, acco
 			startDate = calculateStartDate(parsedDate, user.MealStartDay)
 		}
 
-		date := startDate
+		days, err := plannerService.GetMeals(r.Context(), startDate, 7, userId)
 
-		for i := range days {
-			meal, _ := plannerRepo.Get(r.Context(), date, userId)
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "Server error: unable to fetch days", http.StatusInternalServerError)
 
-			day := day{
-				Date:      date.Format("2006-01-02"),
-				Label:     dateLabel(date),
-				Meal:      meal,
-				IsWeekend: slices.Contains([]string{time.Saturday.String(), time.Sunday.String()}, date.Weekday().String()),
-				IsToday:   date.Format("2006-01-02") == time.Now().Format("2006-01-02"),
-			}
-
-			days[i] = day
-
-			date = date.Add(24 * time.Hour)
+			return
 		}
 
 		type templateData struct {
 			Title      string
-			Days       []day
+			Days       []planner.Day
 			Previous   string
 			Next       string
 			ChosenDate string
@@ -178,7 +159,7 @@ func GetEditDayHandler(templateFiles fs.FS, plannerRepo planner.Repository, meal
 		}
 
 		tmpl.ExecuteTemplate(w, "layout", templateData{
-			Title:        dateLabel(parsedDate),
+			Title:        fmt.Sprintf("%s (%s)", parsedDate.Weekday().String(), parsedDate.Format("02/01")),
 			Date:         parsedDate.Format("2006-01-02"),
 			Meal:         meal,
 			Meals:        filteredMeals,
@@ -264,7 +245,7 @@ func GetPlannedIngredientsHandler(plannerSerivce planner.Service, accountRepo ac
 			return
 		}
 
-		user, err := accountRepo.Get(r.Context(), account.GetForm{Id: &userId})
+		user, err := accountRepo.GetById(r.Context(), userId)
 
 		startDate := calculateStartDate(parsedDate, user.MealStartDay)
 
