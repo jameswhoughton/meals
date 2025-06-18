@@ -80,13 +80,48 @@ func (mf MealFilter) Validate() error {
 }
 
 type Repository interface {
+
+	// Return a meal matching the given ID
+	//
+	// If a meal ID does not exist, returns ErrMealNotFound
 	Get(ctx context.Context, id int) (Meal, error)
+
+	// Filter meals for a given user
+	//
+	// Meals can be filtered by name, tags and owner (user id)
+	// The UserId filter is required,
 	Find(ctx context.Context, filter MealFilter) ([]Meal, error)
+
+	// Stores a new meal
 	Create(ctx context.Context, meal Meal) (Meal, error)
+
+	// Updates an existing meal
+	//
+	// Returns ErrMealNotFound id the meal.Id does not exist.
 	Update(ctx context.Context, meal Meal) error
+
+	// Deletes a meal
 	Destroy(ctx context.Context, id int) error
+
+	// Find ingredient names that partially match the searchString
+	//
+	// All ingredients are searched (regardless of owner).
+	// Matches any part of the ingredient name e.g. searchString of `at` matches `tomato`.
 	FindIngredientNames(ctx context.Context, searchString string) ([]string, error)
+
+	// Find tag names that partially match the searchString
+	//
+	// All tags are searched (regardless of owner).
+	// Matches any part of the tag name e.g. searchString of `ui` matches `quick`.
 	FindTagNames(ctx context.Context, searchString string) ([]string, error)
+
+	// Find units that partially match the searchString
+	//
+	// All units are searched (regardless of owner).
+	// Matches are case-insensitive and match any part of the unit
+	// e.g. searchString of `g` matches `KG`.
 	FindUnitNames(ctx context.Context, searchString string) ([]string, error)
+
+	// Returns all the tag names used by the given userId
 	TagNamesForUser(ctx context.Context, userId int) ([]string, error)
 }
