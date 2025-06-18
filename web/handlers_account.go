@@ -371,7 +371,7 @@ func NewIsAuthenticatedMiddleware(accountService account.Service, sessionService
 			user, err := sessionService.UserFromSession(r.Context(), session.Value)
 
 			if err != nil {
-				if errors.Is(err, ErrorSessionNotFound{}) {
+				if errors.Is(err, ErrSessionNotFound) {
 					setMessage(w, "error", "Session has expired, please login again")
 					http.Redirect(w, r, "/login", http.StatusFound)
 

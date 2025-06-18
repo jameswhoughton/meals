@@ -30,7 +30,7 @@ func (sr *SessionRepository) Destroy(ctx context.Context, sessionId string) erro
 	}
 
 	if index == nil {
-		return web.ErrorSessionNotFound{}
+		return nil
 	}
 
 	existingStore := sr.Store
@@ -52,7 +52,7 @@ func (sr *SessionRepository) Get(ctx context.Context, sessionId string) (web.Ses
 		}
 	}
 
-	return web.Session{}, web.ErrorSessionNotFound{}
+	return web.Session{}, web.ErrSessionNotFound
 }
 
 func (sr *SessionRepository) DestroyExpired(ctx context.Context, expiredTime time.Time) error {
@@ -80,5 +80,5 @@ func (sr *SessionRepository) Refresh(ctx context.Context, sessionId string) erro
 		}
 	}
 
-	return web.ErrorSessionNotFound{}
+	return nil
 }
