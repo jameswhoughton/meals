@@ -18,7 +18,7 @@ func TestUserReceives404WhenTryingToAssignAMealThatDoesNotExist(t *testing.T) {
 
 	mealRepository := memory.MealRepository{}
 
-	handler := web.PostEditDayHandler(plannerRepository, &mealRepository)
+	handler := web.PostEditDayHandler(newTestLogger(), plannerRepository, &mealRepository)
 
 	ctx := context.WithValue(context.Background(), "userId", 1)
 
@@ -57,7 +57,7 @@ func TestUserReceieves403IfTryingToAssignAMealTheyDoNotOwn(t *testing.T) {
 		},
 	}
 
-	handler := web.PostEditDayHandler(plannerRepository, &mealRepository)
+	handler := web.PostEditDayHandler(newTestLogger(), plannerRepository, &mealRepository)
 
 	ctx := context.WithValue(context.Background(), "userId", 1)
 
