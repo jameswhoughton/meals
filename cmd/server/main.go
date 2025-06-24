@@ -13,6 +13,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jameswhoughton/meals/database"
+	"github.com/jameswhoughton/meals/internal"
 	"github.com/jameswhoughton/meals/internal/account"
 	"github.com/jameswhoughton/meals/internal/meals"
 	"github.com/jameswhoughton/meals/internal/planner"
@@ -85,6 +86,20 @@ func main() {
 		panic(err)
 	}
 
+	// Configure the logger
+	logFile, err := os.OpenFile("application.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
+
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		if err := logFile.Close(); err != nil {
+			log.Printf("unable to close log file: %v", err)
+		}
+	}()
+
+	logger := internal.NewApplicationLogger(logFile)
+
 	// Signal context to detext an interupt (Ctrl + c) or terminate signal
 	rootCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -103,6 +118,7 @@ func main() {
 	server := web.NewServer(
 		ongoingCtx,
 		config.port,
+		logger,
 		&accountService,
 		&mealService,
 		sessionService,

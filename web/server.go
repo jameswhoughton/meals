@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"log/slog"
 	"net"
 	"net/http"
 
@@ -13,6 +14,7 @@ import (
 func NewServer(
 	ctx context.Context,
 	port string,
+	logger *slog.Logger,
 	accountService *account.Service,
 	mealService *meals.Service,
 	sessionService *SessionService,
@@ -24,7 +26,7 @@ func NewServer(
 ) *http.Server {
 	mux := http.NewServeMux()
 
-	AddRoutes(mux, *accountService, *mealService, *sessionService, *plannerService, accountRepository, mealRepository, sessionRepository, plannerRepository)
+	AddRoutes(mux, logger, *accountService, *mealService, *sessionService, *plannerService, accountRepository, mealRepository, sessionRepository, plannerRepository)
 
 	return &http.Server{
 		Addr:        ":" + port,

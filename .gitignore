@@ -10,3 +10,6 @@ node_modules
 
 # Build files
 web/static/main.css
+
+## Log
+application.log
