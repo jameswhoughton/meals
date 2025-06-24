@@ -1,12 +1,11 @@
 package web
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"html/template"
 	"io/fs"
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -15,7 +14,7 @@ import (
 
 type middleware func(http.Handler) http.Handler
 
-func GetRegistrationHandler(templateFiles fs.FS) http.Handler {
+func GetRegistrationHandler(logger *slog.Logger, templateFiles fs.FS) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
 			templateFiles,
@@ -33,7 +32,12 @@ func GetRegistrationHandler(templateFiles fs.FS) http.Handler {
 		formJson, err := getMessage(w, r, "formData")
 
 		if err != nil {
-			log.Println(err)
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"unable to get flash message",
+				slog.Any("err", err),
+			)
 			http.Error(w, "server error", http.StatusInternalServerError)
 
 			return
@@ -57,7 +61,7 @@ func GetRegistrationHandler(templateFiles fs.FS) http.Handler {
 	})
 }
 
-func PostRegistrationHandler(service account.Service) http.Handler {
+func PostRegistrationHandler(logger *slog.Logger, service account.Service) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 
@@ -68,7 +72,7 @@ func PostRegistrationHandler(service account.Service) http.Handler {
 			Name:            r.FormValue("name"),
 		}
 
-		_, err := service.CreateUser(r.Context(), &form)
+		user, err := service.CreateUser(r.Context(), &form)
 
 		if err != nil && errors.Is(err, account.ErrUserFormInvalid) {
 			formJson, _ := json.Marshal(form)
@@ -80,11 +84,23 @@ func PostRegistrationHandler(service account.Service) http.Handler {
 		}
 
 		if err != nil {
-			log.Println(err)
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"unable to create user",
+				slog.Any("err", err),
+			)
 			http.Error(w, "server error", http.StatusInternalServerError)
 
 			return
 		}
+
+		logger.LogAttrs(
+			r.Context(),
+			slog.LevelInfo,
+			"New user created",
+			slog.Int("userId", user.Id),
+		)
 
 		setMessage(w, "success", "Your account has been created, please login below")
 
@@ -92,7 +108,7 @@ func PostRegistrationHandler(service account.Service) http.Handler {
 	})
 }
 
-func GetAccountHandler(templateFiles fs.FS, service SessionService) http.Handler {
+func GetAccountHandler(logger *slog.Logger, templateFiles fs.FS, service SessionService) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(templateFiles, "templates/layout.gohtml", "templates/navigation.gohtml", "templates/pages/auth/account.gohtml")
 
@@ -102,19 +118,15 @@ func GetAccountHandler(templateFiles fs.FS, service SessionService) http.Handler
 			return
 		}
 
-		session, err := r.Cookie("session")
+		user := UserFromContext(r.Context())
 
-		if err != nil {
-			log.Println(err)
-			http.Error(w, "server error", http.StatusInternalServerError)
+		if user == nil {
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"user missing from context",
+			)
 
-			return
-		}
-
-		user, err := service.UserFromSession(r.Context(), session.Value)
-
-		if err != nil {
-			log.Println(err)
 			http.Error(w, "server error", http.StatusInternalServerError)
 
 			return
@@ -129,7 +141,13 @@ func GetAccountHandler(templateFiles fs.FS, service SessionService) http.Handler
 		success, err := getMessage(w, r, "success")
 
 		if err != nil {
-			log.Println(err)
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"unable to get success message",
+				slog.Any("err", err),
+			)
+
 			http.Error(w, "server error", http.StatusInternalServerError)
 
 			return
@@ -138,7 +156,13 @@ func GetAccountHandler(templateFiles fs.FS, service SessionService) http.Handler
 		formJson, err := getMessage(w, r, "formData")
 
 		if err != nil {
-			log.Println(err)
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"unable to get form data",
+				slog.Any("err", err),
+			)
+
 			http.Error(w, "server error", http.StatusInternalServerError)
 
 			return
@@ -154,33 +178,37 @@ func GetAccountHandler(templateFiles fs.FS, service SessionService) http.Handler
 			json.Unmarshal([]byte(formJson), &formData)
 		}
 
-		err = tmpl.ExecuteTemplate(w, "layout", templateData{
+		data := templateData{
 			Title:   "My Account",
 			Form:    formData,
 			Success: success,
-		})
+		}
 
-		if err != nil {
-			log.Println(err)
+		err = tmpl.ExecuteTemplate(w, "layout", data)
+
+		if err == nil {
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"error executing template",
+				slog.Any("err", err),
+				slog.Any("templateData", data),
+			)
 		}
 	})
 }
 
-func PutAccountHandler(accountService account.Service, sessionService SessionService) http.Handler {
+func PutAccountHandler(logger *slog.Logger, accountService account.Service, sessionService SessionService) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		session, err := r.Cookie("session")
+		user := UserFromContext(r.Context())
 
-		if err != nil {
-			log.Println(err)
-			http.Error(w, "server error", http.StatusInternalServerError)
+		if user == nil {
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"user missing from context",
+			)
 
-			return
-		}
-
-		user, err := sessionService.UserFromSession(r.Context(), session.Value)
-
-		if err != nil {
-			log.Println(err)
 			http.Error(w, "server error", http.StatusInternalServerError)
 
 			return
@@ -223,6 +251,14 @@ func PutAccountHandler(accountService account.Service, sessionService SessionSer
 		}
 
 		if err != nil {
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"error updating user",
+				slog.Any("err", err),
+				slog.Int("userId", form.Id),
+			)
+
 			http.Error(w, "server error", http.StatusInternalServerError)
 		}
 
@@ -232,7 +268,7 @@ func PutAccountHandler(accountService account.Service, sessionService SessionSer
 	})
 }
 
-func GetLoginHandler(templateFiles fs.FS) http.Handler {
+func GetLoginHandler(logger *slog.Logger, templateFiles fs.FS) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
 			templateFiles,
@@ -255,32 +291,54 @@ func GetLoginHandler(templateFiles fs.FS) http.Handler {
 		errorMessage, err := getMessage(w, r, "error")
 
 		if err != nil {
-			log.Println(err)
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"unable to get error message",
+				slog.Any("err", err),
+			)
 
-			errorMessage = "There was a problem with your request, please try again"
+			http.Error(w, "server error", http.StatusInternalServerError)
+
+			return
 		}
 
 		successMessage, err := getMessage(w, r, "success")
 
 		if err != nil {
-			log.Println(err)
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"unable to get success message",
+				slog.Any("err", err),
+			)
 
-			errorMessage = "There was a problem with your request, please try again"
+			http.Error(w, "server error", http.StatusInternalServerError)
+
+			return
 		}
 
-		err = tmpl.ExecuteTemplate(w, "layout", loginData{
+		data := loginData{
 			Title:   "Meals - Login",
 			Error:   errorMessage,
 			Success: successMessage,
-		})
+		}
+
+		err = tmpl.ExecuteTemplate(w, "layout", data)
 
 		if err != nil {
-			log.Print(err)
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"error executing template",
+				slog.Any("err", err),
+				slog.Any("templateData", data),
+			)
 		}
 	})
 }
 
-func PostLoginHandler(accountService account.Service, sessionService SessionService) http.Handler {
+func PostLoginHandler(logger *slog.Logger, accountService account.Service, sessionService SessionService) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 
@@ -289,7 +347,6 @@ func PostLoginHandler(accountService account.Service, sessionService SessionServ
 		user, err := accountService.GetUserFromCredentials(r.Context(), email, password)
 
 		if err != nil {
-			log.Println(err)
 			setMessage(w, "error", "credentials are invalid")
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return
@@ -298,8 +355,15 @@ func PostLoginHandler(accountService account.Service, sessionService SessionServ
 		session, err := sessionService.CreateForUser(r.Context(), user.Id)
 
 		if err != nil {
-			w.WriteHeader(500)
-			log.Print(err)
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"unable to create session for user",
+				slog.Any("err", err),
+				slog.Int("userId", user.Id),
+			)
+
+			http.Error(w, "server error", http.StatusInternalServerError)
 			return
 		}
 
@@ -319,20 +383,39 @@ func PostLoginHandler(accountService account.Service, sessionService SessionServ
 	})
 }
 
-func GetLogoutHandler(service account.Service, session SessionRepository) http.Handler {
+func GetLogoutHandler(logger *slog.Logger, service account.Service, session SessionRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		currentSesion, err := r.Cookie("session")
 
 		if err != nil {
-			log.Println(err)
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"unable to fetch session cookie",
+				slog.Any("err", err),
+			)
+
 			http.Error(w, "server error", http.StatusInternalServerError)
+
+			return
 		}
 
 		err = session.Destroy(r.Context(), currentSesion.Value)
 
 		if err != nil {
-			log.Println(err)
+			user := UserFromContext(r.Context())
+
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"unable to destroy session for user",
+				slog.Any("err", err),
+				slog.Int("userId", user.Id),
+			)
+
 			http.Error(w, "server error", http.StatusInternalServerError)
+
+			return
 		}
 
 		userSession := http.Cookie{
@@ -349,58 +432,4 @@ func GetLogoutHandler(service account.Service, session SessionRepository) http.H
 
 		http.Redirect(w, r, "/login", http.StatusFound)
 	})
-}
-
-func NewIsAuthenticatedMiddleware(accountService account.Service, sessionService SessionService) middleware {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			session, err := r.Cookie("session")
-
-			if err != nil {
-				switch {
-				case errors.Is(err, http.ErrNoCookie):
-					http.Redirect(w, r, "/login", http.StatusFound)
-				default:
-					log.Println(err)
-					http.Error(w, "server error", http.StatusInternalServerError)
-				}
-				return
-			}
-
-			user, err := sessionService.UserFromSession(r.Context(), session.Value)
-
-			if err != nil {
-				if errors.Is(err, ErrSessionNotFound) {
-					setMessage(w, "error", "Session has expired, please login again")
-					http.Redirect(w, r, "/login", http.StatusFound)
-
-					return
-				}
-
-				log.Println(err)
-				http.Error(w, "server error", http.StatusInternalServerError)
-
-				return
-			}
-
-			// Refresh the token cookie
-			userSession := http.Cookie{
-				Name:     "session",
-				Value:    session.Value,
-				Path:     "/",
-				HttpOnly: true,
-				Secure:   true,
-				SameSite: http.SameSiteStrictMode,
-			}
-
-			http.SetCookie(w, &userSession)
-
-			ctx := context.WithValue(r.Context(), "userId", user.Id)
-
-			r = r.WithContext(ctx)
-
-			next.ServeHTTP(w, r)
-		})
-	}
 }

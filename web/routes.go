@@ -4,6 +4,7 @@ import (
 	"embed"
 	"errors"
 	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/jameswhoughton/meals/internal/account"
@@ -21,6 +22,7 @@ var publicFiles embed.FS
 
 func AddRoutes(
 	mux *http.ServeMux,
+	logger *slog.Logger,
 	accountService account.Service,
 	mealService meals.Service,
 	sessionService SessionService,
@@ -56,15 +58,15 @@ func AddRoutes(
 	mux.Handle("GET /static/", getStaticFilesHandler(publicFiles))
 
 	// Authentication
-	mux.Handle("GET /login", GetLoginHandler(templateFiles))
-	mux.Handle("POST /login", PostLoginHandler(accountService, sessionService))
-	mux.Handle("GET /register", GetRegistrationHandler(templateFiles))
-	mux.Handle("POST /register", PostRegistrationHandler(accountService))
-	mux.Handle("GET /logout", GetLogoutHandler(accountService, sessionRepository))
+	mux.Handle("GET /login", GetLoginHandler(logger, templateFiles))
+	mux.Handle("POST /login", PostLoginHandler(logger, accountService, sessionService))
+	mux.Handle("GET /register", GetRegistrationHandler(logger, templateFiles))
+	mux.Handle("POST /register", PostRegistrationHandler(logger, accountService))
+	mux.Handle("GET /logout", GetLogoutHandler(logger, accountService, sessionRepository))
 
 	// Account
-	mux.Handle("GET /account", isAuthed(GetAccountHandler(templateFiles, sessionService)))
-	mux.Handle("POST /account", isAuthed(PutAccountHandler(accountService, sessionService)))
+	mux.Handle("GET /account", isAuthed(GetAccountHandler(logger, templateFiles, sessionService)))
+	mux.Handle("POST /account", isAuthed(PutAccountHandler(logger, accountService, sessionService)))
 
 	// Meals
 	mux.Handle("GET /meals/create", isAuthed(GetCreateMealHandler(templateFiles)))
