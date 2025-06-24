@@ -17,11 +17,11 @@ watch:
 
 .PHONY: watch-tw
 watch-tw:
-	cd ./web && npx tailwindcss -i ./src/input.css -o ./static/main.css --watch
+	cd ./frontend && npx tailwindcss -i ../web/src/input.css -o ../web/static/main.css --watch
 
 .PHONY: build-tw
 build-tw:
-	cd ./web && npx tailwindcss -i ./src/input.css -o ./static/main.css --minify
+	cd ./frontend && npx tailwindcss -i ../web/src/input.css -o ../web/static/main.css --minify
 
 .PHONY: build
 build:
