@@ -3,11 +3,13 @@ FROM node:20 AS frontend-builder
 
 WORKDIR /app
 
-COPY web/package*.json ./
-RUN npm install
+COPY web/ ./web
+COPY frontend/package*.json ./frontend/
+COPY frontend/tailwind.config.js ./frontend/
 
-COPY web/ ./
-RUN npx tailwindcss -i ./src/input.css -o ./static/main.css --minify
+WORKDIR /app/frontend
+
+RUN npm install && npx tailwindcss -i ../web/src/input.css -o ../web/static/main.css --minify
 
 # Stage 2: Build Go binary
 FROM golang:1.23 AS go-builder
@@ -20,7 +22,7 @@ RUN go mod download
 COPY . .
 
 # Copy built frontend into appropriate location
-COPY --from=frontend-builder /app/static ./web/static
+COPY --from=frontend-builder /app/web/static ./web/static
 
 # Build the Go binary
 RUN CGO_ENABLED=0 GOOS=linux go build -o app ./cmd/server
