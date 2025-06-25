@@ -183,20 +183,14 @@ func (us *Service) CreateUser(ctx context.Context, form *UserFormCreate) (User, 
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = user.CreatedAt
 
-	createdUser, err := us.account.Create(ctx, user)
-
-	if err != nil {
-		return User{}, fmt.Errorf("failed to create user: %w", err)
-	}
-
-	return createdUser, nil
+	return us.account.Create(ctx, user)
 }
 
 func (us *Service) UpdateUser(ctx context.Context, form *UserFormUpdate) error {
 	currentUser, err := us.account.GetById(ctx, form.Id)
 
 	if err != nil {
-		return fmt.Errorf("unable to update user with id=%d: %w", form.Id, err)
+		return fmt.Errorf("failed to get user with id=%d: %w", form.Id, err)
 	}
 
 	if !form.Validate(ctx, currentUser, us.account) {

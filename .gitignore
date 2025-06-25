@@ -2,11 +2,14 @@
 createmigration
 meals_server
 
-# Database
-meals.db
+# env
+.env
 
 # Dependencies
 node_modules
 
 # Build files
 web/static/main.css
+
+## Log
+application.log

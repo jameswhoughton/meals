@@ -8,20 +8,15 @@ test:
 
 .PHONY: watch
 watch:
-	MEALS_DB_HOST="127.0.0.1" \
-	MEALS_DB_PORT="8001" \
-	MEALS_DB_USERNAME="root" \
-	MEALS_DB_PASSWORD="" \
-	MEALS_PORT="8000" \
 	wgo run --file .gohtml --file .css --file .js ./$(main_package_path)/main.go
 
 .PHONY: watch-tw
 watch-tw:
-	cd ./web && npx tailwindcss -i ./src/input.css -o ./static/main.css --watch
+	cd ./frontend && npx tailwindcss -i ../web/src/input.css -o ../web/static/main.css --watch
 
 .PHONY: build-tw
 build-tw:
-	cd ./web && npx tailwindcss -i ./src/input.css -o ./static/main.css --minify
+	cd ./frontend && npx tailwindcss -i ../web/src/input.css -o ../web/static/main.css --minify
 
 .PHONY: build
 build:
@@ -30,12 +25,3 @@ build:
 .PHONY: build-image
 build-image:
 	docker build -t meals .
-
-.PHONY: seed
-seed:
-	MEALS_DB_HOST="127.0.0.1" \
-	MEALS_DB_PORT="8001" \
-	MEALS_DB_USERNAME="root" \
-	MEALS_DB_PASSWORD="" \
-	MEALS_PORT="8000" \
-	go run ./cmd/seeder/main.go -user-count=5

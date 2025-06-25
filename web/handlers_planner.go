@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"io/fs"
-	"log"
+	"log/slog"
 	"net/http"
 	"slices"
 	"strconv"
@@ -31,7 +31,7 @@ func calculateStartDate(date time.Time, startDay int) time.Time {
 	return time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
 }
 
-func GetPlannerHandler(templateFiles fs.FS, plannerService planner.Service, accountRepo account.Repository) http.Handler {
+func GetPlannerHandler(logger *slog.Logger, templateFiles fs.FS, plannerService planner.Service, accountRepo account.Repository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
 			templateFiles,
@@ -44,12 +44,16 @@ func GetPlannerHandler(templateFiles fs.FS, plannerService planner.Service, acco
 
 			return
 		}
-		userId := r.Context().Value("userId").(int)
+		user := UserFromContext(r.Context())
 
-		user, err := accountRepo.GetById(r.Context(), userId)
+		if user == nil {
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"user missing from context",
+			)
 
-		if err != nil {
-			http.Error(w, "Server error: unable to fetch user", http.StatusInternalServerError)
+			http.Error(w, "server error", http.StatusInternalServerError)
 
 			return
 		}
@@ -72,11 +76,19 @@ func GetPlannerHandler(templateFiles fs.FS, plannerService planner.Service, acco
 			startDate = calculateStartDate(parsedDate, user.MealStartDay)
 		}
 
-		days, err := plannerService.GetMeals(r.Context(), startDate, 7, userId)
+		days, err := plannerService.GetMeals(r.Context(), startDate, 7, user.Id)
 
 		if err != nil {
-			log.Println(err)
-			http.Error(w, "Server error: unable to fetch days", http.StatusInternalServerError)
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"unable to fetch days",
+				slog.Any("err", err),
+				slog.Int("userId", user.Id),
+				slog.String("date", startDate.String()),
+			)
+
+			http.Error(w, "Server error", http.StatusInternalServerError)
 
 			return
 		}
@@ -99,7 +111,7 @@ func GetPlannerHandler(templateFiles fs.FS, plannerService planner.Service, acco
 	})
 }
 
-func GetEditDayHandler(templateFiles fs.FS, plannerRepo planner.Repository, mealRepo meals.Repository) http.Handler {
+func GetEditDayHandler(logger *slog.Logger, templateFiles fs.FS, plannerRepo planner.Repository, mealRepo meals.Repository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		contains := func(tags []string, name string) bool {
 			return slices.Contains(tags, name)
@@ -124,11 +136,23 @@ func GetEditDayHandler(templateFiles fs.FS, plannerRepo planner.Repository, meal
 			return
 		}
 
-		userId := r.Context().Value("userId").(int)
+		user := UserFromContext(r.Context())
+
+		if user == nil {
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"user missing from context",
+			)
+
+			http.Error(w, "server error", http.StatusInternalServerError)
+
+			return
+		}
 
 		parsedDate, err := time.Parse("2006-01-02", r.PathValue("date"))
 
-		meal, _ := plannerRepo.Get(r.Context(), parsedDate, userId)
+		meal, _ := plannerRepo.Get(r.Context(), parsedDate, user.Id)
 
 		// Parse any filter params
 		r.ParseForm()
@@ -139,14 +163,14 @@ func GetEditDayHandler(templateFiles fs.FS, plannerRepo planner.Repository, meal
 			filterTags[i] = r.Form["tags"][i]
 		}
 		filter := meals.MealFilter{
-			UserId: userId,
+			UserId: user.Id,
 			Name:   &filterSearch,
 			Tags:   filterTags,
 		}
 
 		filteredMeals, err := mealRepo.Find(r.Context(), filter)
 
-		tags, err := mealRepo.TagNamesForUser(r.Context(), userId)
+		tags, err := mealRepo.TagNamesForUser(r.Context(), user.Id)
 
 		type templateData struct {
 			Title        string
@@ -170,9 +194,21 @@ func GetEditDayHandler(templateFiles fs.FS, plannerRepo planner.Repository, meal
 	})
 }
 
-func PostEditDayHandler(plannerRepo planner.Repository, mealRepo meals.Repository) http.Handler {
+func PostEditDayHandler(logger *slog.Logger, plannerRepo planner.Repository, mealRepo meals.Repository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userId := r.Context().Value("userId").(int)
+		user := UserFromContext(r.Context())
+
+		if user == nil {
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"user missing from context",
+			)
+
+			http.Error(w, "server error", http.StatusInternalServerError)
+
+			return
+		}
 
 		parsedDate, err := time.Parse("2006-01-02", r.PathValue("date"))
 
@@ -185,7 +221,7 @@ func PostEditDayHandler(plannerRepo planner.Repository, mealRepo meals.Repositor
 		mealId := r.FormValue("meal_id")
 		clearMeal := r.FormValue("action") == "clear"
 
-		plannerRepo.Clear(r.Context(), parsedDate, userId)
+		plannerRepo.Clear(r.Context(), parsedDate, user.Id)
 
 		if !clearMeal && mealId != "" {
 			mealId, err := strconv.Atoi(mealId)
@@ -204,14 +240,23 @@ func PostEditDayHandler(plannerRepo planner.Repository, mealRepo meals.Repositor
 				return
 			}
 
-			if meal.UserId != userId {
+			if meal.UserId != user.Id {
 				http.Error(w, "You do not have permission to assign this meal", http.StatusForbidden)
 			}
 
 			err = plannerRepo.Add(r.Context(), parsedDate, mealId)
 
 			if err != nil {
-				http.Error(w, "Server error: unable to save meal to date", http.StatusInternalServerError)
+				logger.LogAttrs(
+					r.Context(),
+					slog.LevelError,
+					"unable to save meal to date",
+					slog.Int("userId", user.Id),
+					slog.Int("mealId", mealId),
+					slog.String("date", parsedDate.String()),
+				)
+
+				http.Error(w, "Server error", http.StatusInternalServerError)
 
 				return
 			}
@@ -221,7 +266,7 @@ func PostEditDayHandler(plannerRepo planner.Repository, mealRepo meals.Repositor
 	})
 }
 
-func GetPlannedIngredientsHandler(plannerSerivce planner.Service, accountRepo account.Repository) http.Handler {
+func GetPlannedIngredientsHandler(logger *slog.Logger, plannerSerivce planner.Service, accountRepo account.Repository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
 			templateFiles,
@@ -236,7 +281,19 @@ func GetPlannedIngredientsHandler(plannerSerivce planner.Service, accountRepo ac
 			return
 		}
 
-		userId := r.Context().Value("userId").(int)
+		user := UserFromContext(r.Context())
+
+		if user == nil {
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"user missing from context",
+			)
+
+			http.Error(w, "server error", http.StatusInternalServerError)
+
+			return
+		}
 		parsedDate, err := time.Parse("2006-01-02", r.PathValue("date"))
 
 		if err != nil {
@@ -245,16 +302,23 @@ func GetPlannedIngredientsHandler(plannerSerivce planner.Service, accountRepo ac
 			return
 		}
 
-		user, err := accountRepo.GetById(r.Context(), userId)
-
 		startDate := calculateStartDate(parsedDate, user.MealStartDay)
 
 		// At the momeent we limit to a 7 day window, this could in future be user configurable.
 		endDate := startDate.AddDate(0, 0, 7)
 
-		ingredients, err := plannerSerivce.GetIngredients(r.Context(), startDate, endDate, userId)
+		ingredients, err := plannerSerivce.GetIngredients(r.Context(), startDate, endDate, user.Id)
 
 		if err != nil {
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"unable to get ingredients list",
+				slog.Int("userId", user.Id),
+				slog.String("startDate", startDate.String()),
+				slog.String("endDate", endDate.String()),
+			)
+
 			http.Error(w, "Internal error", http.StatusInternalServerError)
 
 			return

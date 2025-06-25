@@ -31,6 +31,7 @@ import (
 	"github.com/jameswhoughton/meals/database"
 	"github.com/jameswhoughton/meals/internal/account"
 	"github.com/jameswhoughton/meals/internal/meals"
+	"github.com/joho/godotenv"
 )
 
 func randomSelectionOfMealNames(n int) []string {
@@ -141,17 +142,23 @@ func main() {
 
 		return
 	}
-	dsn := os.Getenv("MEALS_DB_USERNAME")
 
-	if os.Getenv("MEALS_BD_PASSWORD") != "" {
-		dsn += ":" + os.Getenv("MEALS_DB_PASSWORD")
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Printf("Error loading .env file: %v", err)
+	}
+
+	dsn := os.Getenv("DB_USERNAME")
+
+	if os.Getenv("BD_PASSWORD") != "" {
+		dsn += ":" + os.Getenv("DB_PASSWORD")
 	}
 
 	dsn = fmt.Sprintf(
 		"%s@tcp(%s:%s)/meals?parseTime=true",
 		dsn,
-		os.Getenv("MEALS_DB_HOST"),
-		os.Getenv("MEALS_DB_PORT"),
+		os.Getenv("DB_HOST"),
+		os.Getenv("DB_PORT"),
 	)
 
 	conn, err := sql.Open("mysql", dsn)
