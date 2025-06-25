@@ -69,13 +69,13 @@ func AddRoutes(
 	mux.Handle("POST /account", isAuthed(PutAccountHandler(logger, accountService, sessionService)))
 
 	// Meals
-	mux.Handle("GET /meals/create", isAuthed(GetCreateMealHandler(templateFiles)))
-	mux.Handle("POST /meals/create", isAuthed(PostMealHandler(mealService)))
-	mux.Handle("GET /meals", isAuthed(GetMealsHandler(templateFiles, mealRepository)))
-	mux.Handle("GET /meals/{id}", isAuthed(GetMealHandler(templateFiles, mealRepository)))
-	mux.Handle("GET /meals/{id}/edit", isAuthed(GetMealEditHandler(templateFiles, mealRepository)))
-	mux.Handle("POST /meals/{id}", isAuthed(PutMealHandler(mealService, mealRepository)))
-	mux.Handle("POST /meals/{id}/delete", isAuthed(PostDeleteMealHandler(mealRepository)))
+	mux.Handle("GET /meals/create", isAuthed(GetCreateMealHandler(logger, templateFiles)))
+	mux.Handle("POST /meals/create", isAuthed(PostMealHandler(logger, mealService)))
+	mux.Handle("GET /meals", isAuthed(GetMealsHandler(logger, templateFiles, mealRepository)))
+	mux.Handle("GET /meals/{id}", isAuthed(GetMealHandler(logger, templateFiles, mealRepository)))
+	mux.Handle("GET /meals/{id}/edit", isAuthed(GetMealEditHandler(logger, templateFiles, mealRepository)))
+	mux.Handle("POST /meals/{id}", isAuthed(PutMealHandler(logger, mealService, mealRepository)))
+	mux.Handle("POST /meals/{id}/delete", isAuthed(PostDeleteMealHandler(logger, mealRepository)))
 
 	// Planner
 	mux.Handle("GET /planner", isAuthed(GetPlannerHandler(logger, templateFiles, plannerService, accountRepository)))
@@ -84,7 +84,7 @@ func AddRoutes(
 	mux.Handle("GET /planner/{date}/ingredients", isAuthed(GetPlannedIngredientsHandler(logger, plannerService, accountRepository)))
 
 	// API
-	mux.Handle("GET /api/ingredients", isAuthed(GetSearchIngredientsHandler(mealRepository)))
-	mux.Handle("GET /api/tags", isAuthed(GetSearchTagHandler(mealRepository)))
-	mux.Handle("GET /api/units", isAuthed(GetSearchUnitHandler(mealRepository)))
+	mux.Handle("GET /api/ingredients", isAuthed(GetSearchIngredientsHandler(logger, mealRepository)))
+	mux.Handle("GET /api/tags", isAuthed(GetSearchTagHandler(logger, mealRepository)))
+	mux.Handle("GET /api/units", isAuthed(GetSearchUnitHandler(logger, mealRepository)))
 }

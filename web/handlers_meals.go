@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/fs"
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"text/template"
@@ -16,7 +16,7 @@ import (
 //
 // Only the authenticated user's meals are visible
 // Results can be filtered
-func GetMealsHandler(templateFiles fs.FS, repo meals.Repository) http.Handler {
+func GetMealsHandler(logger *slog.Logger, templateFiles fs.FS, repo meals.Repository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
 			templateFiles,
@@ -31,18 +31,39 @@ func GetMealsHandler(templateFiles fs.FS, repo meals.Repository) http.Handler {
 			return
 		}
 
-		userId := r.Context().Value("userId").(int)
+		user := UserFromContext(r.Context())
+
+		if user == nil {
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"user missing from context",
+			)
+
+			http.Error(w, "server error", http.StatusInternalServerError)
+
+			return
+		}
+
 		queryString := r.URL.Query().Get("query")
 
 		filter := meals.MealFilter{
-			UserId: userId,
+			UserId: user.Id,
 			Name:   &queryString,
 		}
 
 		results, err := repo.Find(r.Context(), filter)
 
 		if err != nil {
-			log.Println(err)
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"failed to get meals",
+				slog.Any("err", err),
+				slog.Int("userId", user.Id),
+				slog.Any("filters", filter),
+			)
+
 			http.Error(w, "server error", http.StatusInternalServerError)
 		}
 
@@ -69,7 +90,7 @@ func GetMealsHandler(templateFiles fs.FS, repo meals.Repository) http.Handler {
 // Only the owner of a meal can access this page.
 // If a meal does not exist a 404 is returned.
 // Expects the meal Id as a url path value with the name 'id'.
-func GetMealEditHandler(templateFiles fs.FS, repo meals.Repository) http.Handler {
+func GetMealEditHandler(logger *slog.Logger, templateFiles fs.FS, repo meals.Repository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
 			templateFiles,
@@ -84,7 +105,19 @@ func GetMealEditHandler(templateFiles fs.FS, repo meals.Repository) http.Handler
 			return
 		}
 
-		userId := r.Context().Value("userId").(int)
+		user := UserFromContext(r.Context())
+
+		if user == nil {
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"user missing from context",
+			)
+
+			http.Error(w, "server error", http.StatusInternalServerError)
+
+			return
+		}
 		mealId, _ := strconv.Atoi(r.PathValue("id"))
 
 		meal, err := repo.Get(r.Context(), mealId)
@@ -97,7 +130,7 @@ func GetMealEditHandler(templateFiles fs.FS, repo meals.Repository) http.Handler
 			}
 		}
 
-		if meal.UserId != userId {
+		if meal.UserId != user.Id {
 			http.Error(w, "You do not have permission to access this page", http.StatusForbidden)
 
 			return
@@ -106,7 +139,13 @@ func GetMealEditHandler(templateFiles fs.FS, repo meals.Repository) http.Handler
 		formJson, err := getMessage(w, r, "formData")
 
 		if err != nil {
-			log.Println(err)
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"unable to fetch form data from cookie",
+				slog.Any("err", err),
+			)
+
 			http.Error(w, "server error", http.StatusInternalServerError)
 
 			return
@@ -137,7 +176,7 @@ func GetMealEditHandler(templateFiles fs.FS, repo meals.Repository) http.Handler
 // Only the owner of a meal can access this page.
 // If a meal does not exist a 404 is returned.
 // Expects the meal Id as a url path value with the name 'id'.
-func GetMealHandler(templateFiles fs.FS, repo meals.Repository) http.Handler {
+func GetMealHandler(logger *slog.Logger, templateFiles fs.FS, repo meals.Repository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
 			templateFiles,
@@ -152,7 +191,19 @@ func GetMealHandler(templateFiles fs.FS, repo meals.Repository) http.Handler {
 			return
 		}
 
-		userId := r.Context().Value("userId").(int)
+		user := UserFromContext(r.Context())
+
+		if user == nil {
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"user missing from context",
+			)
+
+			http.Error(w, "server error", http.StatusInternalServerError)
+
+			return
+		}
 		mealId, _ := strconv.Atoi(r.PathValue("id"))
 
 		meal, err := repo.Get(r.Context(), mealId)
@@ -165,7 +216,7 @@ func GetMealHandler(templateFiles fs.FS, repo meals.Repository) http.Handler {
 			}
 		}
 
-		if meal.UserId != userId {
+		if meal.UserId != user.Id {
 			http.Error(w, "You do not have permission to access this page", http.StatusForbidden)
 
 			return
@@ -184,7 +235,7 @@ func GetMealHandler(templateFiles fs.FS, repo meals.Repository) http.Handler {
 }
 
 // Render the create a meal page
-func GetCreateMealHandler(templateFiles fs.FS) http.Handler {
+func GetCreateMealHandler(logger *slog.Logger, templateFiles fs.FS) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
 			templateFiles,
@@ -202,7 +253,13 @@ func GetCreateMealHandler(templateFiles fs.FS) http.Handler {
 		formJson, err := getMessage(w, r, "formData")
 
 		if err != nil {
-			log.Println(err)
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"unable to fetch form data from cookie",
+				slog.Any("err", err),
+			)
+
 			http.Error(w, "server error", http.StatusInternalServerError)
 
 			return
@@ -280,13 +337,25 @@ func mealFromRequest(r http.Request) meals.Meal {
 //
 // If the form is invalid, redirects back to the create a meal page.
 // Redirects to the meal list page on success.
-func PostMealHandler(service meals.Service) http.Handler {
+func PostMealHandler(logger *slog.Logger, service meals.Service) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userId := r.Context().Value("userId").(int)
+		user := UserFromContext(r.Context())
+
+		if user == nil {
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"user missing from context",
+			)
+
+			http.Error(w, "server error", http.StatusInternalServerError)
+
+			return
+		}
 
 		meal := mealFromRequest(*r)
 
-		meal.UserId = userId
+		meal.UserId = user.Id
 
 		_, err := service.CreateMeal(r.Context(), &meal)
 
@@ -300,7 +369,15 @@ func PostMealHandler(service meals.Service) http.Handler {
 		}
 
 		if err != nil {
-			log.Println(err)
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"failed to create meal",
+				slog.Any("err", err),
+				slog.Int("userId", user.Id),
+				slog.Any("meal", meal),
+			)
+
 			http.Error(w, "server error", http.StatusInternalServerError)
 
 			return
@@ -319,9 +396,21 @@ func PostMealHandler(service meals.Service) http.Handler {
 // Expects the meal Id as a url path value with the name 'id'.
 // If the form is invalid, redirects back to the edit a meal page.
 // Redirects to the meal list page on success.
-func PutMealHandler(service meals.Service, repo meals.Repository) http.Handler {
+func PutMealHandler(logger *slog.Logger, service meals.Service, repo meals.Repository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userId := r.Context().Value("userId").(int)
+		user := UserFromContext(r.Context())
+
+		if user == nil {
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"user missing from context",
+			)
+
+			http.Error(w, "server error", http.StatusInternalServerError)
+
+			return
+		}
 
 		meal := mealFromRequest(*r)
 
@@ -337,13 +426,13 @@ func PutMealHandler(service meals.Service, repo meals.Repository) http.Handler {
 			}
 		}
 
-		if existingMeal.UserId != userId {
+		if existingMeal.UserId != user.Id {
 			http.Error(w, "You do not have permission to access this page", http.StatusForbidden)
 
 			return
 		}
 
-		meal.UserId = userId
+		meal.UserId = user.Id
 
 		err = service.UpdateMeal(r.Context(), &meal)
 
@@ -357,7 +446,15 @@ func PutMealHandler(service meals.Service, repo meals.Repository) http.Handler {
 		}
 
 		if err != nil {
-			log.Println(err)
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"failed to create meal",
+				slog.Any("err", err),
+				slog.Int("userId", user.Id),
+				slog.Any("meal", meal),
+			)
+
 			http.Error(w, "server error", http.StatusInternalServerError)
 
 			return
@@ -370,9 +467,21 @@ func PutMealHandler(service meals.Service, repo meals.Repository) http.Handler {
 	})
 }
 
-func PostDeleteMealHandler(repo meals.Repository) http.Handler {
+func PostDeleteMealHandler(logger *slog.Logger, repo meals.Repository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userId := r.Context().Value("userId").(int)
+		user := UserFromContext(r.Context())
+
+		if user == nil {
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"user missing from context",
+			)
+
+			http.Error(w, "server error", http.StatusInternalServerError)
+
+			return
+		}
 
 		mealId, _ := strconv.Atoi(r.PathValue("id"))
 
@@ -386,7 +495,7 @@ func PostDeleteMealHandler(repo meals.Repository) http.Handler {
 			}
 		}
 
-		if mealToDelete.UserId != userId {
+		if mealToDelete.UserId != user.Id {
 			http.Error(w, "You do not have permission to access this page", http.StatusForbidden)
 
 			return
@@ -395,7 +504,16 @@ func PostDeleteMealHandler(repo meals.Repository) http.Handler {
 		err = repo.Destroy(r.Context(), mealId)
 
 		if err != nil {
-			http.Error(w, "Server error: Unable to delete meal", http.StatusInternalServerError)
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"failed to delete meal",
+				slog.Any("err", err),
+				slog.Int("userId", user.Id),
+				slog.Int("mealId", mealId),
+			)
+
+			http.Error(w, "Server error", http.StatusInternalServerError)
 
 			return
 		}
@@ -407,14 +525,21 @@ func PostDeleteMealHandler(repo meals.Repository) http.Handler {
 // API endpoint to search for existing ingredient names
 //
 // Returns JSON.
-func GetSearchIngredientsHandler(mealRepo meals.Repository) http.Handler {
+func GetSearchIngredientsHandler(logger *slog.Logger, mealRepo meals.Repository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		queryString := r.URL.Query().Get("query")
 
 		results, err := mealRepo.FindIngredientNames(r.Context(), queryString)
 
 		if err != nil {
-			log.Println(err)
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"failed to fetch ingredient names",
+				slog.Any("err", err),
+				slog.String("queryString", queryString),
+			)
+
 			http.Error(w, "server error", http.StatusInternalServerError)
 		}
 
@@ -427,14 +552,21 @@ func GetSearchIngredientsHandler(mealRepo meals.Repository) http.Handler {
 // API handler to search for tags by name
 //
 // Returns JSON.
-func GetSearchTagHandler(mealRepo meals.Repository) http.Handler {
+func GetSearchTagHandler(logger *slog.Logger, mealRepo meals.Repository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		queryString := r.URL.Query().Get("query")
 
 		results, err := mealRepo.FindTagNames(r.Context(), queryString)
 
 		if err != nil {
-			log.Println(err)
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"failed to fetch tag names",
+				slog.Any("err", err),
+				slog.String("queryString", queryString),
+			)
+
 			http.Error(w, "server error", http.StatusInternalServerError)
 		}
 
@@ -447,14 +579,21 @@ func GetSearchTagHandler(mealRepo meals.Repository) http.Handler {
 // API handler to search for units by name
 //
 // Returns JSON.
-func GetSearchUnitHandler(mealRepo meals.Repository) http.Handler {
+func GetSearchUnitHandler(logger *slog.Logger, mealRepo meals.Repository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		queryString := r.URL.Query().Get("query")
 
 		results, err := mealRepo.FindUnitNames(r.Context(), queryString)
 
 		if err != nil {
-			log.Println(err)
+			logger.LogAttrs(
+				r.Context(),
+				slog.LevelError,
+				"failed to fetch units",
+				slog.Any("err", err),
+				slog.String("queryString", queryString),
+			)
+
 			http.Error(w, "server error", http.StatusInternalServerError)
 		}
 

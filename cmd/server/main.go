@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -134,7 +135,12 @@ func main() {
 
 		// Ignore ErrServerClosed as this happens when the server is expectedly shutdown
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Error running server: %v", err)
+			logger.LogAttrs(
+				context.TODO(),
+				slog.LevelError,
+				"error starting server",
+				slog.Any("err", err),
+			)
 		}
 	}()
 

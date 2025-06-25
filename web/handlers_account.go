@@ -186,7 +186,7 @@ func GetAccountHandler(logger *slog.Logger, templateFiles fs.FS, service Session
 
 		err = tmpl.ExecuteTemplate(w, "layout", data)
 
-		if err == nil {
+		if err != nil {
 			logger.LogAttrs(
 				r.Context(),
 				slog.LevelError,

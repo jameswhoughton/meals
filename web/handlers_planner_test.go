@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jameswhoughton/meals/internal/account"
 	"github.com/jameswhoughton/meals/internal/meals"
 	"github.com/jameswhoughton/meals/memory"
 	"github.com/jameswhoughton/meals/web"
@@ -20,7 +21,9 @@ func TestUserReceives404WhenTryingToAssignAMealThatDoesNotExist(t *testing.T) {
 
 	handler := web.PostEditDayHandler(newTestLogger(), plannerRepository, &mealRepository)
 
-	ctx := context.WithValue(context.Background(), "userId", 1)
+	user := account.User{}
+
+	ctx := context.WithValue(context.Background(), "user", user)
 
 	form := url.Values{}
 	form.Add("meal_id", "1")
@@ -59,7 +62,9 @@ func TestUserReceieves403IfTryingToAssignAMealTheyDoNotOwn(t *testing.T) {
 
 	handler := web.PostEditDayHandler(newTestLogger(), plannerRepository, &mealRepository)
 
-	ctx := context.WithValue(context.Background(), "userId", 1)
+	user := account.User{}
+
+	ctx := context.WithValue(context.Background(), "user", user)
 
 	form := url.Values{}
 	form.Add("meal_id", "1")
