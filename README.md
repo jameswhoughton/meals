@@ -69,6 +69,13 @@ This is the main web app executeable. Here the repositories/services and web ser
 
 - Install [wgo](https://github.com/bokwoon95/wgo)
 - Run `docker compose up -d`.
+- copy `.env-example` to `.env`.
 - Run `make watch` this will start the server and restart on any file changes.
 - Run `make watch-tw` this will start the tailwind server and automatically restart on any file changes.
 - Navigate to `localhost:8000` in your browser.
+
+## (Optional) Seed the DB
+
+If desired, the DB can be seeded with one or more fake users (each with their own selection of meals).
+
+- run `go run ./cmd/seeder -user-count=N` where `N` is the number of users to create.
