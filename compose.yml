@@ -6,11 +6,11 @@ services:
     ports:
       - "8005:8000"
     environment:
-      MEALS_PORT: "8000"
-      MEALS_DB_HOST: "db-dev"
-      MEALS_DB_USERNAME: "root"
-      MEALS_DB_PASSWORD: ""
-      MEALS_DB_PORT: "3306"
+      APP_PORT: "8000"
+      DB_HOST: "db-dev"
+      DB_USERNAME: "root"
+      DB_PASSWORD: ""
+      DB_PORT: "3306"
     depends_on:
       - db-dev
   db-dev:
