@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"time"
 
 	"github.com/jameswhoughton/meals/internal/account"
 	"github.com/jameswhoughton/meals/internal/meals"
@@ -29,8 +30,10 @@ func NewServer(
 	AddRoutes(mux, logger, *accountService, *mealService, *sessionService, *plannerService, accountRepository, mealRepository, sessionRepository, plannerRepository)
 
 	return &http.Server{
-		Addr:        ":" + port,
-		Handler:     mux,
-		BaseContext: func(_ net.Listener) context.Context { return ctx },
+		Addr:              ":" + port,
+		ReadTimeout:       500 * time.Millisecond,
+		ReadHeaderTimeout: 500 * time.Millisecond,
+		Handler:           http.TimeoutHandler(mux, 5*time.Second, "timeout"),
+		BaseContext:       func(_ net.Listener) context.Context { return ctx },
 	}
 }
