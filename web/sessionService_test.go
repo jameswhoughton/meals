@@ -2,6 +2,7 @@ package web_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -12,27 +13,24 @@ import (
 
 func TestAnyExpiredSessionsAreRemovedWhenANewSessionIsCreated(t *testing.T) {
 	sessionLifetime := 3600
-	accountRepo := memory.AccountRepository{
-		Store: []account.User{
-			{
-				Id: 1,
-			},
-		},
-	}
+	accountRepo := memory.AccountRepository{}
 
-	sessionRepo := memory.SessionRepository{
-		Store: []web.Session{
-			// Expired session
-			{
-				UserId:    2,
-				CreatedAt: time.Now().Add(-time.Duration((sessionLifetime + 1) * 1000)),
-			},
-		},
+	ctx := context.Background()
+
+	accountRepo.Create(ctx, account.User{Id: 1})
+
+	sessionRepo := memory.SessionRepository{}
+
+	expiredSession, err := sessionRepo.Create(ctx, web.Session{
+		UserId:    2,
+		CreatedAt: time.Now().Add(-time.Duration((sessionLifetime + 1) * 1000)),
+	})
+
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
 	}
 
 	service := web.NewSessionService(&accountRepo, &sessionRepo, sessionLifetime)
-
-	ctx := context.Background()
 
 	newSession, err := service.CreateForUser(ctx, 1)
 
@@ -40,11 +38,19 @@ func TestAnyExpiredSessionsAreRemovedWhenANewSessionIsCreated(t *testing.T) {
 		t.Errorf("Unexpected error: %v", err)
 	}
 
-	if len(sessionRepo.Store) != 1 {
-		t.Errorf("Expected only 1 session, found %d", len(sessionRepo.Store))
+	_, err = sessionRepo.Get(ctx, expiredSession.SessionId)
+
+	if !errors.Is(err, web.ErrSessionNotFound) {
+		t.Error("expired session still exists")
 	}
 
-	if newSession.SessionId != sessionRepo.Store[0].SessionId {
-		t.Errorf("Expected session ID %s, found %s", newSession.SessionId, sessionRepo.Store[0].SessionId)
+	check, err := sessionRepo.Get(ctx, newSession.SessionId)
+
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	if newSession.SessionId != check.SessionId {
+		t.Errorf("Expected session ID %s, found %s", newSession.SessionId, check.SessionId)
 	}
 }

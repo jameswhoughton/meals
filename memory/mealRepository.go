@@ -4,14 +4,12 @@ import (
 	"context"
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/jameswhoughton/meals/internal/meals"
 )
 
 type MealRepository struct {
-	Store    []meals.Meal
-	Calendar map[int][]time.Time
+	Store []meals.Meal
 }
 
 func (mr *MealRepository) Get(ctx context.Context, id int) (meals.Meal, error) {
@@ -149,8 +147,6 @@ func (mr *MealRepository) Destroy(ctx context.Context, id int) error {
 
 	for _, meal := range mr.Store {
 		if meal.Id == id {
-			delete(mr.Calendar, id)
-
 			continue
 		}
 
@@ -158,16 +154,6 @@ func (mr *MealRepository) Destroy(ctx context.Context, id int) error {
 	}
 
 	mr.Store = meals
-
-	return nil
-}
-
-func (mr *MealRepository) AssignToDate(ctx context.Context, id int, date time.Time) error {
-	if _, ok := mr.Calendar[id]; ok {
-		mr.Calendar[id] = append(mr.Calendar[id], date)
-	} else {
-		mr.Calendar[id] = []time.Time{date}
-	}
 
 	return nil
 }
