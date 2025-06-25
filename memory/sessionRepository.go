@@ -8,13 +8,13 @@ import (
 )
 
 type SessionRepository struct {
-	Store []web.Session
+	store []web.Session
 }
 
 func (sr *SessionRepository) Create(ctx context.Context, session web.Session) (web.Session, error) {
-	session.Id = len(sr.Store) + 1
+	session.Id = len(sr.store) + 1
 
-	sr.Store = append(sr.Store, session)
+	sr.store = append(sr.store, session)
 
 	return session, nil
 }
@@ -22,7 +22,7 @@ func (sr *SessionRepository) Create(ctx context.Context, session web.Session) (w
 func (sr *SessionRepository) Destroy(ctx context.Context, sessionId string) error {
 	var index *int
 
-	for i, session := range sr.Store {
+	for i, session := range sr.store {
 		if session.SessionId == sessionId {
 			index = &i
 			break
@@ -33,22 +33,22 @@ func (sr *SessionRepository) Destroy(ctx context.Context, sessionId string) erro
 		return nil
 	}
 
-	existingStore := sr.Store
+	existingstore := sr.store
 
-	sr.Store = make([]web.Session, len(existingStore)-1)
+	sr.store = make([]web.Session, len(existingstore)-1)
 
-	sr.Store = append(sr.Store, existingStore[:*index]...)
-	sr.Store = append(sr.Store, existingStore[*index+1:]...)
+	sr.store = append(sr.store, existingstore[:*index]...)
+	sr.store = append(sr.store, existingstore[*index+1:]...)
 
 	return nil
 }
 
 func (sr *SessionRepository) Get(ctx context.Context, sessionId string) (web.Session, error) {
-	for i, session := range sr.Store {
+	for i, session := range sr.store {
 		if session.SessionId == sessionId {
-			sr.Store[i] = session
+			sr.store[i] = session
 
-			return sr.Store[i], nil
+			return sr.store[i], nil
 		}
 	}
 
@@ -58,7 +58,7 @@ func (sr *SessionRepository) Get(ctx context.Context, sessionId string) (web.Ses
 func (sr *SessionRepository) DestroyExpired(ctx context.Context, expiredTime time.Time) error {
 	var sessions []web.Session
 
-	for _, session := range sr.Store {
+	for _, session := range sr.store {
 		if session.UpdatedAt.Before(expiredTime) {
 			continue
 		}
@@ -66,15 +66,15 @@ func (sr *SessionRepository) DestroyExpired(ctx context.Context, expiredTime tim
 		sessions = append(sessions, session)
 	}
 
-	sr.Store = sessions
+	sr.store = sessions
 
 	return nil
 }
 
 func (sr *SessionRepository) Refresh(ctx context.Context, sessionId string) error {
-	for i, session := range sr.Store {
+	for i, session := range sr.store {
 		if session.SessionId == sessionId {
-			sr.Store[i].UpdatedAt = time.Now()
+			sr.store[i].UpdatedAt = time.Now()
 
 			return nil
 		}

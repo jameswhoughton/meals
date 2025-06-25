@@ -67,14 +67,12 @@ func TestCreateUserFailsIfFormIsInvalid(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.description, func(t *testing.T) {
-			userRepo := memory.AccountRepository{
-				Store: []account.User{
-					{
-						Id:    1,
-						Email: "paul@example.com",
-					},
-				},
-			}
+			userRepo := memory.AccountRepository{}
+
+			userRepo.Create(ctx, account.User{
+				Id:    1,
+				Email: "paul@example.com",
+			})
 			service := account.NewService(&userRepo)
 
 			_, err := service.CreateUser(ctx, &testCase.form)
@@ -155,17 +153,13 @@ func TestUpdateUserFailsIfFormIsInvalid(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.description, func(t *testing.T) {
-			userRepo := memory.AccountRepository{
-				Store: []account.User{
-					{
-						Id: 1,
-					},
-					{
-						Id:    2,
-						Email: "paul@example.com",
-					},
-				},
-			}
+			userRepo := memory.AccountRepository{}
+
+			userRepo.Create(ctx, account.User{Id: 1})
+			userRepo.Create(ctx, account.User{
+				Id:    2,
+				Email: "paul@example.com",
+			})
 
 			service := account.NewService(&userRepo)
 

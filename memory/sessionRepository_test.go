@@ -9,9 +9,7 @@ import (
 
 func TestMemorySessionService(t *testing.T) {
 	init := func() (web.SessionRepository, func(id int), func()) {
-		return &memory.SessionRepository{
-			Store: []web.Session{},
-		}, func(_ int) {}, func() {}
+		return &memory.SessionRepository{}, func(_ int) {}, func() {}
 	}
 
 	contract := web.SessionRepositoryContract{

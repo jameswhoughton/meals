@@ -9,9 +9,7 @@ import (
 
 func TestAccountRepositoryContract(t *testing.T) {
 	init := func() (account.Repository, func()) {
-		return &memory.AccountRepository{
-			Store: []account.User{},
-		}, func() {}
+		return &memory.AccountRepository{}, func() {}
 	}
 
 	contract := account.RepositoryContract{

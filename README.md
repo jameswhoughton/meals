@@ -8,7 +8,11 @@ The aim of the application is to simplify the process of planning the weekly foo
 
 ## Architecture Overview
 
-The project is split across multiple packages with the business logic located in internal/*. I have used the service/repository pattern where the repositories are solely responsible for saving to the data store and the services are responsible for ensuring the data passed to and from the repository is valid.
+The project follows a layered architecture:
+
+- **Repositories** Interact with the storage medium.
+- **Services** Contain all the the business logic.
+- **Handlers** Format data to and from the service layer.
 
 ### internal/account
 
@@ -34,9 +38,17 @@ This package contains in memory implementations of the repositories defined in `
 
 In the web package the handlers are defined, which use the services/repositories defined in `internal/*` to create a web interface for the application. Also contained in this package are html template files along with non-go assets (e.g. JS, CSS and images).
 
+### frontend
+
+Contains dependencies to build TailwindCSS styles.
+
 ### cmd/server
 
 This is the main web app executeable. Here the repositories/services and web server are created and the server is started. The graceful shutdown process is also handled here.
+
+### cmd/seeder
+
+This is a seeder script to populate the application with test data (see `cmd/seeder/main.go` for more details).
 
 ## Status
 
@@ -70,6 +82,7 @@ This is the main web app executeable. Here the repositories/services and web ser
 - Install [wgo](https://github.com/bokwoon95/wgo)
 - Run `docker compose up -d`.
 - copy `.env-example` to `.env`.
+- In the `frontend/` directory, run `npm ci`.
 - Run `make watch` this will start the server and restart on any file changes.
 - Run `make watch-tw` this will start the tailwind server and automatically restart on any file changes.
 - Navigate to `localhost:8000` in your browser.
