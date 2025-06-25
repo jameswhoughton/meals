@@ -82,6 +82,7 @@ This is a seeder script to populate the application with test data (see `cmd/see
 - Install [wgo](https://github.com/bokwoon95/wgo)
 - Run `docker compose up -d`.
 - copy `.env-example` to `.env`.
+- In the `frontend/` directory, run `npm ci`.
 - Run `make watch` this will start the server and restart on any file changes.
 - Run `make watch-tw` this will start the tailwind server and automatically restart on any file changes.
 - Navigate to `localhost:8000` in your browser.
