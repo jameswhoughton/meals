@@ -2,8 +2,8 @@
 createmigration
 meals_server
 
-# Database
-meals.db
+# env
+.env
 
 # Dependencies
 node_modules

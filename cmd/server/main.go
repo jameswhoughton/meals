@@ -19,6 +19,7 @@ import (
 	"github.com/jameswhoughton/meals/internal/meals"
 	"github.com/jameswhoughton/meals/internal/planner"
 	"github.com/jameswhoughton/meals/web"
+	"github.com/joho/godotenv"
 )
 
 type config struct {
@@ -30,23 +31,28 @@ type config struct {
 //
 // Either returns valid config or will panic.
 func getConfig() config {
-	port := os.Getenv("MEALS_PORT")
-
-	if port == "" {
-		panic("MEALS_PORT environment variable is missing or blank")
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Printf("Error loading .env file: %v", err)
 	}
 
-	dsn := os.Getenv("MEALS_DB_USERNAME")
+	port := os.Getenv("APP_PORT")
 
-	if os.Getenv("MEALS_BD_PASSWORD") != "" {
-		dsn += ":" + os.Getenv("MEALS_DB_PASSWORD")
+	if port == "" {
+		panic("APP_PORT environment variable is missing or blank")
+	}
+
+	dsn := os.Getenv("DB_USERNAME")
+
+	if os.Getenv("DB_PASSWORD") != "" {
+		dsn += ":" + os.Getenv("DB_PASSWORD")
 	}
 
 	dsn = fmt.Sprintf(
 		"%s@tcp(%s:%s)/meals?parseTime=true",
 		dsn,
-		os.Getenv("MEALS_DB_HOST"),
-		os.Getenv("MEALS_DB_PORT"),
+		os.Getenv("DB_HOST"),
+		os.Getenv("DB_PORT"),
 	)
 
 	return config{
