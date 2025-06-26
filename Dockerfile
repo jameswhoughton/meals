@@ -28,18 +28,9 @@ COPY --from=frontend-builder /app/web/static ./web/static
 RUN CGO_ENABLED=0 GOOS=linux go build -o app ./cmd/server
 
 # Stage 3: Final runtime image
-FROM alpine:latest
-
-# Create user and group
-RUN addgroup -S www && adduser -S www -G www
-
-WORKDIR /app
+FROM scratch
 
 COPY --from=go-builder /app/app .
-
-RUN chown -R www:www /app
-
-USER www
 
 EXPOSE 8000
 
