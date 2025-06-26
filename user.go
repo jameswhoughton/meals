@@ -1,4 +1,4 @@
-package account
+package meals
 
 import (
 	"context"
@@ -9,6 +9,55 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 )
+
+var ErrUserNotFound = errors.New("user not found")
+
+type User struct {
+	Id           int
+	Name         string
+	Email        string
+	Password     string
+	MealStartDay int
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+}
+
+type UserUpdate struct {
+	Id           int
+	Name         string
+	Email        string
+	Password     *string
+	MealStartDay int
+	UpdatedAt    time.Time
+}
+
+type UserRepository interface {
+
+	// Get a user that matches the given id
+	//
+	// Returns ErrUserNotFound if the id does not match any users
+	GetById(ctx context.Context, id int) (User, error)
+
+	// Get a user that matches the given email
+	//
+	// Returns ErrUserNotFound if the email does not match any users
+	GetByEmail(ctx context.Context, email string) (User, error)
+
+	// Create a new user
+	//
+	// Returns the new user if created successfully.
+	Create(ctx context.Context, user User) (User, error)
+
+	// Updates an existing user
+	//
+	// Returns ErrUserNotFound if the given user.Id does not exist.
+	Update(ctx context.Context, user UserUpdate) error
+
+	// Deletes an existing user
+	//
+	// Does nothing if the userId does not exist.
+	Delete(ctx context.Context, userId int) error
+}
 
 func validateName(name string) (bool, string) {
 	if len(name) == 0 {
@@ -71,7 +120,7 @@ type UserFormUpdate struct {
 	Errors          map[string]string
 }
 
-func (f *UserFormUpdate) Validate(ctx context.Context, currentUser User, repo Repository) bool {
+func (f *UserFormUpdate) Validate(ctx context.Context, currentUser User, repo UserRepository) bool {
 	f.Errors = make(map[string]string)
 
 	if f.Password != nil {
@@ -112,7 +161,7 @@ type UserFormCreate struct {
 	Errors          map[string]string
 }
 
-func (f *UserFormCreate) Validate(ctx context.Context, repo Repository) bool {
+func (f *UserFormCreate) Validate(ctx context.Context, repo UserRepository) bool {
 	f.Errors = make(map[string]string)
 
 	if passes, message := validatePassword(f.Password, f.PasswordConfirm); !passes {
@@ -144,17 +193,17 @@ func HashPassword(password string) []byte {
 	return hash
 }
 
-func NewService(repo Repository) Service {
-	return Service{
+func NewUserService(repo UserRepository) UserService {
+	return UserService{
 		account: repo,
 	}
 }
 
-type Service struct {
-	account Repository
+type UserService struct {
+	account UserRepository
 }
 
-func (us *Service) GetUserFromCredentials(ctx context.Context, email, password string) (User, error) {
+func (us *UserService) GetUserFromCredentials(ctx context.Context, email, password string) (User, error) {
 	user, err := us.account.GetByEmail(ctx, email)
 
 	if err != nil {
@@ -170,7 +219,7 @@ func (us *Service) GetUserFromCredentials(ctx context.Context, email, password s
 	return user, nil
 }
 
-func (us *Service) CreateUser(ctx context.Context, form *UserFormCreate) (User, error) {
+func (us *UserService) CreateUser(ctx context.Context, form *UserFormCreate) (User, error) {
 	if !form.Validate(ctx, us.account) {
 		return User{}, ErrUserFormInvalid
 	}
@@ -186,7 +235,7 @@ func (us *Service) CreateUser(ctx context.Context, form *UserFormCreate) (User, 
 	return us.account.Create(ctx, user)
 }
 
-func (us *Service) UpdateUser(ctx context.Context, form *UserFormUpdate) error {
+func (us *UserService) UpdateUser(ctx context.Context, form *UserFormUpdate) error {
 	currentUser, err := us.account.GetById(ctx, form.Id)
 
 	if err != nil {

@@ -9,14 +9,14 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/jameswhoughton/meals/internal/meals"
+	"github.com/jameswhoughton/meals"
 )
 
 // Render the meals list page.
 //
 // Only the authenticated user's meals are visible
 // Results can be filtered
-func GetMealsHandler(logger *slog.Logger, templateFiles fs.FS, repo meals.Repository) http.Handler {
+func GetMealsHandler(logger *slog.Logger, templateFiles fs.FS, repo meals.MealRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
 			templateFiles,
@@ -90,7 +90,7 @@ func GetMealsHandler(logger *slog.Logger, templateFiles fs.FS, repo meals.Reposi
 // Only the owner of a meal can access this page.
 // If a meal does not exist a 404 is returned.
 // Expects the meal Id as a url path value with the name 'id'.
-func GetMealEditHandler(logger *slog.Logger, templateFiles fs.FS, repo meals.Repository) http.Handler {
+func GetMealEditHandler(logger *slog.Logger, templateFiles fs.FS, repo meals.MealRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
 			templateFiles,
@@ -176,7 +176,7 @@ func GetMealEditHandler(logger *slog.Logger, templateFiles fs.FS, repo meals.Rep
 // Only the owner of a meal can access this page.
 // If a meal does not exist a 404 is returned.
 // Expects the meal Id as a url path value with the name 'id'.
-func GetMealHandler(logger *slog.Logger, templateFiles fs.FS, repo meals.Repository) http.Handler {
+func GetMealHandler(logger *slog.Logger, templateFiles fs.FS, repo meals.MealRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
 			templateFiles,
@@ -337,7 +337,7 @@ func mealFromRequest(r http.Request) meals.Meal {
 //
 // If the form is invalid, redirects back to the create a meal page.
 // Redirects to the meal list page on success.
-func PostMealHandler(logger *slog.Logger, service meals.Service) http.Handler {
+func PostMealHandler(logger *slog.Logger, service meals.MealService) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user := UserFromContext(r.Context())
 
@@ -396,7 +396,7 @@ func PostMealHandler(logger *slog.Logger, service meals.Service) http.Handler {
 // Expects the meal Id as a url path value with the name 'id'.
 // If the form is invalid, redirects back to the edit a meal page.
 // Redirects to the meal list page on success.
-func PutMealHandler(logger *slog.Logger, service meals.Service, repo meals.Repository) http.Handler {
+func PutMealHandler(logger *slog.Logger, service meals.MealService, repo meals.MealRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user := UserFromContext(r.Context())
 
@@ -467,7 +467,7 @@ func PutMealHandler(logger *slog.Logger, service meals.Service, repo meals.Repos
 	})
 }
 
-func PostDeleteMealHandler(logger *slog.Logger, repo meals.Repository) http.Handler {
+func PostDeleteMealHandler(logger *slog.Logger, repo meals.MealRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user := UserFromContext(r.Context())
 
@@ -525,7 +525,7 @@ func PostDeleteMealHandler(logger *slog.Logger, repo meals.Repository) http.Hand
 // API endpoint to search for existing ingredient names
 //
 // Returns JSON.
-func GetSearchIngredientsHandler(logger *slog.Logger, mealRepo meals.Repository) http.Handler {
+func GetSearchIngredientsHandler(logger *slog.Logger, mealRepo meals.MealRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		queryString := r.URL.Query().Get("query")
 
@@ -552,7 +552,7 @@ func GetSearchIngredientsHandler(logger *slog.Logger, mealRepo meals.Repository)
 // API handler to search for tags by name
 //
 // Returns JSON.
-func GetSearchTagHandler(logger *slog.Logger, mealRepo meals.Repository) http.Handler {
+func GetSearchTagHandler(logger *slog.Logger, mealRepo meals.MealRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		queryString := r.URL.Query().Get("query")
 
@@ -579,7 +579,7 @@ func GetSearchTagHandler(logger *slog.Logger, mealRepo meals.Repository) http.Ha
 // API handler to search for units by name
 //
 // Returns JSON.
-func GetSearchUnitHandler(logger *slog.Logger, mealRepo meals.Repository) http.Handler {
+func GetSearchUnitHandler(logger *slog.Logger, mealRepo meals.MealRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		queryString := r.URL.Query().Get("query")
 

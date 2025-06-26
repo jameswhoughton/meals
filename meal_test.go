@@ -5,13 +5,13 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/jameswhoughton/meals/internal/meals"
+	"github.com/jameswhoughton/meals"
 	"github.com/jameswhoughton/meals/memory"
 )
 
 func TestValidationErrorsWhenCreatingAMeal(t *testing.T) {
 	mealRepository := memory.MealRepository{}
-	service := meals.NewService(&mealRepository)
+	service := meals.NewMealService(&mealRepository)
 
 	ctx := context.Background()
 
@@ -75,7 +75,7 @@ func TestValidationErrorsWhenCreatingAMeal(t *testing.T) {
 
 func TestServiceCanCreateAMeal(t *testing.T) {
 	mealRepository := memory.MealRepository{}
-	service := meals.NewService(&mealRepository)
+	service := meals.NewMealService(&mealRepository)
 
 	ctx := context.Background()
 
@@ -123,7 +123,7 @@ func TestServiceCanCreateAMeal(t *testing.T) {
 
 func TestValidationErrorsWhenUpdatingAMeal(t *testing.T) {
 	mealRepository := memory.MealRepository{}
-	service := meals.NewService(&mealRepository)
+	service := meals.NewMealService(&mealRepository)
 
 	ctx := context.Background()
 
@@ -193,7 +193,7 @@ func TestServiceCanUpdateAMeal(t *testing.T) {
 			},
 		},
 	}
-	service := meals.NewService(&mealRepository)
+	service := meals.NewMealService(&mealRepository)
 
 	ctx := context.Background()
 
@@ -244,7 +244,7 @@ func TestMustIncludeUserIdWhenFilteringMeals(t *testing.T) {
 			},
 		},
 	}
-	service := meals.NewService(&mealRepository)
+	service := meals.NewMealService(&mealRepository)
 
 	ctx := context.Background()
 

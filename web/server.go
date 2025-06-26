@@ -7,8 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/jameswhoughton/meals/internal/account"
-	"github.com/jameswhoughton/meals/internal/meals"
+	"github.com/jameswhoughton/meals"
 	"github.com/jameswhoughton/meals/internal/planner"
 )
 
@@ -16,12 +15,12 @@ func NewServer(
 	ctx context.Context,
 	port string,
 	logger *slog.Logger,
-	accountService *account.Service,
-	mealService *meals.Service,
+	accountService *meals.UserService,
+	mealService *meals.MealService,
 	sessionService *SessionService,
 	plannerService *planner.Service,
-	accountRepository account.Repository,
-	mealRepository meals.Repository,
+	accountRepository meals.UserRepository,
+	mealRepository meals.MealRepository,
 	sessionRepository SessionRepository,
 	plannerRepository planner.Repository,
 ) *http.Server {

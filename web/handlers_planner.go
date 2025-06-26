@@ -10,8 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/jameswhoughton/meals/internal/account"
-	"github.com/jameswhoughton/meals/internal/meals"
+	"github.com/jameswhoughton/meals"
 	"github.com/jameswhoughton/meals/internal/planner"
 )
 
@@ -31,7 +30,7 @@ func calculateStartDate(date time.Time, startDay int) time.Time {
 	return time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
 }
 
-func GetPlannerHandler(logger *slog.Logger, templateFiles fs.FS, plannerService planner.Service, accountRepo account.Repository) http.Handler {
+func GetPlannerHandler(logger *slog.Logger, templateFiles fs.FS, plannerService planner.Service, accountRepo meals.UserRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
 			templateFiles,
@@ -111,7 +110,7 @@ func GetPlannerHandler(logger *slog.Logger, templateFiles fs.FS, plannerService 
 	})
 }
 
-func GetEditDayHandler(logger *slog.Logger, templateFiles fs.FS, plannerRepo planner.Repository, mealRepo meals.Repository) http.Handler {
+func GetEditDayHandler(logger *slog.Logger, templateFiles fs.FS, plannerRepo planner.Repository, mealRepo meals.MealRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		contains := func(tags []string, name string) bool {
 			return slices.Contains(tags, name)
@@ -194,7 +193,7 @@ func GetEditDayHandler(logger *slog.Logger, templateFiles fs.FS, plannerRepo pla
 	})
 }
 
-func PostEditDayHandler(logger *slog.Logger, plannerRepo planner.Repository, mealRepo meals.Repository) http.Handler {
+func PostEditDayHandler(logger *slog.Logger, plannerRepo planner.Repository, mealRepo meals.MealRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user := UserFromContext(r.Context())
 
@@ -266,7 +265,7 @@ func PostEditDayHandler(logger *slog.Logger, plannerRepo planner.Repository, mea
 	})
 }
 
-func GetPlannedIngredientsHandler(logger *slog.Logger, plannerSerivce planner.Service, accountRepo account.Repository) http.Handler {
+func GetPlannedIngredientsHandler(logger *slog.Logger, plannerSerivce planner.Service) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
 			templateFiles,

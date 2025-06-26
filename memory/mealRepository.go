@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/jameswhoughton/meals/internal/meals"
+	"github.com/jameswhoughton/meals"
 )
 
 type MealRepository struct {

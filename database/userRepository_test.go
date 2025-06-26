@@ -6,12 +6,13 @@ import (
 	"testing"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/jameswhoughton/meals"
+	"github.com/jameswhoughton/meals/contracts"
 	"github.com/jameswhoughton/meals/database"
-	"github.com/jameswhoughton/meals/internal/account"
 )
 
-func TestDatabaseAccountRepository(t *testing.T) {
-	init := func() (account.Repository, func()) {
+func TestDatabaseUserRepository(t *testing.T) {
+	init := func() (meals.UserRepository, func()) {
 		conn, err := sql.Open("mysql", "root@tcp(127.0.0.1:8002)/meals")
 
 		if err != nil {
@@ -31,10 +32,10 @@ func TestDatabaseAccountRepository(t *testing.T) {
 				log.Fatal(err)
 			}
 		}
-		return database.NewAccountRespository(conn), closeDown
+		return database.NewUserRespository(conn), closeDown
 	}
 
-	contract := account.RepositoryContract{
+	contract := contracts.UserRepository{
 		Repo: init,
 	}
 

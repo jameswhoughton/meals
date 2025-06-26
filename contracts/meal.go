@@ -1,4 +1,4 @@
-package meals
+package contracts
 
 import (
 	"context"
@@ -6,6 +6,8 @@ import (
 	"slices"
 	"testing"
 	"time"
+
+	"github.com/jameswhoughton/meals"
 )
 
 type toPtrValue interface {
@@ -14,11 +16,11 @@ type toPtrValue interface {
 
 func toPtr[T toPtrValue](v T) *T { return &v }
 
-type RepositoryContract struct {
-	Repo func() (Repository, func(userId int), func())
+type MealRepository struct {
+	Repo func() (meals.MealRepository, func(userId int), func())
 }
 
-func (i RepositoryContract) Test(t *testing.T) {
+func (i MealRepository) Test(t *testing.T) {
 	t.Run("Can create get update and delete a meal", func(t *testing.T) {
 		repo, seedUser, closeDown := i.Repo()
 		defer closeDown()
@@ -27,10 +29,10 @@ func (i RepositoryContract) Test(t *testing.T) {
 
 		seedUser(1)
 
-		newMeal := Meal{
+		newMeal := meals.Meal{
 			Name:   "Bolognese",
 			UserId: 1,
-			Tags: []Tag{
+			Tags: []meals.Tag{
 				{
 					Name: "Easy",
 				},
@@ -38,7 +40,7 @@ func (i RepositoryContract) Test(t *testing.T) {
 					Name: "Family",
 				},
 			},
-			Ingredients: []Ingredient{
+			Ingredients: []meals.Ingredient{
 				{
 					Name:     "Beef mince",
 					Quantity: 500,
@@ -97,11 +99,11 @@ func (i RepositoryContract) Test(t *testing.T) {
 			t.Errorf("Fetching meal: unexpected error: %v", err)
 		}
 
-		updatedMeal.Tags = append(updatedMeal.Tags, Tag{
+		updatedMeal.Tags = append(updatedMeal.Tags, meals.Tag{
 			Name: "Quick",
 		})
 
-		updatedMeal.Ingredients = append(updatedMeal.Ingredients, Ingredient{
+		updatedMeal.Ingredients = append(updatedMeal.Ingredients, meals.Ingredient{
 			Name:     "Onion",
 			Quantity: 2,
 		})
@@ -158,8 +160,8 @@ func (i RepositoryContract) Test(t *testing.T) {
 			t.Error("Expected error, got none")
 		}
 
-		if !errors.Is(err, ErrMealNotFound) {
-			t.Errorf("Expected error of type %T, got %T (%v)", ErrMealNotFound, err, err)
+		if !errors.Is(err, meals.ErrMealNotFound) {
+			t.Errorf("Expected error of type %T, got %T (%v)", meals.ErrMealNotFound, err, err)
 		}
 	})
 
@@ -172,10 +174,10 @@ func (i RepositoryContract) Test(t *testing.T) {
 		seedUser(1)
 		seedUser(2)
 
-		mealA, _ := repo.Create(ctx, Meal{
+		mealA, _ := repo.Create(ctx, meals.Meal{
 			UserId: 1,
 			Name:   "Meal A",
-			Tags: []Tag{
+			Tags: []meals.Tag{
 				{
 					Id:   1,
 					Name: "Quick",
@@ -189,17 +191,17 @@ func (i RepositoryContract) Test(t *testing.T) {
 					Name: "Easy",
 				},
 			},
-			Ingredients: []Ingredient{
+			Ingredients: []meals.Ingredient{
 				{
 					Id: 1,
 				},
 			},
 		})
 
-		repo.Create(ctx, Meal{
+		repo.Create(ctx, meals.Meal{
 			UserId: 1,
 			Name:   "Meal B",
-			Tags: []Tag{
+			Tags: []meals.Tag{
 				{
 					Id:   2,
 					Name: "Family",
@@ -209,7 +211,7 @@ func (i RepositoryContract) Test(t *testing.T) {
 					Name: "Easy",
 				},
 			},
-			Ingredients: []Ingredient{
+			Ingredients: []meals.Ingredient{
 				{
 					Id: 2,
 				},
@@ -219,10 +221,10 @@ func (i RepositoryContract) Test(t *testing.T) {
 			},
 		})
 
-		repo.Create(ctx, Meal{
+		repo.Create(ctx, meals.Meal{
 			UserId: 2,
 			Name:   "Meal C",
-			Tags: []Tag{
+			Tags: []meals.Tag{
 				{
 					Id:   1,
 					Name: "Quick",
@@ -236,7 +238,7 @@ func (i RepositoryContract) Test(t *testing.T) {
 					Name: "Easy",
 				},
 			},
-			Ingredients: []Ingredient{
+			Ingredients: []meals.Ingredient{
 				{
 					Id: 1,
 				},
@@ -245,14 +247,14 @@ func (i RepositoryContract) Test(t *testing.T) {
 
 		type testCase struct {
 			label         string
-			filters       MealFilter
+			filters       meals.MealFilter
 			expectedMeals []int
 		}
 
 		testCases := []testCase{
 			{
 				label: "All tags",
-				filters: MealFilter{
+				filters: meals.MealFilter{
 					UserId: 1,
 					Tags:   []string{"Quick", "Family", "Easy"},
 				},
@@ -260,7 +262,7 @@ func (i RepositoryContract) Test(t *testing.T) {
 			},
 			{
 				label: "By name",
-				filters: MealFilter{
+				filters: meals.MealFilter{
 					UserId: 1,
 					Name:   toPtr("eAl a"),
 				},
@@ -298,9 +300,9 @@ func (i RepositoryContract) Test(t *testing.T) {
 		seedUser(1)
 		seedUser(2)
 
-		repo.Create(ctx, Meal{
+		repo.Create(ctx, meals.Meal{
 			UserId: 1,
-			Ingredients: []Ingredient{
+			Ingredients: []meals.Ingredient{
 				{
 					Id:   2,
 					Name: "Onion",
@@ -312,9 +314,9 @@ func (i RepositoryContract) Test(t *testing.T) {
 			},
 		})
 
-		repo.Create(ctx, Meal{
+		repo.Create(ctx, meals.Meal{
 			UserId: 2,
-			Ingredients: []Ingredient{
+			Ingredients: []meals.Ingredient{
 				{
 					Id:   9,
 					Name: "Red Onion",
@@ -359,9 +361,9 @@ func (i RepositoryContract) Test(t *testing.T) {
 		seedUser(1)
 		seedUser(2)
 
-		repo.Create(ctx, Meal{
+		repo.Create(ctx, meals.Meal{
 			UserId: 1,
-			Ingredients: []Ingredient{
+			Ingredients: []meals.Ingredient{
 				{
 					Id:   2,
 					Name: "tomatoes",
@@ -380,9 +382,9 @@ func (i RepositoryContract) Test(t *testing.T) {
 			},
 		})
 
-		repo.Create(ctx, Meal{
+		repo.Create(ctx, meals.Meal{
 			UserId: 2,
-			Ingredients: []Ingredient{
+			Ingredients: []meals.Ingredient{
 				{
 					Id:   7,
 					Name: "Cheese",
@@ -420,9 +422,9 @@ func (i RepositoryContract) Test(t *testing.T) {
 		seedUser(1)
 		seedUser(2)
 
-		repo.Create(ctx, Meal{
+		repo.Create(ctx, meals.Meal{
 			UserId: 1,
-			Tags: []Tag{
+			Tags: []meals.Tag{
 				{
 					Id:   2,
 					Name: "AAA",
@@ -434,9 +436,9 @@ func (i RepositoryContract) Test(t *testing.T) {
 			},
 		})
 
-		repo.Create(ctx, Meal{
+		repo.Create(ctx, meals.Meal{
 			UserId: 2,
-			Tags: []Tag{
+			Tags: []meals.Tag{
 				{
 					Id:   9,
 					Name: "caa",
@@ -480,9 +482,9 @@ func (i RepositoryContract) Test(t *testing.T) {
 
 		seedUser(1)
 
-		repo.Create(ctx, Meal{
+		repo.Create(ctx, meals.Meal{
 			UserId: 1,
-			Tags: []Tag{
+			Tags: []meals.Tag{
 				{
 					Id:   2,
 					Name: "Quick",
@@ -494,9 +496,9 @@ func (i RepositoryContract) Test(t *testing.T) {
 			},
 		})
 
-		repo.Create(ctx, Meal{
+		repo.Create(ctx, meals.Meal{
 			UserId: 1,
-			Tags: []Tag{
+			Tags: []meals.Tag{
 				{
 					Id:   5,
 					Name: "Quick",

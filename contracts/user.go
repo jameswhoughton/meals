@@ -1,17 +1,19 @@
-package account
+package contracts
 
 import (
 	"context"
 	"errors"
 	"testing"
 	"time"
+
+	"github.com/jameswhoughton/meals"
 )
 
-type RepositoryContract struct {
-	Repo func() (Repository, func())
+type UserRepository struct {
+	Repo func() (meals.UserRepository, func())
 }
 
-func (c *RepositoryContract) Test(t *testing.T) {
+func (c *UserRepository) Test(t *testing.T) {
 	t.Run("Can add, update, retrieve and delete a user", func(t *testing.T) {
 		repo, closeDown := c.Repo()
 		defer closeDown()
@@ -23,7 +25,7 @@ func (c *RepositoryContract) Test(t *testing.T) {
 		newName := "John Smith"
 
 		// Add a new user
-		form := User{
+		form := meals.User{
 			Email:     newUserEmail,
 			Password:  newUserPassword,
 			Name:      newName,
@@ -81,7 +83,7 @@ func (c *RepositoryContract) Test(t *testing.T) {
 		newStartDay := 3
 
 		// Update User
-		update := UserUpdate{
+		update := meals.UserUpdate{
 			Id:           fetchedUser.Id,
 			Name:         newName,
 			Email:        newEmail,
@@ -125,7 +127,7 @@ func (c *RepositoryContract) Test(t *testing.T) {
 
 		_, err = repo.GetById(ctx, update.Id)
 
-		if !errors.Is(err, ErrUserNotFound) {
+		if !errors.Is(err, meals.ErrUserNotFound) {
 			t.Errorf("Expected user not found error, got %T: %v", err, err)
 		}
 	})
@@ -142,7 +144,7 @@ func (c *RepositoryContract) Test(t *testing.T) {
 			t.Errorf("Expected error got nil")
 		}
 
-		if !errors.Is(err, ErrUserNotFound) {
+		if !errors.Is(err, meals.ErrUserNotFound) {
 			t.Errorf("Expected UserNotFoundError, got %T", err)
 		}
 
@@ -152,17 +154,17 @@ func (c *RepositoryContract) Test(t *testing.T) {
 			t.Errorf("Expected error got nil")
 		}
 
-		if !errors.Is(err, ErrUserNotFound) {
+		if !errors.Is(err, meals.ErrUserNotFound) {
 			t.Errorf("Expected UserNotFoundError, got %T", err)
 		}
 
-		err = repo.Update(ctx, UserUpdate{Id: 1})
+		err = repo.Update(ctx, meals.UserUpdate{Id: 1})
 
 		if err == nil {
 			t.Errorf("Expected error got nil")
 		}
 
-		if !errors.Is(err, ErrUserNotFound) {
+		if !errors.Is(err, meals.ErrUserNotFound) {
 			t.Errorf("Expected UserNotFoundError, got %T", err)
 		}
 	})

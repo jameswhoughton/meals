@@ -7,19 +7,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jameswhoughton/meals/internal/account"
+	"github.com/jameswhoughton/meals"
 )
 
-type AccountRepository struct {
+type UserRepository struct {
 	db *sql.DB
 }
 
-func NewAccountRespository(db *sql.DB) *AccountRepository {
-	return &AccountRepository{db}
+func NewUserRespository(db *sql.DB) *UserRepository {
+	return &UserRepository{db}
 }
 
-func (us *AccountRepository) GetById(ctx context.Context, id int) (account.User, error) {
-	var user account.User
+func (us *UserRepository) GetById(ctx context.Context, id int) (meals.User, error) {
+	var user meals.User
 
 	err := us.db.QueryRowContext(
 		ctx,
@@ -28,17 +28,17 @@ func (us *AccountRepository) GetById(ctx context.Context, id int) (account.User,
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return account.User{}, account.ErrUserNotFound
+			return meals.User{}, meals.ErrUserNotFound
 		}
 
-		return account.User{}, fmt.Errorf("failed to query user with id=%d: %w", id, err)
+		return meals.User{}, fmt.Errorf("failed to query user with id=%d: %w", id, err)
 	}
 
 	return user, nil
 }
 
-func (us *AccountRepository) GetByEmail(ctx context.Context, email string) (account.User, error) {
-	var user account.User
+func (us *UserRepository) GetByEmail(ctx context.Context, email string) (meals.User, error) {
+	var user meals.User
 
 	err := us.db.QueryRowContext(
 		ctx,
@@ -47,16 +47,16 @@ func (us *AccountRepository) GetByEmail(ctx context.Context, email string) (acco
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return account.User{}, account.ErrUserNotFound
+			return meals.User{}, meals.ErrUserNotFound
 		}
 
-		return account.User{}, fmt.Errorf("failed to query user with email=%s: %w", email, err)
+		return meals.User{}, fmt.Errorf("failed to query user with email=%s: %w", email, err)
 	}
 
 	return user, nil
 }
 
-func (us *AccountRepository) Create(ctx context.Context, user account.User) (account.User, error) {
+func (us *UserRepository) Create(ctx context.Context, user meals.User) (meals.User, error) {
 	result, err := us.db.ExecContext(ctx, `
 		INSERT INTO users 
 		(email, name, password, created_at, updated_at)
@@ -64,13 +64,13 @@ func (us *AccountRepository) Create(ctx context.Context, user account.User) (acc
 	`, user.Email, user.Name, user.Password, user.CreatedAt, user.UpdatedAt)
 
 	if err != nil {
-		return account.User{}, err
+		return meals.User{}, err
 	}
 
 	id, err := result.LastInsertId()
 
 	if err != nil {
-		return account.User{}, err
+		return meals.User{}, err
 	}
 
 	user.Id = int(id)
@@ -78,7 +78,7 @@ func (us *AccountRepository) Create(ctx context.Context, user account.User) (acc
 	return user, nil
 }
 
-func (us *AccountRepository) Update(ctx context.Context, user account.UserUpdate) error {
+func (us *UserRepository) Update(ctx context.Context, user meals.UserUpdate) error {
 	_, err := us.GetById(ctx, user.Id)
 
 	if err != nil {
@@ -117,7 +117,7 @@ func (us *AccountRepository) Update(ctx context.Context, user account.UserUpdate
 	return nil
 }
 
-func (us *AccountRepository) Delete(ctx context.Context, userId int) error {
+func (us *UserRepository) Delete(ctx context.Context, userId int) error {
 	_, err := us.db.ExecContext(ctx, `DELETE FROM users WHERE id = ?`, userId)
 
 	if err != nil {

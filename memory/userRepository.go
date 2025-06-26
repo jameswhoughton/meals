@@ -4,34 +4,34 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jameswhoughton/meals/internal/account"
+	"github.com/jameswhoughton/meals"
 )
 
-type AccountRepository struct {
-	store []account.User
+type UserRepository struct {
+	store []meals.User
 }
 
-func (ar *AccountRepository) GetById(ctx context.Context, id int) (account.User, error) {
+func (ar *UserRepository) GetById(ctx context.Context, id int) (meals.User, error) {
 	for _, user := range ar.store {
 		if user.Id == id {
 			return user, nil
 		}
 	}
 
-	return account.User{}, account.ErrUserNotFound
+	return meals.User{}, meals.ErrUserNotFound
 }
 
-func (ar *AccountRepository) GetByEmail(ctx context.Context, email string) (account.User, error) {
+func (ar *UserRepository) GetByEmail(ctx context.Context, email string) (meals.User, error) {
 	for _, user := range ar.store {
 		if user.Email == email {
 			return user, nil
 		}
 	}
 
-	return account.User{}, account.ErrUserNotFound
+	return meals.User{}, meals.ErrUserNotFound
 }
 
-func (ar *AccountRepository) Create(ctx context.Context, user account.User) (account.User, error) {
+func (ar *UserRepository) Create(ctx context.Context, user meals.User) (meals.User, error) {
 	user.Id = len(ar.store) + 1
 
 	ar.store = append(ar.store, user)
@@ -39,7 +39,7 @@ func (ar *AccountRepository) Create(ctx context.Context, user account.User) (acc
 	return user, nil
 }
 
-func (ar *AccountRepository) Update(ctx context.Context, form account.UserUpdate) error {
+func (ar *UserRepository) Update(ctx context.Context, form meals.UserUpdate) error {
 	var index int
 	found := false
 
@@ -52,7 +52,7 @@ func (ar *AccountRepository) Update(ctx context.Context, form account.UserUpdate
 	}
 
 	if !found {
-		return fmt.Errorf("Cannot find user to update: %w", account.ErrUserNotFound)
+		return fmt.Errorf("Cannot find user to update: %w", meals.ErrUserNotFound)
 	}
 
 	ar.store[index].Email = form.Email
@@ -68,8 +68,8 @@ func (ar *AccountRepository) Update(ctx context.Context, form account.UserUpdate
 	return nil
 }
 
-func (ar *AccountRepository) Delete(ctx context.Context, userId int) error {
-	var store []account.User
+func (ar *UserRepository) Delete(ctx context.Context, userId int) error {
+	var store []meals.User
 
 	for _, user := range ar.store {
 		if user.Id == userId {

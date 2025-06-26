@@ -7,8 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/jameswhoughton/meals/internal/account"
-	"github.com/jameswhoughton/meals/internal/meals"
+	"github.com/jameswhoughton/meals"
 	"github.com/jameswhoughton/meals/internal/planner"
 )
 
@@ -23,17 +22,17 @@ var publicFiles embed.FS
 func AddRoutes(
 	mux *http.ServeMux,
 	logger *slog.Logger,
-	accountService account.Service,
-	mealService meals.Service,
+	userService meals.UserService,
+	mealService meals.MealService,
 	sessionService SessionService,
 	plannerService planner.Service,
-	accountRepository account.Repository,
-	mealRepository meals.Repository,
+	userRepository meals.UserRepository,
+	mealRepository meals.MealRepository,
 	sessionRepository SessionRepository,
 	plannerRepository planner.Repository,
 ) {
 	// Middleware
-	isAuthed := NewIsAuthenticatedMiddleware(accountService, sessionService)
+	isAuthed := NewIsAuthenticatedMiddleware(userService, sessionService)
 
 	// Root redirect
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
@@ -59,14 +58,14 @@ func AddRoutes(
 
 	// Authentication
 	mux.Handle("GET /login", GetLoginHandler(logger, templateFiles))
-	mux.Handle("POST /login", PostLoginHandler(logger, accountService, sessionService))
+	mux.Handle("POST /login", PostLoginHandler(logger, userService, sessionService))
 	mux.Handle("GET /register", GetRegistrationHandler(logger, templateFiles))
-	mux.Handle("POST /register", PostRegistrationHandler(logger, accountService))
-	mux.Handle("GET /logout", GetLogoutHandler(logger, accountService, sessionRepository))
+	mux.Handle("POST /register", PostRegistrationHandler(logger, userService))
+	mux.Handle("GET /logout", GetLogoutHandler(logger, userService, sessionRepository))
 
 	// Account
 	mux.Handle("GET /account", isAuthed(GetAccountHandler(logger, templateFiles, sessionService)))
-	mux.Handle("POST /account", isAuthed(PutAccountHandler(logger, accountService, sessionService)))
+	mux.Handle("POST /account", isAuthed(PutAccountHandler(logger, userService, sessionService)))
 
 	// Meals
 	mux.Handle("GET /meals/create", isAuthed(GetCreateMealHandler(logger, templateFiles)))
@@ -78,10 +77,10 @@ func AddRoutes(
 	mux.Handle("POST /meals/{id}/delete", isAuthed(PostDeleteMealHandler(logger, mealRepository)))
 
 	// Planner
-	mux.Handle("GET /planner", isAuthed(GetPlannerHandler(logger, templateFiles, plannerService, accountRepository)))
+	mux.Handle("GET /planner", isAuthed(GetPlannerHandler(logger, templateFiles, plannerService, userRepository)))
 	mux.Handle("GET /planner/{date}", isAuthed(GetEditDayHandler(logger, templateFiles, plannerRepository, mealRepository)))
 	mux.Handle("POST /planner/{date}", isAuthed(PostEditDayHandler(logger, plannerRepository, mealRepository)))
-	mux.Handle("GET /planner/{date}/ingredients", isAuthed(GetPlannedIngredientsHandler(logger, plannerService, accountRepository)))
+	mux.Handle("GET /planner/{date}/ingredients", isAuthed(GetPlannedIngredientsHandler(logger, plannerService)))
 
 	// API
 	mux.Handle("GET /api/ingredients", isAuthed(GetSearchIngredientsHandler(logger, mealRepository)))

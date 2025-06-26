@@ -3,6 +3,7 @@ package meals
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 )
@@ -79,7 +80,7 @@ func (mf MealFilter) Validate() error {
 	return nil
 }
 
-type Repository interface {
+type MealRepository interface {
 
 	// Return a meal matching the given ID
 	//
@@ -124,4 +125,79 @@ type Repository interface {
 
 	// Returns all the tag names used by the given userId
 	TagNamesForUser(ctx context.Context, userId int) ([]string, error)
+}
+
+type MealService struct {
+	meals MealRepository
+}
+
+var ErrMealFormInvalid = errors.New("meal form has validation errors")
+var ErrMealFilterFormInvalid = errors.New("filter form has validation errors")
+
+type MealFilterForm struct {
+	UserId int
+	Name   *string
+	Tags   []string
+	Errors map[string]string
+}
+
+func (mf *MealFilterForm) Validate() bool {
+	mf.Errors = make(map[string]string)
+
+	if mf.UserId == 0 {
+		mf.Errors["user_id"] = "UserID must be set"
+	}
+
+	return len(mf.Errors) == 0
+}
+
+func NewMealService(m MealRepository) MealService {
+	return MealService{m}
+}
+
+func (s *MealService) FilterMeals(ctx context.Context, form *MealFilterForm) ([]Meal, error) {
+	if !form.Validate() {
+		return []Meal{}, ErrMealFilterFormInvalid
+	}
+
+	filter := MealFilter{
+		UserId: form.UserId,
+		Name:   form.Name,
+		Tags:   form.Tags,
+	}
+
+	return s.meals.Find(ctx, filter)
+}
+
+func (s *MealService) CreateMeal(ctx context.Context, meal *Meal) (Meal, error) {
+	if isValid := meal.Validate(); !isValid {
+		return Meal{}, ErrMealFormInvalid
+	}
+
+	meal.CreatedAt = time.Now()
+	meal.UpdatedAt = time.Now()
+
+	createdMeal, err := s.meals.Create(ctx, *meal)
+
+	if err != nil {
+		return Meal{}, fmt.Errorf("Error creating meal: %v", err)
+	}
+
+	return createdMeal, nil
+}
+
+func (s *MealService) UpdateMeal(ctx context.Context, meal *Meal) error {
+	if isValid := meal.Validate(); !isValid {
+		return ErrMealFormInvalid
+	}
+
+	meal.UpdatedAt = time.Now()
+
+	err := s.meals.Update(ctx, *meal)
+
+	if err != nil {
+		return fmt.Errorf("Error updating meal: %v", err)
+	}
+
+	return nil
 }

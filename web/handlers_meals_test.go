@@ -11,8 +11,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/jameswhoughton/meals/internal/account"
-	"github.com/jameswhoughton/meals/internal/meals"
+	"github.com/jameswhoughton/meals"
 	"github.com/jameswhoughton/meals/memory"
 	"github.com/jameswhoughton/meals/web"
 )
@@ -28,7 +27,7 @@ func TestGetMealEditHandlerReturns404IfMealDoesNotExist(t *testing.T) {
 
 	handler := web.GetMealEditHandler(newTestLogger(), templateFiles, &repository)
 
-	ctx := context.WithValue(context.Background(), "user", account.User{Id: 1})
+	ctx := context.WithValue(context.Background(), "user", meals.User{Id: 1})
 
 	req := httptest.NewRequestWithContext(ctx, http.MethodGet, "/meals/1/edit", nil)
 
@@ -64,7 +63,7 @@ func TestGetMealEditHandlerReturns403IfMealDoesNotBelongToUser(t *testing.T) {
 
 	handler := web.GetMealEditHandler(newTestLogger(), templateFiles, &repository)
 
-	ctx := context.WithValue(context.Background(), "user", account.User{Id: 1})
+	ctx := context.WithValue(context.Background(), "user", meals.User{Id: 1})
 
 	req := httptest.NewRequestWithContext(ctx, http.MethodGet, "/meals/1/edit", nil)
 
@@ -94,7 +93,7 @@ func TestGetMealHandlerReturns404IfMealDoesNotExist(t *testing.T) {
 
 	handler := web.GetMealHandler(newTestLogger(), templateFiles, &repository)
 
-	ctx := context.WithValue(context.Background(), "user", account.User{Id: 1})
+	ctx := context.WithValue(context.Background(), "user", meals.User{Id: 1})
 
 	req := httptest.NewRequestWithContext(ctx, http.MethodGet, "/meals/1", nil)
 
@@ -130,7 +129,7 @@ func TestGetMealHandlerReturns403IfMealDoesNotBelongToUser(t *testing.T) {
 
 	handler := web.GetMealHandler(newTestLogger(), templateFiles, &repository)
 
-	ctx := context.WithValue(context.Background(), "user", account.User{Id: 1})
+	ctx := context.WithValue(context.Background(), "user", meals.User{Id: 1})
 
 	req := httptest.NewRequestWithContext(ctx, http.MethodGet, "/meals/1", nil)
 
@@ -151,11 +150,11 @@ func TestGetMealHandlerReturns403IfMealDoesNotBelongToUser(t *testing.T) {
 
 func TestPutMealHandlerReturns404IfMealDoesNotExist(t *testing.T) {
 	mealRepository := memory.MealRepository{}
-	service := meals.NewService(&mealRepository)
+	service := meals.NewMealService(&mealRepository)
 
 	handler := web.PutMealHandler(newTestLogger(), service, &mealRepository)
 
-	ctx := context.WithValue(context.Background(), "user", account.User{Id: 1})
+	ctx := context.WithValue(context.Background(), "user", meals.User{Id: 1})
 
 	form := url.Values{}
 	form.Add("name", "updated name")
@@ -196,11 +195,11 @@ func TestPutMealHandlerReturns403IfMealDoesNotBelongToTheUser(t *testing.T) {
 			},
 		},
 	}
-	service := meals.NewService(&mealRepository)
+	service := meals.NewMealService(&mealRepository)
 
 	handler := web.PutMealHandler(newTestLogger(), service, &mealRepository)
 
-	ctx := context.WithValue(context.Background(), "user", account.User{Id: 1})
+	ctx := context.WithValue(context.Background(), "user", meals.User{Id: 1})
 
 	form := url.Values{}
 	form.Add("name", "updated name")
@@ -232,11 +231,11 @@ func TestPutMealHandlerReturns403IfMealDoesNotBelongToTheUser(t *testing.T) {
 
 func TestPostMealHandlerCraetesAMeal(t *testing.T) {
 	mealRepository := memory.MealRepository{}
-	service := meals.NewService(&mealRepository)
+	service := meals.NewMealService(&mealRepository)
 
 	handler := web.PostMealHandler(newTestLogger(), service)
 
-	ctx := context.WithValue(context.Background(), "user", account.User{Id: 1})
+	ctx := context.WithValue(context.Background(), "user", meals.User{Id: 1})
 
 	mealToCreate := meals.Meal{
 		Name:  "Chicken Pie",
@@ -389,11 +388,11 @@ func TestPutMealHandlerWithCorrectFormUpdatesAMeal(t *testing.T) {
 			},
 		},
 	}
-	service := meals.NewService(&mealRepository)
+	service := meals.NewMealService(&mealRepository)
 
 	handler := web.PutMealHandler(newTestLogger(), service, &mealRepository)
 
-	ctx := context.WithValue(context.Background(), "user", account.User{Id: 1})
+	ctx := context.WithValue(context.Background(), "user", meals.User{Id: 1})
 
 	mealToUpdate := meals.Meal{
 		Name:  "New name",
@@ -463,7 +462,7 @@ func TestPostMealDeleteReturns404IfMealDoesNotExist(t *testing.T) {
 
 	handler := web.PostDeleteMealHandler(newTestLogger(), &mealRepository)
 
-	ctx := context.WithValue(context.Background(), "user", account.User{Id: 1})
+	ctx := context.WithValue(context.Background(), "user", meals.User{Id: 1})
 
 	req := httptest.NewRequestWithContext(ctx, http.MethodGet, "/meals/1/delete", nil)
 
@@ -493,7 +492,7 @@ func TestPostMealDeleteReturns403IfTheUserDoesNotOwnTheMeal(t *testing.T) {
 
 	handler := web.PostDeleteMealHandler(newTestLogger(), &repository)
 
-	ctx := context.WithValue(context.Background(), "user", account.User{Id: 1})
+	ctx := context.WithValue(context.Background(), "user", meals.User{Id: 1})
 
 	req := httptest.NewRequestWithContext(ctx, http.MethodGet, "/meals/1/delete", nil)
 
@@ -523,7 +522,7 @@ func TestPostMealDeleteDeletesMeal(t *testing.T) {
 
 	handler := web.PostDeleteMealHandler(newTestLogger(), &repository)
 
-	ctx := context.WithValue(context.Background(), "user", account.User{Id: 1})
+	ctx := context.WithValue(context.Background(), "user", meals.User{Id: 1})
 
 	req := httptest.NewRequestWithContext(ctx, http.MethodGet, "/meals/1/delete", nil)
 

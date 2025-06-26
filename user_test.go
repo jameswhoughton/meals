@@ -1,4 +1,4 @@
-package account_test
+package meals_test
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jameswhoughton/meals/internal/account"
+	"github.com/jameswhoughton/meals"
 	"github.com/jameswhoughton/meals/memory"
 )
 
@@ -16,7 +16,7 @@ func TestCreateUserFailsIfFormIsInvalid(t *testing.T) {
 
 	type testCase struct {
 		description    string
-		form           account.UserFormCreate
+		form           meals.UserFormCreate
 		expectedErrors []string
 	}
 
@@ -25,7 +25,7 @@ func TestCreateUserFailsIfFormIsInvalid(t *testing.T) {
 	cases := []testCase{
 		{
 			description: "Mismatched password",
-			form: account.UserFormCreate{
+			form: meals.UserFormCreate{
 				Name:            "John Smith",
 				Password:        "password",
 				PasswordConfirm: "pssword",
@@ -35,7 +35,7 @@ func TestCreateUserFailsIfFormIsInvalid(t *testing.T) {
 		},
 		{
 			description: "Fields missing",
-			form: account.UserFormCreate{
+			form: meals.UserFormCreate{
 				Name:            "",
 				Password:        "",
 				PasswordConfirm: "",
@@ -45,7 +45,7 @@ func TestCreateUserFailsIfFormIsInvalid(t *testing.T) {
 		},
 		{
 			description: "Fields too long",
-			form: account.UserFormCreate{
+			form: meals.UserFormCreate{
 				Name:            strings.Repeat("A", 256),
 				Password:        strings.Repeat("A", 256),
 				PasswordConfirm: strings.Repeat("A", 256),
@@ -55,7 +55,7 @@ func TestCreateUserFailsIfFormIsInvalid(t *testing.T) {
 		},
 		{
 			description: "Email in use",
-			form: account.UserFormCreate{
+			form: meals.UserFormCreate{
 				Name:            "Paul",
 				Password:        "aaabbbcccd",
 				PasswordConfirm: "aaabbbcccd",
@@ -67,13 +67,13 @@ func TestCreateUserFailsIfFormIsInvalid(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.description, func(t *testing.T) {
-			userRepo := memory.AccountRepository{}
+			userRepo := memory.UserRepository{}
 
-			userRepo.Create(ctx, account.User{
+			userRepo.Create(ctx, meals.User{
 				Id:    1,
 				Email: "paul@example.com",
 			})
-			service := account.NewService(&userRepo)
+			service := meals.NewUserService(&userRepo)
 
 			_, err := service.CreateUser(ctx, &testCase.form)
 
@@ -81,7 +81,7 @@ func TestCreateUserFailsIfFormIsInvalid(t *testing.T) {
 				t.Error("Expected error, got none")
 			}
 
-			if !errors.Is(err, account.ErrUserFormInvalid) {
+			if !errors.Is(err, meals.ErrUserFormInvalid) {
 				t.Errorf("Expected validation error, got: %v", err)
 			}
 
@@ -98,7 +98,7 @@ func TestUpdateUserFailsIfFormIsInvalid(t *testing.T) {
 
 	type testCase struct {
 		description    string
-		form           account.UserFormUpdate
+		form           meals.UserFormUpdate
 		expectedErrors []string
 	}
 
@@ -109,7 +109,7 @@ func TestUpdateUserFailsIfFormIsInvalid(t *testing.T) {
 	cases := []testCase{
 		{
 			description: "Mismatched password",
-			form: account.UserFormUpdate{
+			form: meals.UserFormUpdate{
 				Id:              1,
 				Name:            "John Smith",
 				Password:        strPtr("password"),
@@ -120,7 +120,7 @@ func TestUpdateUserFailsIfFormIsInvalid(t *testing.T) {
 		},
 		{
 			description: "Fields too long",
-			form: account.UserFormUpdate{
+			form: meals.UserFormUpdate{
 				Id:              1,
 				Name:            strings.Repeat("A", 256),
 				Password:        strPtr(strings.Repeat("A", 256)),
@@ -131,7 +131,7 @@ func TestUpdateUserFailsIfFormIsInvalid(t *testing.T) {
 		},
 		{
 			description: "Email in use",
-			form: account.UserFormUpdate{
+			form: meals.UserFormUpdate{
 				Id:    1,
 				Email: "paul@example.com",
 			},
@@ -139,7 +139,7 @@ func TestUpdateUserFailsIfFormIsInvalid(t *testing.T) {
 		},
 		{
 			description: "Meal start day invalid",
-			form: account.UserFormUpdate{
+			form: meals.UserFormUpdate{
 				Id:              1,
 				Name:            "Paul",
 				Password:        strPtr("aaabbbcccd"),
@@ -153,15 +153,15 @@ func TestUpdateUserFailsIfFormIsInvalid(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.description, func(t *testing.T) {
-			userRepo := memory.AccountRepository{}
+			userRepo := memory.UserRepository{}
 
-			userRepo.Create(ctx, account.User{Id: 1})
-			userRepo.Create(ctx, account.User{
+			userRepo.Create(ctx, meals.User{Id: 1})
+			userRepo.Create(ctx, meals.User{
 				Id:    2,
 				Email: "paul@example.com",
 			})
 
-			service := account.NewService(&userRepo)
+			service := meals.NewUserService(&userRepo)
 
 			err := service.UpdateUser(ctx, &testCase.form)
 
@@ -169,7 +169,7 @@ func TestUpdateUserFailsIfFormIsInvalid(t *testing.T) {
 				t.Error("Expected error, got none")
 			}
 
-			if !errors.Is(err, account.ErrUserFormInvalid) {
+			if !errors.Is(err, meals.ErrUserFormInvalid) {
 				t.Errorf("Expected validation error, got: %v", err)
 			}
 
@@ -184,11 +184,11 @@ func TestUpdateUserFailsIfFormIsInvalid(t *testing.T) {
 
 // test can create, get and update a user
 func TestCanCreateGetAndUpdateAUser(t *testing.T) {
-	service := account.NewService(&memory.AccountRepository{})
+	service := meals.NewUserService(&memory.UserRepository{})
 
 	ctx := context.Background()
 
-	form := account.UserFormCreate{
+	form := meals.UserFormCreate{
 		Name:            "John Smith",
 		Email:           "john.smith@example.com",
 		Password:        "password123",
@@ -231,7 +231,7 @@ func TestCanCreateGetAndUpdateAUser(t *testing.T) {
 		t.Errorf("Password not hashed %s - %s", form.Password, user.Password)
 	}
 
-	updateForm := account.UserFormUpdate{
+	updateForm := meals.UserFormUpdate{
 		Id:              user.Id,
 		Name:            "Steve Smith",
 		Email:           "steve.smith@example.com",
@@ -271,7 +271,7 @@ func TestCanCreateGetAndUpdateAUser(t *testing.T) {
 
 // test returns expected error if a user does not exist
 func TestReturnExpectedErrorIfUserDoesNotExist(t *testing.T) {
-	service := account.NewService(&memory.AccountRepository{})
+	service := meals.NewUserService(&memory.UserRepository{})
 
 	ctx := context.Background()
 
@@ -281,7 +281,7 @@ func TestReturnExpectedErrorIfUserDoesNotExist(t *testing.T) {
 		t.Error("Expected error, got nil")
 	}
 
-	if !errors.Is(err, account.ErrUserNotFound) {
+	if !errors.Is(err, meals.ErrUserNotFound) {
 		t.Errorf("Expected ErrorUserNotFound, got %v", err)
 	}
 }

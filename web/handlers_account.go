@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/jameswhoughton/meals/internal/account"
+	"github.com/jameswhoughton/meals"
 )
 
 type middleware func(http.Handler) http.Handler
@@ -43,7 +43,7 @@ func GetRegistrationHandler(logger *slog.Logger, templateFiles fs.FS) http.Handl
 			return
 		}
 
-		formData := account.UserFormCreate{}
+		formData := meals.UserFormCreate{}
 
 		if formJson != "" {
 			json.Unmarshal([]byte(formJson), &formData)
@@ -51,7 +51,7 @@ func GetRegistrationHandler(logger *slog.Logger, templateFiles fs.FS) http.Handl
 
 		type templateData struct {
 			Title string
-			Form  account.UserFormCreate
+			Form  meals.UserFormCreate
 		}
 
 		tmpl.ExecuteTemplate(w, "layout", templateData{
@@ -61,11 +61,11 @@ func GetRegistrationHandler(logger *slog.Logger, templateFiles fs.FS) http.Handl
 	})
 }
 
-func PostRegistrationHandler(logger *slog.Logger, service account.Service) http.Handler {
+func PostRegistrationHandler(logger *slog.Logger, service meals.UserService) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 
-		form := account.UserFormCreate{
+		form := meals.UserFormCreate{
 			Email:           r.FormValue("email"),
 			Password:        r.FormValue("password"),
 			PasswordConfirm: r.FormValue("passwordConfirm"),
@@ -74,7 +74,7 @@ func PostRegistrationHandler(logger *slog.Logger, service account.Service) http.
 
 		user, err := service.CreateUser(r.Context(), &form)
 
-		if err != nil && errors.Is(err, account.ErrUserFormInvalid) {
+		if err != nil && errors.Is(err, meals.ErrUserFormInvalid) {
 			formJson, _ := json.Marshal(form)
 			setMessage(w, "formData", string(formJson))
 
@@ -110,7 +110,7 @@ func PostRegistrationHandler(logger *slog.Logger, service account.Service) http.
 
 func GetAccountHandler(logger *slog.Logger, templateFiles fs.FS, service SessionService) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tmpl, err := template.ParseFS(templateFiles, "templates/layout.gohtml", "templates/navigation.gohtml", "templates/pages/auth/account.gohtml")
+		tmpl, err := template.ParseFS(templateFiles, "templates/layout.gohtml", "templates/navigation.gohtml", "templates/pages/auth/meals.gohtml")
 
 		if err != nil {
 			w.Write([]byte("Template error: " + err.Error()))
@@ -135,7 +135,7 @@ func GetAccountHandler(logger *slog.Logger, templateFiles fs.FS, service Session
 		type templateData struct {
 			Title   string
 			Success string
-			Form    account.UserFormUpdate
+			Form    meals.UserFormUpdate
 		}
 
 		success, err := getMessage(w, r, "success")
@@ -168,7 +168,7 @@ func GetAccountHandler(logger *slog.Logger, templateFiles fs.FS, service Session
 			return
 		}
 
-		formData := account.UserFormUpdate{
+		formData := meals.UserFormUpdate{
 			Name:         user.Name,
 			Email:        user.Email,
 			MealStartDay: user.MealStartDay,
@@ -198,7 +198,7 @@ func GetAccountHandler(logger *slog.Logger, templateFiles fs.FS, service Session
 	})
 }
 
-func PutAccountHandler(logger *slog.Logger, accountService account.Service, sessionService SessionService) http.Handler {
+func PutAccountHandler(logger *slog.Logger, accountService meals.UserService, sessionService SessionService) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user := UserFromContext(r.Context())
 
@@ -227,7 +227,7 @@ func PutAccountHandler(logger *slog.Logger, accountService account.Service, sess
 			return
 		}
 
-		form := account.UserFormUpdate{
+		form := meals.UserFormUpdate{
 			Id:           user.Id,
 			Email:        r.FormValue("email"),
 			Name:         r.FormValue("name"),
@@ -241,7 +241,7 @@ func PutAccountHandler(logger *slog.Logger, accountService account.Service, sess
 
 		err = accountService.UpdateUser(r.Context(), &form)
 
-		if err != nil && errors.Is(err, account.ErrUserFormInvalid) {
+		if err != nil && errors.Is(err, meals.ErrUserFormInvalid) {
 			formJson, _ := json.Marshal(form)
 			setMessage(w, "formData", string(formJson))
 
@@ -338,13 +338,13 @@ func GetLoginHandler(logger *slog.Logger, templateFiles fs.FS) http.Handler {
 	})
 }
 
-func PostLoginHandler(logger *slog.Logger, accountService account.Service, sessionService SessionService) http.Handler {
+func PostLoginHandler(logger *slog.Logger, UserService meals.UserService, sessionService SessionService) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 
 		email, password := r.FormValue("email"), r.FormValue("password")
 
-		user, err := accountService.GetUserFromCredentials(r.Context(), email, password)
+		user, err := UserService.GetUserFromCredentials(r.Context(), email, password)
 
 		if err != nil {
 			setMessage(w, "error", "credentials are invalid")
@@ -383,7 +383,7 @@ func PostLoginHandler(logger *slog.Logger, accountService account.Service, sessi
 	})
 }
 
-func GetLogoutHandler(logger *slog.Logger, service account.Service, session SessionRepository) http.Handler {
+func GetLogoutHandler(logger *slog.Logger, service meals.UserService, session SessionRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		currentSesion, err := r.Cookie("session")
 
