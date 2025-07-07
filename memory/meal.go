@@ -2,6 +2,7 @@ package memory
 
 import (
 	"context"
+	"maps"
 	"slices"
 	"strings"
 
@@ -158,7 +159,11 @@ func (mr *MealRepository) Destroy(ctx context.Context, id int) error {
 	return nil
 }
 
-func (mr *MealRepository) FindIngredientNames(ctx context.Context, searchString string) ([]string, error) {
+type MealMetaDataRepository struct {
+	Store []meals.Meal
+}
+
+func (mr *MealMetaDataRepository) FindIngredientNames(ctx context.Context, searchString string) ([]string, error) {
 	names := make([]string, 0)
 
 	for _, meal := range mr.Store {
@@ -174,7 +179,7 @@ func (mr *MealRepository) FindIngredientNames(ctx context.Context, searchString 
 	return names, nil
 }
 
-func (mr *MealRepository) FindTagNames(ctx context.Context, searchString string) ([]string, error) {
+func (mr *MealMetaDataRepository) FindTagNames(ctx context.Context, searchString string) ([]string, error) {
 	names := make([]string, 0)
 
 	for _, meal := range mr.Store {
@@ -190,7 +195,7 @@ func (mr *MealRepository) FindTagNames(ctx context.Context, searchString string)
 	return names, nil
 }
 
-func (mr *MealRepository) FindUnitNames(ctx context.Context, searchString string) ([]string, error) {
+func (mr *MealMetaDataRepository) FindUnitNames(ctx context.Context, searchString string) ([]string, error) {
 	names := make([]string, 0)
 
 	for _, meal := range mr.Store {
@@ -206,7 +211,7 @@ func (mr *MealRepository) FindUnitNames(ctx context.Context, searchString string
 	return names, nil
 }
 
-func (mr *MealRepository) TagNamesForUser(ctx context.Context, userId int) ([]string, error) {
+func (mr *MealMetaDataRepository) TagNamesForUser(ctx context.Context, userId int) ([]string, error) {
 	tags := make([]string, 0)
 
 	for _, meal := range mr.Store {
@@ -224,4 +229,61 @@ func (mr *MealRepository) TagNamesForUser(ctx context.Context, userId int) ([]st
 	}
 
 	return tags, nil
+}
+
+func (mr *MealMetaDataRepository) findMeal(id int) (meals.Meal, error) {
+	var meal meals.Meal
+
+	for _, m := range mr.Store {
+		if m.Id == id {
+			meal = m
+			break
+		}
+	}
+
+	if meal.Id == 0 {
+		return meal, meals.ErrMealNotFound
+	}
+
+	return meal, nil
+}
+
+func (mr *MealMetaDataRepository) GetTotalIngredients(ct context.Context, mealIds []int) ([]meals.IngredientTotal, error) {
+	totals := make(map[string]meals.IngredientTotal)
+
+	for _, mealId := range mealIds {
+		if mealId == 0 {
+			continue
+		}
+
+		meal, err := mr.findMeal(mealId)
+
+		if err != nil {
+			return nil, err
+		}
+
+		ingredients := meal.Ingredients
+
+		for _, ingredient := range ingredients {
+			totalsKey := ingredient.Name + "|" + ingredient.Unit
+
+			total, ok := totals[totalsKey]
+
+			if !ok {
+				totals[totalsKey] = meals.IngredientTotal{
+					Name:     ingredient.Name,
+					Quantity: ingredient.Quantity,
+					Unit:     ingredient.Unit,
+				}
+
+				continue
+			}
+
+			total.Quantity += ingredient.Quantity
+
+			totals[totalsKey] = total
+		}
+	}
+
+	return slices.Collect(maps.Values(totals)), nil
 }

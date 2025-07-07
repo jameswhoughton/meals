@@ -110,7 +110,7 @@ func PostRegistrationHandler(logger *slog.Logger, service meals.UserService) htt
 
 func GetAccountHandler(logger *slog.Logger, templateFiles fs.FS, service SessionService) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tmpl, err := template.ParseFS(templateFiles, "templates/layout.gohtml", "templates/navigation.gohtml", "templates/pages/auth/meals.gohtml")
+		tmpl, err := template.ParseFS(templateFiles, "templates/layout.gohtml", "templates/navigation.gohtml", "templates/pages/auth/account.gohtml")
 
 		if err != nil {
 			w.Write([]byte("Template error: " + err.Error()))

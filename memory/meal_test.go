@@ -8,7 +8,7 @@ import (
 	"github.com/jameswhoughton/meals/memory"
 )
 
-func TestMemoryRepository(t *testing.T) {
+func TestMemoryMealRepository(t *testing.T) {
 	init := func() (meals.MealRepository, func(id int), func()) {
 		return &memory.MealRepository{
 			Store: []meals.Meal{},
@@ -16,6 +16,23 @@ func TestMemoryRepository(t *testing.T) {
 	}
 
 	contract := contracts.MealRepository{
+		Repo: init,
+	}
+
+	contract.Test(t)
+
+}
+
+func TestMemoryMealMetaDataRepository(t *testing.T) {
+	init := func(meals []meals.Meal) (meals.MealMetaDataRepository, func()) {
+		repo := &memory.MealMetaDataRepository{
+			Store: meals,
+		}
+
+		return repo, func() {}
+	}
+
+	contract := contracts.MealMetaDataRepository{
 		Repo: init,
 	}
 

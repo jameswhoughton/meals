@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -290,47 +291,51 @@ func (i MealRepository) Test(t *testing.T) {
 			})
 		}
 	})
+}
 
+type MealMetaDataRepository struct {
+	Repo func([]meals.Meal) (meals.MealMetaDataRepository, func())
+}
+
+func (i MealMetaDataRepository) Test(t *testing.T) {
 	t.Run("Can filter a list of distinct ingredient names", func(t *testing.T) {
-		repo, seedUser, closeDown := i.Repo()
+		testData := []meals.Meal{
+			{
+				UserId: 1,
+				Ingredients: []meals.Ingredient{
+					{
+						Id:   2,
+						Name: "Onion",
+					},
+					{
+						Id:   1,
+						Name: "Spring Onion",
+					},
+				},
+			},
+			{
+				UserId: 2,
+				Ingredients: []meals.Ingredient{
+					{
+						Id:   9,
+						Name: "Red Onion",
+					},
+					{
+						Id:   5,
+						Name: "Onion",
+					},
+					{
+						Id:   7,
+						Name: "Cheese",
+					},
+				},
+			},
+		}
+
+		repo, closeDown := i.Repo(testData)
 		defer closeDown()
 
 		ctx := context.Background()
-
-		seedUser(1)
-		seedUser(2)
-
-		repo.Create(ctx, meals.Meal{
-			UserId: 1,
-			Ingredients: []meals.Ingredient{
-				{
-					Id:   2,
-					Name: "Onion",
-				},
-				{
-					Id:   1,
-					Name: "Spring Onion",
-				},
-			},
-		})
-
-		repo.Create(ctx, meals.Meal{
-			UserId: 2,
-			Ingredients: []meals.Ingredient{
-				{
-					Id:   9,
-					Name: "Red Onion",
-				},
-				{
-					Id:   5,
-					Name: "Onion",
-				},
-				{
-					Id:   7,
-					Name: "Cheese",
-				},
-			},
-		})
 
 		searchString := "Onio"
 		ingredients, err := repo.FindIngredientNames(ctx, searchString)
@@ -353,45 +358,42 @@ func (i MealRepository) Test(t *testing.T) {
 
 	})
 	t.Run("Can filter a list of distinct unit names", func(t *testing.T) {
-		repo, seedUser, closeDown := i.Repo()
+		testData := []meals.Meal{
+			{
+				UserId: 1,
+				Ingredients: []meals.Ingredient{
+					{
+						Id:   2,
+						Name: "tomatoes",
+						Unit: "cans",
+					},
+					{
+						Id:   1,
+						Name: "Spring Onion",
+						Unit: "Bunches",
+					},
+					{
+						Id:   100,
+						Name: "Diced Chicken",
+						Unit: "KG",
+					},
+				},
+			},
+			{
+				UserId: 2,
+				Ingredients: []meals.Ingredient{
+					{
+						Id:   7,
+						Name: "Cheese",
+						Unit: "Grams",
+					},
+				},
+			},
+		}
+		repo, closeDown := i.Repo(testData)
 		defer closeDown()
 
 		ctx := context.Background()
-
-		seedUser(1)
-		seedUser(2)
-
-		repo.Create(ctx, meals.Meal{
-			UserId: 1,
-			Ingredients: []meals.Ingredient{
-				{
-					Id:   2,
-					Name: "tomatoes",
-					Unit: "cans",
-				},
-				{
-					Id:   1,
-					Name: "Spring Onion",
-					Unit: "Bunches",
-				},
-				{
-					Id:   100,
-					Name: "Diced Chicken",
-					Unit: "KG",
-				},
-			},
-		})
-
-		repo.Create(ctx, meals.Meal{
-			UserId: 2,
-			Ingredients: []meals.Ingredient{
-				{
-					Id:   7,
-					Name: "Cheese",
-					Unit: "Grams",
-				},
-			},
-		})
 
 		searchString := "S"
 		units, err := repo.FindUnitNames(ctx, searchString)
@@ -414,45 +416,42 @@ func (i MealRepository) Test(t *testing.T) {
 
 	})
 	t.Run("Can filter a list of distinct tag names", func(t *testing.T) {
-		repo, seedUser, closeDown := i.Repo()
+		testData := []meals.Meal{
+			{
+				UserId: 1,
+				Tags: []meals.Tag{
+					{
+						Id:   2,
+						Name: "AAA",
+					},
+					{
+						Id:   1,
+						Name: "baa",
+					},
+				},
+			},
+			{
+				UserId: 2,
+				Tags: []meals.Tag{
+					{
+						Id:   9,
+						Name: "caa",
+					},
+					{
+						Id:   5,
+						Name: "Quick",
+					},
+					{
+						Id:   7,
+						Name: "Family",
+					},
+				},
+			},
+		}
+		repo, closeDown := i.Repo(testData)
 		defer closeDown()
 
 		ctx := context.Background()
-
-		seedUser(1)
-		seedUser(2)
-
-		repo.Create(ctx, meals.Meal{
-			UserId: 1,
-			Tags: []meals.Tag{
-				{
-					Id:   2,
-					Name: "AAA",
-				},
-				{
-					Id:   1,
-					Name: "baa",
-				},
-			},
-		})
-
-		repo.Create(ctx, meals.Meal{
-			UserId: 2,
-			Tags: []meals.Tag{
-				{
-					Id:   9,
-					Name: "caa",
-				},
-				{
-					Id:   5,
-					Name: "Quick",
-				},
-				{
-					Id:   7,
-					Name: "Family",
-				},
-			},
-		})
 
 		searchString := "aa"
 		tags, err := repo.FindTagNames(ctx, searchString)
@@ -475,40 +474,38 @@ func (i MealRepository) Test(t *testing.T) {
 
 	})
 	t.Run("Can list distinct tag names for a user", func(t *testing.T) {
-		repo, seedUser, closeDown := i.Repo()
+		testData := []meals.Meal{
+			{
+				UserId: 1,
+				Tags: []meals.Tag{
+					{
+						Id:   2,
+						Name: "Quick",
+					},
+					{
+						Id:   1,
+						Name: "Family",
+					},
+				},
+			},
+			{
+				UserId: 1,
+				Tags: []meals.Tag{
+					{
+						Id:   5,
+						Name: "Quick",
+					},
+					{
+						Id:   7,
+						Name: "Family",
+					},
+				},
+			},
+		}
+		repo, closeDown := i.Repo(testData)
 		defer closeDown()
 
 		ctx := context.Background()
-
-		seedUser(1)
-
-		repo.Create(ctx, meals.Meal{
-			UserId: 1,
-			Tags: []meals.Tag{
-				{
-					Id:   2,
-					Name: "Quick",
-				},
-				{
-					Id:   1,
-					Name: "Family",
-				},
-			},
-		})
-
-		repo.Create(ctx, meals.Meal{
-			UserId: 1,
-			Tags: []meals.Tag{
-				{
-					Id:   5,
-					Name: "Quick",
-				},
-				{
-					Id:   7,
-					Name: "Family",
-				},
-			},
-		})
 
 		tags, err := repo.TagNamesForUser(ctx, 1)
 
@@ -528,5 +525,152 @@ func (i MealRepository) Test(t *testing.T) {
 			}
 		}
 
+	})
+
+	t.Run("GetTotalIngredients counts meals multiple times if they are included more than once", func(t *testing.T) {
+		testData := []meals.Meal{
+			{
+				Id:     1,
+				UserId: 1,
+				Ingredients: []meals.Ingredient{
+					{
+						Name:     "Salmon",
+						Quantity: 400,
+						Unit:     "g",
+					},
+				},
+			},
+		}
+
+		repo, closeDown := i.Repo(testData)
+		defer closeDown()
+
+		ingredients, err := repo.GetTotalIngredients(context.Background(), []int{1, 1})
+
+		if err != nil {
+			t.Errorf("Unexpected error fetching ingredients: %v", err)
+		}
+
+		expectedIngredients := []meals.IngredientTotal{
+			{
+				Name:     "Salmon",
+				Quantity: 800,
+				Unit:     "g",
+			},
+		}
+
+		if len(ingredients) != len(expectedIngredients) {
+			t.Errorf("The number of ingredients (%d) doesn't match the expected: %d", len(ingredients), len(expectedIngredients))
+		}
+
+		sort := func(a, b meals.IngredientTotal) int {
+			return strings.Compare(a.Name, b.Name)
+		}
+
+		slices.SortFunc(ingredients, sort)
+		slices.SortFunc(expectedIngredients, sort)
+
+		for i, ingredient := range ingredients {
+			if ingredient != expectedIngredients[i] {
+				t.Errorf("Ingredients do not match, expected: %+v, got %+v", expectedIngredients[i], ingredient)
+			}
+		}
+	})
+
+	t.Run("Can fetch list of ingredient totals for list of meals", func(t *testing.T) {
+		testData := []meals.Meal{
+			{
+				Id:     1,
+				UserId: 1,
+				Name:   "Salmon stir-fry",
+				Ingredients: []meals.Ingredient{
+					{
+						Name:     "Salmon",
+						Quantity: 400,
+						Unit:     "g",
+					},
+					{
+						Name:     "Bell Pepper",
+						Quantity: 2,
+					},
+					{
+						Name:     "Onion",
+						Quantity: 1,
+					},
+				},
+			},
+			{
+				Id:     3,
+				UserId: 1,
+				Name:   "Salmon curry",
+				Ingredients: []meals.Ingredient{
+					{
+						Name:     "Salmon",
+						Quantity: 400,
+						Unit:     "g",
+					},
+					{
+						Name:     "Bell Pepper",
+						Quantity: 1,
+					},
+					{
+						Name:     "Onion",
+						Quantity: 1,
+					},
+					{
+						Name:     "Ginger",
+						Quantity: 3,
+						Unit:     "cm",
+					},
+				},
+			},
+		}
+
+		repo, closeDown := i.Repo(testData)
+		defer closeDown()
+
+		ingredients, err := repo.GetTotalIngredients(context.Background(), []int{1, 3})
+
+		if err != nil {
+			t.Errorf("Unexpected error fetching ingredients: %v", err)
+		}
+
+		expectedIngredients := []meals.IngredientTotal{
+			{
+				Name:     "Salmon",
+				Quantity: 800,
+				Unit:     "g",
+			},
+			{
+				Name:     "Bell Pepper",
+				Quantity: 3,
+			},
+			{
+				Name:     "Onion",
+				Quantity: 2,
+			},
+			{
+				Name:     "Ginger",
+				Quantity: 3,
+				Unit:     "cm",
+			},
+		}
+
+		if len(ingredients) != len(expectedIngredients) {
+			t.Errorf("The number of ingredients (%d) doesn't match the expected: %d", len(ingredients), len(expectedIngredients))
+		}
+
+		sort := func(a, b meals.IngredientTotal) int {
+			return strings.Compare(a.Name, b.Name)
+		}
+
+		slices.SortFunc(ingredients, sort)
+		slices.SortFunc(expectedIngredients, sort)
+
+		for i, ingredient := range ingredients {
+			if ingredient != expectedIngredients[i] {
+				t.Errorf("Ingredients do not match, expected: %+v, got %+v", expectedIngredients[i], ingredient)
+			}
+		}
 	})
 }

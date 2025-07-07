@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/jameswhoughton/meals"
-	"github.com/jameswhoughton/meals/internal/planner"
 )
 
 func calculateStartDate(date time.Time, startDay int) time.Time {
@@ -30,7 +29,7 @@ func calculateStartDate(date time.Time, startDay int) time.Time {
 	return time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
 }
 
-func GetPlannerHandler(logger *slog.Logger, templateFiles fs.FS, plannerService planner.Service, accountRepo meals.UserRepository) http.Handler {
+func GetPlannerHandler(logger *slog.Logger, templateFiles fs.FS, plannerService meals.PlannerService, accountRepo meals.UserRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
 			templateFiles,
@@ -94,7 +93,7 @@ func GetPlannerHandler(logger *slog.Logger, templateFiles fs.FS, plannerService 
 
 		type templateData struct {
 			Title      string
-			Days       []planner.Day
+			Days       []meals.Day
 			Previous   string
 			Next       string
 			ChosenDate string
@@ -110,7 +109,7 @@ func GetPlannerHandler(logger *slog.Logger, templateFiles fs.FS, plannerService 
 	})
 }
 
-func GetEditDayHandler(logger *slog.Logger, templateFiles fs.FS, plannerRepo planner.Repository, mealRepo meals.MealRepository) http.Handler {
+func GetEditDayHandler(logger *slog.Logger, templateFiles fs.FS, plannerRepo meals.PlannerRepository, mealRepo meals.MealRepository, mealMetaDataRepo meals.MealMetaDataRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		contains := func(tags []string, name string) bool {
 			return slices.Contains(tags, name)
@@ -151,7 +150,13 @@ func GetEditDayHandler(logger *slog.Logger, templateFiles fs.FS, plannerRepo pla
 
 		parsedDate, err := time.Parse("2006-01-02", r.PathValue("date"))
 
-		meal, _ := plannerRepo.Get(r.Context(), parsedDate, user.Id)
+		plannedMeals, _ := plannerRepo.GetMealIdsInRange(r.Context(), parsedDate, parsedDate, user.Id)
+
+		var meal meals.Meal
+
+		if plannedMeals[int(parsedDate.Weekday())] > 0 {
+			meal, _ = mealRepo.Get(r.Context(), meal.Id)
+		}
 
 		// Parse any filter params
 		r.ParseForm()
@@ -169,12 +174,12 @@ func GetEditDayHandler(logger *slog.Logger, templateFiles fs.FS, plannerRepo pla
 
 		filteredMeals, err := mealRepo.Find(r.Context(), filter)
 
-		tags, err := mealRepo.TagNamesForUser(r.Context(), user.Id)
+		tags, err := mealMetaDataRepo.TagNamesForUser(r.Context(), user.Id)
 
 		type templateData struct {
 			Title        string
 			Date         string
-			Meal         planner.Meal
+			Meal         meals.Meal
 			Meals        []meals.Meal
 			Tags         []string
 			FilterSearch string
@@ -193,7 +198,7 @@ func GetEditDayHandler(logger *slog.Logger, templateFiles fs.FS, plannerRepo pla
 	})
 }
 
-func PostEditDayHandler(logger *slog.Logger, plannerRepo planner.Repository, mealRepo meals.MealRepository) http.Handler {
+func PostEditDayHandler(logger *slog.Logger, plannerRepo meals.PlannerRepository, mealRepo meals.MealRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user := UserFromContext(r.Context())
 
@@ -265,7 +270,7 @@ func PostEditDayHandler(logger *slog.Logger, plannerRepo planner.Repository, mea
 	})
 }
 
-func GetPlannedIngredientsHandler(logger *slog.Logger, plannerSerivce planner.Service) http.Handler {
+func GetPlannedIngredientsHandler(logger *slog.Logger, plannerSerivce meals.PlannerService) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(
 			templateFiles,
@@ -325,7 +330,7 @@ func GetPlannedIngredientsHandler(logger *slog.Logger, plannerSerivce planner.Se
 
 		type templateData struct {
 			Title       string
-			Ingredients []planner.Ingredient
+			Ingredients []meals.IngredientTotal
 		}
 
 		tmpl.ExecuteTemplate(w, "layout", templateData{

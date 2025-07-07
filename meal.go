@@ -103,7 +103,9 @@ type MealRepository interface {
 
 	// Deletes a meal
 	Destroy(ctx context.Context, id int) error
+}
 
+type MealMetaDataRepository interface {
 	// Find ingredient names that partially match the searchString
 	//
 	// All ingredients are searched (regardless of owner).
@@ -125,6 +127,12 @@ type MealRepository interface {
 
 	// Returns all the tag names used by the given userId
 	TagNamesForUser(ctx context.Context, userId int) ([]string, error)
+
+	// Get the combined ingredients for all meals in the given slice
+	// of meal Ids.
+	//
+	// Ingredients are grouped by name and unit.
+	GetTotalIngredients(ctx context.Context, mealIds []int) ([]IngredientTotal, error)
 }
 
 type MealService struct {

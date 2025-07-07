@@ -1,18 +1,20 @@
-package planner_test
+package meals_test
 
 import (
 	"context"
 	"testing"
 	"time"
 
-	"github.com/jameswhoughton/meals/internal/planner"
+	"github.com/jameswhoughton/meals"
 	"github.com/jameswhoughton/meals/memory"
 )
 
 func TestGetIngredientsValidation(t *testing.T) {
-	repo := memory.NewPlannerRepository()
+	plannerRepo := memory.NewPlannerRepository()
+	mealRepo := memory.MealRepository{}
+	mealMetaDataRepo := memory.MealMetaDataRepository{}
 
-	service := planner.NewService(repo)
+	service := meals.NewPlannerService(plannerRepo, &mealRepo, &mealMetaDataRepo)
 
 	type testCase struct {
 		name          string
@@ -26,13 +28,13 @@ func TestGetIngredientsValidation(t *testing.T) {
 			name:          "start date after end date",
 			startDate:     time.Date(2025, 1, 5, 0, 0, 0, 0, time.UTC),
 			endDate:       time.Date(2025, 1, 3, 0, 0, 0, 0, time.UTC),
-			expectedError: planner.ErrValidation,
+			expectedError: meals.ErrValidation,
 		},
 		{
 			name:          "start date differs from end date by more than 4 weeks",
 			startDate:     time.Date(2025, 1, 5, 0, 0, 0, 0, time.UTC),
 			endDate:       time.Date(2025, 3, 5, 0, 0, 0, 0, time.UTC),
-			expectedError: planner.ErrValidation,
+			expectedError: meals.ErrValidation,
 		},
 		{
 			name:          "valid case",

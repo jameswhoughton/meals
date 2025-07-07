@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	"github.com/jameswhoughton/meals"
-	"github.com/jameswhoughton/meals/internal/planner"
 )
 
 //go:embed templates/*.gohtml
@@ -25,11 +24,12 @@ func AddRoutes(
 	userService meals.UserService,
 	mealService meals.MealService,
 	sessionService SessionService,
-	plannerService planner.Service,
+	plannerService meals.PlannerService,
 	userRepository meals.UserRepository,
 	mealRepository meals.MealRepository,
+	mealMetaDataRepository meals.MealMetaDataRepository,
 	sessionRepository SessionRepository,
-	plannerRepository planner.Repository,
+	plannerRepository meals.PlannerRepository,
 ) {
 	// Middleware
 	isAuthed := NewIsAuthenticatedMiddleware(userService, sessionService)
@@ -78,12 +78,12 @@ func AddRoutes(
 
 	// Planner
 	mux.Handle("GET /planner", isAuthed(GetPlannerHandler(logger, templateFiles, plannerService, userRepository)))
-	mux.Handle("GET /planner/{date}", isAuthed(GetEditDayHandler(logger, templateFiles, plannerRepository, mealRepository)))
+	mux.Handle("GET /planner/{date}", isAuthed(GetEditDayHandler(logger, templateFiles, plannerRepository, mealRepository, mealMetaDataRepository)))
 	mux.Handle("POST /planner/{date}", isAuthed(PostEditDayHandler(logger, plannerRepository, mealRepository)))
 	mux.Handle("GET /planner/{date}/ingredients", isAuthed(GetPlannedIngredientsHandler(logger, plannerService)))
 
 	// API
-	mux.Handle("GET /api/ingredients", isAuthed(GetSearchIngredientsHandler(logger, mealRepository)))
-	mux.Handle("GET /api/tags", isAuthed(GetSearchTagHandler(logger, mealRepository)))
-	mux.Handle("GET /api/units", isAuthed(GetSearchUnitHandler(logger, mealRepository)))
+	mux.Handle("GET /api/ingredients", isAuthed(GetSearchIngredientsHandler(logger, mealMetaDataRepository)))
+	mux.Handle("GET /api/tags", isAuthed(GetSearchTagHandler(logger, mealMetaDataRepository)))
+	mux.Handle("GET /api/units", isAuthed(GetSearchUnitHandler(logger, mealMetaDataRepository)))
 }

@@ -6,13 +6,14 @@ import (
 	"testing"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/jameswhoughton/meals"
+	"github.com/jameswhoughton/meals/contracts"
 	"github.com/jameswhoughton/meals/database"
-	"github.com/jameswhoughton/meals/internal/planner"
 )
 
 func TestDatabasePlannerRepository(t *testing.T) {
-	init := func() (planner.Repository, func(meal planner.Meal, ingredients []planner.Ingredient), func()) {
-		conn, err := sql.Open("mysql", "root@tcp(127.0.0.1:8002)/meals")
+	init := func(testData []meals.Meal) (meals.PlannerRepository, func()) {
+		conn, err := sql.Open("mysql", "root@tcp(127.0.0.1:8002)/meals?parseTime=true")
 
 		if err != nil {
 			log.Fatal(err)
@@ -24,6 +25,10 @@ func TestDatabasePlannerRepository(t *testing.T) {
 			log.Fatal(err)
 		}
 
+		for _, meal := range testData {
+			seedMeal(conn, meal)
+		}
+
 		closeDown := func() {
 			err := database.Rollback(conn)
 
@@ -31,10 +36,10 @@ func TestDatabasePlannerRepository(t *testing.T) {
 				log.Fatal(err)
 			}
 		}
-		return database.NewPlannerRepository(conn), func(meal planner.Meal, ingredients []planner.Ingredient) { seedPlannerMeal(conn, meal, ingredients) }, closeDown
+		return database.NewPlannerRepository(conn), closeDown
 	}
 
-	contract := planner.RepositoryContract{
+	contract := contracts.PlannerRepository{
 		Repo: init,
 	}
 

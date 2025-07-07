@@ -6,18 +6,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jameswhoughton/meals/internal/account"
+	"github.com/jameswhoughton/meals"
 	"github.com/jameswhoughton/meals/memory"
 	"github.com/jameswhoughton/meals/web"
 )
 
 func TestAnyExpiredSessionsAreRemovedWhenANewSessionIsCreated(t *testing.T) {
 	sessionLifetime := 3600
-	accountRepo := memory.AccountRepository{}
+	accountRepo := memory.UserRepository{}
 
 	ctx := context.Background()
 
-	accountRepo.Create(ctx, account.User{Id: 1})
+	accountRepo.Create(ctx, meals.User{Id: 1})
 
 	sessionRepo := memory.SessionRepository{}
 

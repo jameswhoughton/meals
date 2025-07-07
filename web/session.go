@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jameswhoughton/meals/internal/account"
+	"github.com/jameswhoughton/meals"
 )
 
 type Session struct {
@@ -45,17 +45,17 @@ type SessionRepository interface {
 	Refresh(ctx context.Context, sessionId string) error
 }
 
-func NewSessionService(accountRepo account.Repository, sessionRepo SessionRepository, sessionLifetime int) *SessionService {
+func NewSessionService(userRepo meals.UserRepository, sessionRepo SessionRepository, sessionLifetime int) *SessionService {
 	return &SessionService{
 		SessionRepo:     sessionRepo,
-		AccountRepo:     accountRepo,
+		UserRepo:        userRepo,
 		SessionLifetime: sessionLifetime,
 	}
 }
 
 type SessionService struct {
 	SessionRepo     SessionRepository
-	AccountRepo     account.Repository
+	UserRepo        meals.UserRepository
 	SessionLifetime int
 }
 
@@ -75,11 +75,11 @@ func (ss *SessionService) CreateForUser(ctx context.Context, userId int) (Sessio
 	return ss.SessionRepo.Create(ctx, session)
 }
 
-func (ss *SessionService) UserFromSession(ctx context.Context, sessionId string) (account.User, error) {
+func (ss *SessionService) UserFromSession(ctx context.Context, sessionId string) (meals.User, error) {
 	session, err := ss.SessionRepo.Get(ctx, sessionId)
 
 	if err != nil {
-		return account.User{}, fmt.Errorf("error fetching session: %w", err)
+		return meals.User{}, fmt.Errorf("error fetching session: %w", err)
 	}
 
 	expiredTime := time.Now().Add(-time.Duration(ss.SessionLifetime) * time.Second).UTC()
@@ -87,13 +87,13 @@ func (ss *SessionService) UserFromSession(ctx context.Context, sessionId string)
 	if session.UpdatedAt.UTC().Before(expiredTime) {
 		ss.SessionRepo.Destroy(ctx, sessionId)
 
-		return account.User{}, fmt.Errorf("Session has expired")
+		return meals.User{}, fmt.Errorf("Session has expired")
 	}
 
-	user, err := ss.AccountRepo.GetById(ctx, session.UserId)
+	user, err := ss.UserRepo.GetById(ctx, session.UserId)
 
 	if err != nil {
-		return account.User{}, fmt.Errorf("error fetching user: %w", err)
+		return meals.User{}, fmt.Errorf("error fetching user: %w", err)
 	}
 
 	ss.SessionRepo.Refresh(ctx, sessionId)

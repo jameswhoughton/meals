@@ -525,11 +525,11 @@ func PostDeleteMealHandler(logger *slog.Logger, repo meals.MealRepository) http.
 // API endpoint to search for existing ingredient names
 //
 // Returns JSON.
-func GetSearchIngredientsHandler(logger *slog.Logger, mealRepo meals.MealRepository) http.Handler {
+func GetSearchIngredientsHandler(logger *slog.Logger, metaDataRepo meals.MealMetaDataRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		queryString := r.URL.Query().Get("query")
 
-		results, err := mealRepo.FindIngredientNames(r.Context(), queryString)
+		results, err := metaDataRepo.FindIngredientNames(r.Context(), queryString)
 
 		if err != nil {
 			logger.LogAttrs(
@@ -552,11 +552,11 @@ func GetSearchIngredientsHandler(logger *slog.Logger, mealRepo meals.MealReposit
 // API handler to search for tags by name
 //
 // Returns JSON.
-func GetSearchTagHandler(logger *slog.Logger, mealRepo meals.MealRepository) http.Handler {
+func GetSearchTagHandler(logger *slog.Logger, metaDataRepo meals.MealMetaDataRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		queryString := r.URL.Query().Get("query")
 
-		results, err := mealRepo.FindTagNames(r.Context(), queryString)
+		results, err := metaDataRepo.FindTagNames(r.Context(), queryString)
 
 		if err != nil {
 			logger.LogAttrs(
@@ -579,11 +579,11 @@ func GetSearchTagHandler(logger *slog.Logger, mealRepo meals.MealRepository) htt
 // API handler to search for units by name
 //
 // Returns JSON.
-func GetSearchUnitHandler(logger *slog.Logger, mealRepo meals.MealRepository) http.Handler {
+func GetSearchUnitHandler(logger *slog.Logger, metaDataRepo meals.MealMetaDataRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		queryString := r.URL.Query().Get("query")
 
-		results, err := mealRepo.FindUnitNames(r.Context(), queryString)
+		results, err := metaDataRepo.FindUnitNames(r.Context(), queryString)
 
 		if err != nil {
 			logger.LogAttrs(

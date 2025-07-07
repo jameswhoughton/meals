@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"maps"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -461,7 +463,17 @@ func (mr *MealRepository) Destroy(ctx context.Context, id int) error {
 	return nil
 }
 
-func (mr *MealRepository) FindIngredientNames(ctx context.Context, searchString string) ([]string, error) {
+func NewMealMetaDataRepository(db *sql.DB) *MealMetaDataRepository {
+	return &MealMetaDataRepository{
+		db: db,
+	}
+}
+
+type MealMetaDataRepository struct {
+	db *sql.DB
+}
+
+func (mr *MealMetaDataRepository) FindIngredientNames(ctx context.Context, searchString string) ([]string, error) {
 	ingredients := make([]string, 0)
 
 	rows, err := mr.db.QueryContext(
@@ -470,7 +482,7 @@ func (mr *MealRepository) FindIngredientNames(ctx context.Context, searchString 
 		"%"+searchString+"%",
 	)
 	if err != nil {
-		return ingredients, fmt.Errorf("MealRepository.FindIngredientNames: query error: %v", err)
+		return ingredients, fmt.Errorf("MealMetaDataRepository.FindIngredientNames: query error: %v", err)
 	}
 
 	defer rows.Close()
@@ -479,7 +491,7 @@ func (mr *MealRepository) FindIngredientNames(ctx context.Context, searchString 
 		var name string
 
 		if err = rows.Scan(&name); err != nil {
-			return ingredients, fmt.Errorf("MealRepository.FindIngredientNames: row parse error: %v", err)
+			return ingredients, fmt.Errorf("MealMetaDataRepository.FindIngredientNames: row parse error: %v", err)
 		}
 
 		ingredients = append(ingredients, name)
@@ -488,7 +500,7 @@ func (mr *MealRepository) FindIngredientNames(ctx context.Context, searchString 
 	return ingredients, nil
 }
 
-func (mr *MealRepository) FindTagNames(ctx context.Context, searchString string) ([]string, error) {
+func (mr *MealMetaDataRepository) FindTagNames(ctx context.Context, searchString string) ([]string, error) {
 	tags := make([]string, 0)
 
 	rows, err := mr.db.QueryContext(
@@ -497,7 +509,7 @@ func (mr *MealRepository) FindTagNames(ctx context.Context, searchString string)
 		"%"+searchString+"%",
 	)
 	if err != nil {
-		return tags, fmt.Errorf("MealRepository.FindTagNames: query error: %v", err)
+		return tags, fmt.Errorf("MealMetaDataRepository.FindTagNames: query error: %v", err)
 	}
 
 	defer rows.Close()
@@ -506,7 +518,7 @@ func (mr *MealRepository) FindTagNames(ctx context.Context, searchString string)
 		var name string
 
 		if err = rows.Scan(&name); err != nil {
-			return tags, fmt.Errorf("MealRepository.FindTagNames: row parse error: %v", err)
+			return tags, fmt.Errorf("MealMetaDataRepository.FindTagNames: row parse error: %v", err)
 		}
 
 		tags = append(tags, name)
@@ -515,7 +527,7 @@ func (mr *MealRepository) FindTagNames(ctx context.Context, searchString string)
 	return tags, nil
 }
 
-func (mr *MealRepository) FindUnitNames(ctx context.Context, searchString string) ([]string, error) {
+func (mr *MealMetaDataRepository) FindUnitNames(ctx context.Context, searchString string) ([]string, error) {
 	units := make([]string, 0)
 
 	rows, err := mr.db.QueryContext(
@@ -524,7 +536,7 @@ func (mr *MealRepository) FindUnitNames(ctx context.Context, searchString string
 		"%"+searchString+"%",
 	)
 	if err != nil {
-		return units, fmt.Errorf("MealRepository.FindUnitNames: query error: %v", err)
+		return units, fmt.Errorf("MealMetaDataRepository.FindUnitNames: query error: %v", err)
 	}
 
 	defer rows.Close()
@@ -533,7 +545,7 @@ func (mr *MealRepository) FindUnitNames(ctx context.Context, searchString string
 		var name string
 
 		if err = rows.Scan(&name); err != nil {
-			return units, fmt.Errorf("MealRepository.FindUnitNames: row parse error: %v", err)
+			return units, fmt.Errorf("MealMetaDataRepository.FindUnitNames: row parse error: %v", err)
 		}
 
 		units = append(units, name)
@@ -542,7 +554,7 @@ func (mr *MealRepository) FindUnitNames(ctx context.Context, searchString string
 	return units, nil
 }
 
-func (mr *MealRepository) TagNamesForUser(ctx context.Context, userId int) ([]string, error) {
+func (mr *MealMetaDataRepository) TagNamesForUser(ctx context.Context, userId int) ([]string, error) {
 	tags := make([]string, 0)
 
 	rows, err := mr.db.QueryContext(
@@ -551,7 +563,7 @@ func (mr *MealRepository) TagNamesForUser(ctx context.Context, userId int) ([]st
 		userId,
 	)
 	if err != nil {
-		return tags, fmt.Errorf("MealRepository.TagNamesForUser: query error: %v", err)
+		return tags, fmt.Errorf("MealMetaDataRepository.TagNamesForUser: query error: %v", err)
 	}
 
 	defer rows.Close()
@@ -560,11 +572,85 @@ func (mr *MealRepository) TagNamesForUser(ctx context.Context, userId int) ([]st
 		var name string
 
 		if err = rows.Scan(&name); err != nil {
-			return tags, fmt.Errorf("MealRepository.TagNamesForUser: row parse error: %v", err)
+			return tags, fmt.Errorf("MealMetaDataRepository.TagNamesForUser: row parse error: %v", err)
 		}
 
 		tags = append(tags, name)
 	}
 
 	return tags, nil
+}
+
+func (mr *MealMetaDataRepository) GetTotalIngredients(ctx context.Context, mealIds []int) ([]meals.IngredientTotal, error) {
+	totals := make(map[string]meals.IngredientTotal)
+
+	placeholders := make([]string, len(mealIds))
+	parameters := make([]interface{}, len(mealIds))
+	// Track how many times an id appears in the mealIds slice
+	counts := make(map[int]int, len(mealIds))
+
+	for i, id := range mealIds {
+		placeholders[i] = "?"
+		parameters[i] = id
+		counts[id] += 1
+	}
+
+	// Aggregate the quantities in code because the same meal ID could be requested more than once.
+	// It would be possible to handle this in the query (using multiple UNIONS for example) but I
+	// believe this approach is clearer.
+	rows, err := mr.db.QueryContext(ctx, `
+		SELECT m.id, i.name, i.quantity, i.unit
+		FROM meal_ingredients i
+		LEFT JOIN meals m
+		ON i.meal_id = m.id
+		WHERE m.id IN (`+strings.Join(placeholders, ", ")+`)
+	`, parameters...)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return []meals.IngredientTotal{}, nil
+		}
+
+		return []meals.IngredientTotal{}, fmt.Errorf("MealMetadataRepository.GetTotalIngredients: unable to get ingredients: %v", err)
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var (
+			mealId   int
+			name     string
+			quantity int
+			unit     string
+		)
+
+		err := rows.Scan(&mealId, &name, &quantity, &unit)
+
+		if err != nil {
+			return []meals.IngredientTotal{}, fmt.Errorf("MealMetadataRepository.GetTotalIngredients: Unable to scan row: %v", err)
+		}
+
+		key := name + "|" + unit
+
+		total, ok := totals[key]
+
+		// Multiply the quantity by the number of times an ID appears in the mealIds slice.
+		quantity *= counts[mealId]
+
+		if !ok {
+			totals[key] = meals.IngredientTotal{
+				Name:     name,
+				Quantity: quantity,
+				Unit:     unit,
+			}
+
+			continue
+		}
+
+		total.Quantity += quantity
+
+		totals[key] = total
+	}
+
+	return slices.Collect(maps.Values(totals)), nil
 }
