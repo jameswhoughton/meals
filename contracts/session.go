@@ -1,17 +1,19 @@
-package web
+package contracts
 
 import (
 	"context"
 	"errors"
 	"testing"
 	"time"
+
+	"github.com/jameswhoughton/meals/web"
 )
 
-type SessionRepositoryContract struct {
-	Repo func() (SessionRepository, func(id int), func())
+type SessionRepository struct {
+	Repo func() (web.SessionRepository, func(id int), func())
 }
 
-func (rc *SessionRepositoryContract) Test(t *testing.T) {
+func (rc *SessionRepository) Test(t *testing.T) {
 	t.Run("Can create get and destroy a session", func(t *testing.T) {
 		repo, userSeeder, closeDown := rc.Repo()
 		defer closeDown()
@@ -20,7 +22,7 @@ func (rc *SessionRepositoryContract) Test(t *testing.T) {
 
 		userSeeder(1)
 
-		newSession := Session{
+		newSession := web.Session{
 			SessionId: "NEW_SESSION_01",
 			UserId:    1,
 			CreatedAt: time.Now(),
@@ -75,8 +77,8 @@ func (rc *SessionRepositoryContract) Test(t *testing.T) {
 			t.Error("Expected error when fetching destroyed session, got none")
 		}
 
-		if !errors.Is(err, ErrSessionNotFound) {
-			t.Errorf("Expected error %s, got %s", ErrSessionNotFound, err)
+		if !errors.Is(err, web.ErrSessionNotFound) {
+			t.Errorf("Expected error %s, got %s", web.ErrSessionNotFound, err)
 		}
 	})
 
@@ -90,21 +92,21 @@ func (rc *SessionRepositoryContract) Test(t *testing.T) {
 		userSeeder(2)
 		userSeeder(3)
 
-		repo.Create(ctx, Session{
+		repo.Create(ctx, web.Session{
 			UserId:    1,
 			SessionId: "AA",
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Date(2025, time.March, 5, 12, 30, 0, 0, time.UTC),
 		})
 
-		repo.Create(ctx, Session{
+		repo.Create(ctx, web.Session{
 			UserId:    2,
 			SessionId: "BB",
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Date(2025, time.March, 5, 12, 45, 0, 0, time.UTC),
 		})
 
-		repo.Create(ctx, Session{
+		repo.Create(ctx, web.Session{
 			UserId:    3,
 			SessionId: "CC",
 			CreatedAt: time.Now(),
@@ -125,8 +127,8 @@ func (rc *SessionRepositoryContract) Test(t *testing.T) {
 			t.Error("Expected error when fetching destroyed session, got none")
 		}
 
-		if !errors.Is(err, ErrSessionNotFound) {
-			t.Errorf("Expected error %s, got %s", ErrSessionNotFound, err)
+		if !errors.Is(err, web.ErrSessionNotFound) {
+			t.Errorf("Expected error %s, got %s", web.ErrSessionNotFound, err)
 		}
 
 		_, err = repo.Get(ctx, "CC")
@@ -141,14 +143,14 @@ func (rc *SessionRepositoryContract) Test(t *testing.T) {
 			t.Error("Expected error when fetching destroyed session, got none")
 		}
 
-		if !errors.Is(err, ErrSessionNotFound) {
-			t.Errorf("Expected error %s, got %s", ErrSessionNotFound, err)
+		if !errors.Is(err, web.ErrSessionNotFound) {
+			t.Errorf("Expected error %s, got %s", web.ErrSessionNotFound, err)
 		}
 	})
 }
 
 // Test that Refresh updates the UpdatedAt field
-func (rc *SessionRepositoryContract) TestRefreshChangesUpdatedAt(t *testing.T) {
+func (rc *SessionRepository) TestRefreshChangesUpdatedAt(t *testing.T) {
 	repo, userSeeder, closeDown := rc.Repo()
 	defer closeDown()
 
@@ -158,7 +160,7 @@ func (rc *SessionRepositoryContract) TestRefreshChangesUpdatedAt(t *testing.T) {
 
 	updatedAt := time.Now().Add(time.Hour * -48)
 
-	repo.Create(ctx, Session{
+	repo.Create(ctx, web.Session{
 		SessionId: "A",
 		UserId:    1,
 		UpdatedAt: updatedAt,

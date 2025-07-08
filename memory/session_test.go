@@ -3,6 +3,7 @@ package memory_test
 import (
 	"testing"
 
+	"github.com/jameswhoughton/meals/contracts"
 	"github.com/jameswhoughton/meals/memory"
 	"github.com/jameswhoughton/meals/web"
 )
@@ -12,7 +13,7 @@ func TestMemorySessionService(t *testing.T) {
 		return &memory.SessionRepository{}, func(_ int) {}, func() {}
 	}
 
-	contract := web.SessionRepositoryContract{
+	contract := contracts.SessionRepository{
 		Repo: init,
 	}
 

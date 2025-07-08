@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/jameswhoughton/meals/contracts"
 	"github.com/jameswhoughton/meals/database"
 	"github.com/jameswhoughton/meals/web"
 )
@@ -34,7 +35,7 @@ func TestDatabaseSessionService(t *testing.T) {
 		return database.NewSessionRepository(conn), func(id int) { seedUser(conn, id) }, closeDown
 	}
 
-	contract := web.SessionRepositoryContract{
+	contract := contracts.SessionRepository{
 		Repo: init,
 	}
 
