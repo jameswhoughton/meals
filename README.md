@@ -14,18 +14,6 @@ The project follows a layered architecture:
 - **Services** Contain all the the business logic.
 - **Handlers** Format data to and from the service layer.
 
-### internal/account
-
-Contains methods to create and update users.
-
-### internal/meals
-
-Contains methods to create and update meals.
-
-### internal/planner
-
-Contains the methods to assign meals to a date.
-
 ### database
 
 The database package contains implementations of the `internal/*` repositories using MySQL as a store. Also contained here are the migrations files used to build the database schema. 

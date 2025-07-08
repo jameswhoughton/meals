@@ -60,11 +60,11 @@
 - [x] Manually deploy to AWS
 - [x] Setup github actions for CI/CD
 - [x] Create service for Planner
-- [ ] Update planner contract to reflect changes to Get method
-- [ ] Update PlannerRepository implementations
-    - [ ] memory
-    - [ ] database
-- [ ] Rename files
+- [x] Update planner contract to reflect changes to Get method
+- [x] Update PlannerRepository implementations
+    - [x] memory
+    - [x] database
+- [x] Rename files
 
 ## Bugs
 
