@@ -13,11 +13,8 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/jameswhoughton/meals"
 	"github.com/jameswhoughton/meals/database"
-	"github.com/jameswhoughton/meals/internal"
-	"github.com/jameswhoughton/meals/internal/account"
-	"github.com/jameswhoughton/meals/internal/meals"
-	"github.com/jameswhoughton/meals/internal/planner"
 	"github.com/jameswhoughton/meals/web"
 	"github.com/joho/godotenv"
 )
@@ -105,33 +102,35 @@ func main() {
 		}
 	}()
 
-	logger := internal.NewApplicationLogger(logFile)
+	logger := meals.NewApplicationLogger(logFile)
 
 	// Signal context to detext an interupt (Ctrl + c) or terminate signal
 	rootCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	accountRepository := database.NewAccountRespository(conn)
+	userRepository := database.NewUserRespository(conn)
 	sessionRepsoitory := database.NewSessionRepository(conn)
 	mealRepository := database.NewMealRepository(conn)
+	mealMetaDataRepository := database.NewMealMetaDataRepository(conn)
 	plannerRepository := database.NewPlannerRepository(conn)
 
-	accountService := account.NewService(accountRepository)
-	mealService := meals.NewService(mealRepository)
-	sessionService := web.NewSessionService(accountRepository, sessionRepsoitory, 3600)
-	plannerSerivce := planner.NewService(plannerRepository)
+	userService := meals.NewUserService(userRepository)
+	mealService := meals.NewMealService(mealRepository)
+	sessionService := web.NewSessionService(userRepository, sessionRepsoitory, 3600)
+	plannerSerivce := meals.NewPlannerService(plannerRepository, mealRepository, mealMetaDataRepository)
 
 	ongoingCtx, stopOngoningGracefully := context.WithCancel(context.Background())
 	server := web.NewServer(
 		ongoingCtx,
 		config.port,
 		logger,
-		&accountService,
+		&userService,
 		&mealService,
 		sessionService,
 		plannerSerivce,
-		accountRepository,
+		userRepository,
 		mealRepository,
+		mealMetaDataRepository,
 		sessionRepsoitory,
 		plannerRepository,
 	)

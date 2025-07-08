@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/jameswhoughton/meals/internal/planner"
+	"github.com/jameswhoughton/meals"
 )
 
 func seedUser(conn *sql.DB, userId int) {
@@ -27,25 +27,39 @@ func seedUser(conn *sql.DB, userId int) {
 	}
 }
 
-func seedPlannerMeal(conn *sql.DB, meal planner.Meal, ingredients []planner.Ingredient) {
+func seedMeal(conn *sql.DB, meal meals.Meal) {
 	seedUser(conn, meal.UserId)
 
-	_, err := conn.Exec(
+	result, err := conn.Exec(
 		`INSERT INTO meals
-		(id, user_id, name)
-		VALUES (?, ?, ?)
-	`, meal.Id, meal.UserId, meal.Name)
+		(id, user_id, name, notes)
+		VALUES (?, ?, ?, ?)
+	`, meal.Id, meal.UserId, meal.Name, meal.Notes)
 
 	if err != nil {
 		log.Fatalf("Unable to seed meal: %v", err)
 	}
 
-	for _, ingredient := range ingredients {
+	mealId, _ := result.LastInsertId()
+
+	for _, ingredient := range meal.Ingredients {
 		_, err := conn.Exec(`
 			INSERT INTO meal_ingredients
 			(meal_id, name, quantity, unit)
 			VALUES (?, ?, ?, ?)
-		`, meal.Id, ingredient.Name, ingredient.Quantity, ingredient.Unit)
+		`, mealId, ingredient.Name, ingredient.Quantity, ingredient.Unit)
+
+		if err != nil {
+			log.Fatalf("Unable to seed meal meal=%+v: %v", meal, err)
+		}
+	}
+
+	for _, tag := range meal.Tags {
+		_, err := conn.Exec(`
+			INSERT INTO meal_tags
+			(meal_id, name)
+			VALUES (?, ?)
+		`, mealId, tag.Name)
 
 		if err != nil {
 			log.Fatalf("Unable to seed meal: %v", err)

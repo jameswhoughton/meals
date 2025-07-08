@@ -44,7 +44,7 @@
 - [x] Remove ingredients list/edit pages and handlers
 - [x] Remove the ingredients table
 - [x] Add name field to meal_ingredients table
-- [x] Update Find function in IR to search distinct ingredients in meal_ingredients
+- [x] UpdateFind function in IR to search distinct ingredients in meal_ingredients
 - [x] Update meal_repository to remove createIngredient
 - [x] Update meals.Service to remove the populateIngredientIds function
 - [x] Update meal form page to populate the name of an ingredient from the typeahead
@@ -59,7 +59,12 @@
 - [x] Create Dockerfile to build application
 - [x] Manually deploy to AWS
 - [x] Setup github actions for CI/CD
-- [ ] Create service for Planner
+- [x] Create service for Planner
+- [ ] Update planner contract to reflect changes to Get method
+- [ ] Update PlannerRepository implementations
+    - [ ] memory
+    - [ ] database
+- [ ] Rename files
 
 ## Bugs
 

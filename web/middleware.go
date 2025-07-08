@@ -6,10 +6,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/jameswhoughton/meals/internal/account"
+	"github.com/jameswhoughton/meals"
 )
 
-func NewIsAuthenticatedMiddleware(accountService account.Service, sessionService SessionService) middleware {
+func NewIsAuthenticatedMiddleware(userService meals.UserService, sessionService SessionService) middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -63,8 +63,8 @@ func NewIsAuthenticatedMiddleware(accountService account.Service, sessionService
 	}
 }
 
-func UserFromContext(ctx context.Context) *account.User {
-	user, ok := ctx.Value("user").(account.User)
+func UserFromContext(ctx context.Context) *meals.User {
+	user, ok := ctx.Value("user").(meals.User)
 
 	if !ok {
 		return nil

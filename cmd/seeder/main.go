@@ -28,9 +28,8 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/jameswhoughton/meals"
 	"github.com/jameswhoughton/meals/database"
-	"github.com/jameswhoughton/meals/internal/account"
-	"github.com/jameswhoughton/meals/internal/meals"
 	"github.com/joho/godotenv"
 )
 
@@ -172,11 +171,11 @@ func main() {
 
 	flag.Parse()
 
-	accountRepository := database.NewAccountRespository(conn)
+	userRepository := database.NewUserRespository(conn)
 	mealRepository := database.NewMealRepository(conn)
 
-	accountService := account.NewService(accountRepository)
-	mealService := meals.NewService(mealRepository)
+	userService := meals.NewUserService(userRepository)
+	mealService := meals.NewMealService(mealRepository)
 
 	maxMealsPerUser := 40
 	maxIngredientsPerMeal := 15
@@ -188,17 +187,17 @@ func main() {
 	for i := range *userCountPtr {
 		email := "user-" + strconv.Itoa(i) + "@example.com"
 
-		existingUser, _ := accountRepository.GetByEmail(context.Background(), email)
+		existingUser, _ := userRepository.GetByEmail(context.Background(), email)
 
 		if existingUser.Id > 0 {
 			log.Printf("Deleting user %s\n", email)
-			err := accountRepository.Delete(context.Background(), existingUser.Id)
+			err := userRepository.Delete(context.Background(), existingUser.Id)
 
 			if err != nil {
 				log.Fatalf("error deleting user: %v", err)
 			}
 		}
-		form := account.UserFormCreate{
+		form := meals.UserFormCreate{
 			Email:           email,
 			Password:        "password123",
 			PasswordConfirm: "password123",
@@ -206,7 +205,7 @@ func main() {
 		}
 
 		log.Printf("Creating user %s\n", email)
-		user, err := accountService.CreateUser(context.Background(), &form)
+		user, err := userService.CreateUser(context.Background(), &form)
 
 		if err != nil {
 			log.Fatalf("error seeding user: %v, %+v", err, form)

@@ -7,27 +7,26 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/jameswhoughton/meals/internal/account"
-	"github.com/jameswhoughton/meals/internal/meals"
-	"github.com/jameswhoughton/meals/internal/planner"
+	"github.com/jameswhoughton/meals"
 )
 
 func NewServer(
 	ctx context.Context,
 	port string,
 	logger *slog.Logger,
-	accountService *account.Service,
-	mealService *meals.Service,
+	accountService *meals.UserService,
+	mealService *meals.MealService,
 	sessionService *SessionService,
-	plannerService *planner.Service,
-	accountRepository account.Repository,
-	mealRepository meals.Repository,
+	plannerService *meals.PlannerService,
+	accountRepository meals.UserRepository,
+	mealRepository meals.MealRepository,
+	mealMetaDataRepository meals.MealMetaDataRepository,
 	sessionRepository SessionRepository,
-	plannerRepository planner.Repository,
+	plannerRepository meals.PlannerRepository,
 ) *http.Server {
 	mux := http.NewServeMux()
 
-	AddRoutes(mux, logger, *accountService, *mealService, *sessionService, *plannerService, accountRepository, mealRepository, sessionRepository, plannerRepository)
+	AddRoutes(mux, logger, *accountService, *mealService, *sessionService, *plannerService, accountRepository, mealRepository, mealMetaDataRepository, sessionRepository, plannerRepository)
 
 	return &http.Server{
 		Addr:              ":" + port,
