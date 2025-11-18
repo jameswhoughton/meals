@@ -16,8 +16,8 @@
                 class="grow border border-zinc-600 rounded p-3 flex flex-col justify-between w-48 min-h-48{{if .IsWeekend}} bg-zinc-700{{end}}{{if .IsToday}} ring ring-cyan-900{{end}}"
             >
                 <div class="">{{.Label}}</div>
-                {{if .Meal}}
-                <div>{{.Meal.Name}}</div>
+                {{range $meal := .Meals}}
+                <div>{{$meal.Name}}</div>
                 {{end}}
                 <a 
                     href="/planner/{{.Date}}" 

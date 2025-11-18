@@ -109,7 +109,7 @@ func GetPlannerHandler(logger *slog.Logger, templateFiles fs.FS, plannerService 
 	})
 }
 
-func GetEditDayHandler(logger *slog.Logger, templateFiles fs.FS, plannerRepo meals.PlannerRepository, mealRepo meals.MealRepository, mealMetaDataRepo meals.MealMetaDataRepository) http.Handler {
+func GetEditDayHandler(logger *slog.Logger, templateFiles fs.FS, plannerService meals.PlannerService, mealRepo meals.MealRepository, mealMetaDataRepo meals.MealMetaDataRepository) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		contains := func(tags []string, name string) bool {
 			return slices.Contains(tags, name)
@@ -150,12 +150,21 @@ func GetEditDayHandler(logger *slog.Logger, templateFiles fs.FS, plannerRepo mea
 
 		parsedDate, err := time.Parse("2006-01-02", r.PathValue("date"))
 
-		plannedMeals, _ := plannerRepo.GetMealIdsInRange(r.Context(), parsedDate, parsedDate, user.Id)
+		// New repo fuction to return MealIds for day
+		plannedMeals, _ := plannerService.GetMealIdsForDate(r.Context(), parsedDate, user.Id)
 
-		var meal meals.Meal
+		assignedMeals := make([]meals.Meal, len(plannedMeals))
 
-		if plannedMeals[int(parsedDate.Weekday())] > 0 {
-			meal, _ = mealRepo.Get(r.Context(), meal.Id)
+		// TODO Fetch all meals with a single query
+		for i, mealId := range plannedMeals {
+			meal, err := mealRepo.Get(r.Context(), mealId)
+
+			if err != nil {
+				// TODO Handle error
+				panic(err)
+			}
+
+			assignedMeals[i] = meal
 		}
 
 		// Parse any filter params
@@ -176,24 +185,42 @@ func GetEditDayHandler(logger *slog.Logger, templateFiles fs.FS, plannerRepo mea
 
 		tags, err := mealMetaDataRepo.TagNamesForUser(r.Context(), user.Id)
 
+		type filteredResult struct {
+			Id       int
+			Name     string
+			Selected bool
+			Tags     []meals.Tag
+		}
+
+		results := make([]filteredResult, len(filteredMeals))
+
+		for i, meal := range filteredMeals {
+			results[i] = filteredResult{
+				Id:       meal.Id,
+				Name:     meal.Name,
+				Tags:     meal.Tags,
+				Selected: slices.Contains(plannedMeals, meal.Id),
+			}
+		}
+
 		type templateData struct {
-			Title        string
-			Date         string
-			Meal         meals.Meal
-			Meals        []meals.Meal
-			Tags         []string
-			FilterSearch string
-			FilterTags   []string
+			Title         string
+			Date          string
+			AssignedMeals []meals.Meal
+			FilteredMeals []filteredResult
+			Tags          []string
+			FilterSearch  string
+			FilterTags    []string
 		}
 
 		tmpl.ExecuteTemplate(w, "layout", templateData{
-			Title:        fmt.Sprintf("%s (%s)", parsedDate.Weekday().String(), parsedDate.Format("02/01")),
-			Date:         parsedDate.Format("2006-01-02"),
-			Meal:         meal,
-			Meals:        filteredMeals,
-			Tags:         tags,
-			FilterSearch: filterSearch,
-			FilterTags:   filterTags,
+			Title:         fmt.Sprintf("%s (%s)", parsedDate.Weekday().String(), parsedDate.Format("02/01")),
+			Date:          parsedDate.Format("2006-01-02"),
+			AssignedMeals: assignedMeals,
+			FilteredMeals: results,
+			Tags:          tags,
+			FilterSearch:  filterSearch,
+			FilterTags:    filterTags,
 		})
 	})
 }
@@ -222,12 +249,13 @@ func PostEditDayHandler(logger *slog.Logger, plannerRepo meals.PlannerRepository
 			return
 		}
 
-		mealId := r.FormValue("meal_id")
-		clearMeal := r.FormValue("action") == "clear"
+		r.ParseForm()
+
+		mealIds := r.Form["meal_id"]
 
 		plannerRepo.Clear(r.Context(), parsedDate, user.Id)
 
-		if !clearMeal && mealId != "" {
+		for _, mealId := range mealIds {
 			mealId, err := strconv.Atoi(mealId)
 
 			if err != nil {

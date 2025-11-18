@@ -2,6 +2,7 @@ package contracts
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -14,12 +15,17 @@ type PlannerRepository struct {
 
 func (i PlannerRepository) Test(t *testing.T) {
 
-	t.Run("Can add a meal to a date, fetch it and remove it", func(t *testing.T) {
+	t.Run("Can add meals to a date, fetch them and remove them", func(t *testing.T) {
 		testData := []meals.Meal{
 			{
 				Id:     1,
 				UserId: 1,
 				Name:   "Chicken Curry",
+			},
+			{
+				Id:     3,
+				UserId: 1,
+				Name:   "Vegetable Curry",
 			},
 			{
 				Id:     2,
@@ -40,17 +46,36 @@ func (i PlannerRepository) Test(t *testing.T) {
 			t.Errorf("Unexpected error adding meal to day: %v", err)
 		}
 
-		mealFromDay, err := repo.GetMealIdsInRange(ctx, day, day, 1)
+		err = repo.Add(ctx, day, 3)
+
+		if err != nil {
+			t.Errorf("Unexpected error adding meal to day: %v", err)
+		}
+
+		// Add a meal for another user to the same day
+		err = repo.Add(ctx, day, 2)
+
+		if err != nil {
+			t.Errorf("Unexpected error adding meal to day: %v", err)
+		}
+
+		days, err := repo.GetMealIdsInRange(ctx, day, day, 1)
 
 		if err != nil {
 			t.Errorf("Unexpected error fetching a meal for a day: %v", err)
 		}
+		fmt.Println(days)
 
-		// Add a second meal for another user to the same day
-		repo.Add(ctx, day, 2)
+		if len(days[meals.GetDateKey(day)]) != 2 {
+			t.Errorf("expected 2 meals, got %d", len(days[meals.GetDateKey(day)]))
+		}
 
-		if testData[0].Id != mealFromDay[int(day.Weekday())] {
-			t.Errorf("Fetched meal does not match the expected meal\n Expected:%d\nReceived:%d", testData[0].Id, mealFromDay[int(day.Weekday())])
+		if testData[0].Id != days[meals.GetDateKey(day)][0] {
+			t.Errorf("Fetched meal does not match the expected meal\n Expected:%d\nReceived:%d", testData[0].Id, days[meals.GetDateKey(day)])
+		}
+
+		if testData[1].Id != days[meals.GetDateKey(day)][1] {
+			t.Errorf("Fetched meal does not match the expected meal\n Expected:%d\nReceived:%d", testData[0].Id, days[meals.GetDateKey(day)])
 		}
 
 		err = repo.Clear(ctx, day, 1)
@@ -65,14 +90,14 @@ func (i PlannerRepository) Test(t *testing.T) {
 			t.Errorf("unexpected error: %v", err)
 		}
 
-		if check[int(day.Weekday())] != 0 {
-			t.Errorf("Expected no meal, found: %d", check[int(day.Weekday())])
+		if len(check[meals.GetDateKey(day)]) != 0 {
+			t.Errorf("Expected no meals, found: %d", len(check[meals.GetDateKey(day)]))
 		}
 
 		check, _ = repo.GetMealIdsInRange(ctx, day, day, 2)
 
 		// Assert that the second user's meal has not been deleted
-		if testData[1].Id != check[int(day.Weekday())] {
+		if testData[2].Id != check[meals.GetDateKey(day)][0] {
 			t.Errorf("Fetched meal does not match the expected meal\n Expected:%#v\nReceived:%#v", testData[1], check)
 		}
 	})
@@ -105,28 +130,28 @@ func (i PlannerRepository) Test(t *testing.T) {
 			t.Errorf("Unexpected error fetching a meal for a day: %v", err)
 		}
 
-		if fetchedMeal[int(day.Weekday())] != 23 {
-			t.Errorf("Expected meal %d, found %d", 23, fetchedMeal[int(day.Weekday())])
+		if fetchedMeal[meals.GetDateKey(day)][0] != 23 {
+			t.Errorf("Expected meal %d, found %d", 23, fetchedMeal[meals.GetDateKey(day)])
 		}
 
 	})
 
-	t.Run("Returns 0 id if no meal is set", func(t *testing.T) {
+	t.Run("Returns empty slice if no meal is set", func(t *testing.T) {
 		repo, closeDown := i.Repo(nil)
 		defer closeDown()
 
 		startDate := time.Now()
 		endDate := startDate.AddDate(0, 0, 7)
 
-		meals, err := repo.GetMealIdsInRange(context.Background(), startDate, endDate, 0)
+		days, err := repo.GetMealIdsInRange(context.Background(), startDate, endDate, 0)
 
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
 
-		for _, id := range meals {
-			if id != 0 {
-				t.Errorf("expected id=0 got id=%d", id)
+		for _, meals := range days {
+			if len(meals) != 0 {
+				t.Errorf("expected no meals, got %d", meals)
 			}
 		}
 	})

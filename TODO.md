@@ -33,7 +33,7 @@
 - [x] Add required labels
 - [x] Ensure ingredients are unique per user
 - [x] Ensure tags are unique per user
-- [ ] Method to seed the DB for dev/testing
+- [X] Method to seed the DB for dev/testing
 - [x] Replace old alerts with alert-message component
 - [x] Move auth handlers to web
 - [ ] Add tests for account handlers
@@ -65,6 +65,9 @@
     - [x] memory
     - [x] database
 - [x] Rename files
+- [ ] Update planner index styling to support multiple meals
+- [X] Update planner map to use date rather than day of the week
+- [ ] Fix day edit page
 
 ## Bugs
 
@@ -79,3 +82,4 @@
 - [ ] Meal import/export
 - [ ] Add default filters for days
 - [ ] User can delete their account and data
+- [ ] User can configure the number of days to see in the planner

@@ -10,7 +10,7 @@ import (
 
 func TestMemoryPlannerRepository(t *testing.T) {
 	init := func(testData []meals.Meal) (meals.PlannerRepository, func()) {
-		store := make(map[string]int)
+		store := make(map[string][]int)
 
 		repo := &memory.PlannerRepository{
 			Planner: store,

@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
+
+	"github.com/jameswhoughton/meals"
 )
 
 func NewPlannerRepository(db *sql.DB) *PlannerRepository {
@@ -35,17 +37,17 @@ func (pr *PlannerRepository) Add(ctx context.Context, date time.Time, mealId int
 	return nil
 }
 
-func (pr *PlannerRepository) GetMealIdsInRange(ctx context.Context, startDate, endDate time.Time, userId int) (map[int]int, error) {
+func (pr *PlannerRepository) GetMealIdsInRange(ctx context.Context, startDate, endDate time.Time, userId int) (map[meals.DateKey][]int, error) {
 	startDate = normaliseDate(startDate)
 	endDate = normaliseDate(endDate)
 	diff := int(startDate.Sub(endDate).Hours() / 24)
-	mealIds := make(map[int]int, diff)
+	mealIds := make(map[meals.DateKey][]int, diff)
 
 	// Populate map
 	date := startDate
 
 	for date.Before(endDate.AddDate(0, 0, 1)) {
-		mealIds[int(date.Weekday())] = 0
+		mealIds[meals.GetDateKey(date)] = []int{}
 
 		date = date.AddDate(0, 0, 1)
 	}
@@ -79,7 +81,7 @@ func (pr *PlannerRepository) GetMealIdsInRange(ctx context.Context, startDate, e
 			return mealIds, fmt.Errorf("PlannerRepository.GetMealIdsInRange: Unable to scan row: %v", err)
 		}
 
-		mealIds[int(date.Weekday())] = mealId
+		mealIds[meals.GetDateKey(date)] = append(mealIds[meals.GetDateKey(date)], mealId)
 	}
 
 	return mealIds, nil

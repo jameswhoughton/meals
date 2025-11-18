@@ -2,7 +2,6 @@ package memory
 
 import (
 	"context"
-	"fmt"
 	"maps"
 	"slices"
 	"strconv"
@@ -12,7 +11,7 @@ import (
 )
 
 func NewPlannerRepository() *PlannerRepository {
-	store := make(map[string]int)
+	store := make(map[string][]int)
 
 	return &PlannerRepository{
 		Planner: store,
@@ -21,7 +20,11 @@ func NewPlannerRepository() *PlannerRepository {
 
 type PlannerRepository struct {
 	Meals   []meals.Meal
-	Planner map[string]int
+	Planner map[string][]int
+}
+
+func plannerKey(d time.Time, userId int) string {
+	return string(meals.GetDateKey(d)) + "|" + strconv.Itoa(userId)
 }
 
 func (pr *PlannerRepository) findMeal(_ context.Context, id int) (meals.Meal, error) {
@@ -48,25 +51,28 @@ func (pr *PlannerRepository) Add(ctx context.Context, date time.Time, mealId int
 		return err
 	}
 
-	key := date.Format("2006-01-02") + "|" + strconv.Itoa(meal.UserId)
+	key := plannerKey(date, meal.UserId)
 
-	pr.Planner[key] = meal.Id
+	if _, ok := pr.Planner[key]; !ok {
+		pr.Planner[key] = []int{}
+	}
+
+	pr.Planner[key] = append(pr.Planner[key], meal.Id)
 
 	return nil
 }
 
-func (pr *PlannerRepository) GetMealIdsInRange(ctx context.Context, startDate, endDate time.Time, userId int) (map[int]int, error) {
+func (pr *PlannerRepository) GetMealIdsInRange(ctx context.Context, startDate, endDate time.Time, userId int) (map[meals.DateKey][]int, error) {
 	date := startDate
 	diff := int(endDate.AddDate(0, 0, 1).Sub(startDate).Hours() / 24)
-	mealIds := make(map[int]int, diff)
+	mealIds := make(map[meals.DateKey][]int, diff)
 
 	for date.Before(endDate.AddDate(0, 0, 1)) {
-		key := date.Format("2006-01-02") + "|" + strconv.Itoa(userId)
-		fmt.Println(key)
-		mealId, ok := pr.Planner[key]
+		internalKey := plannerKey(date, userId)
+		plannedIds, ok := pr.Planner[internalKey]
 
-		weekDay := int(date.Weekday())
-		mealIds[weekDay] = 0
+		dateKey := meals.GetDateKey(date)
+		mealIds[dateKey] = []int{}
 
 		date = date.AddDate(0, 0, 1)
 
@@ -74,16 +80,24 @@ func (pr *PlannerRepository) GetMealIdsInRange(ctx context.Context, startDate, e
 			continue
 		}
 
-		mealIds[weekDay] = mealId
+		mealIds[dateKey] = plannedIds
 	}
-
-	fmt.Println("MEALIDS", mealIds, diff, startDate, endDate)
 
 	return mealIds, nil
 }
 
+func (pr *PlannerRepository) GetMealIdsForDate(ctx context.Context, date time.Time, userId int) ([]int, error) {
+	days, err := pr.GetMealIdsInRange(ctx, date, date, userId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return days[meals.GetDateKey(date)], nil
+}
+
 func (pr *PlannerRepository) Clear(ctx context.Context, date time.Time, userId int) error {
-	key := date.Format("2006-01-02") + "|" + strconv.Itoa(userId)
+	key := plannerKey(date, userId)
 
 	delete(pr.Planner, key)
 
@@ -91,45 +105,47 @@ func (pr *PlannerRepository) Clear(ctx context.Context, date time.Time, userId i
 }
 
 func (pr *PlannerRepository) GetIngredientsInRange(ctx context.Context, startDate, endDate time.Time, userId int) ([]meals.IngredientTotal, error) {
-	key := startDate.Format("2006-01-02") + "|" + strconv.Itoa(userId)
+	key := plannerKey(startDate, userId)
 
 	totals := make(map[string]meals.IngredientTotal)
 
 	for startDate.Before(endDate.AddDate(0, 0, 1)) {
-		mealId, ok := pr.Planner[key]
+		plannedMealIds, ok := pr.Planner[key]
 		startDate = startDate.AddDate(0, 0, 1)
-		key = startDate.Format("2006-01-02") + "|" + strconv.Itoa(userId)
+		key = plannerKey(startDate, userId)
 
 		if !ok {
 			continue
 		}
 
-		meal, err := pr.findMeal(ctx, mealId)
+		for _, mealId := range plannedMealIds {
+			meal, err := pr.findMeal(ctx, mealId)
 
-		if err != nil {
-			return nil, err
-		}
-
-		ingredients := meal.Ingredients
-
-		for _, ingredient := range ingredients {
-			totalsKey := ingredient.Name + "|" + ingredient.Unit
-
-			total, ok := totals[totalsKey]
-
-			if !ok {
-				totals[totalsKey] = meals.IngredientTotal{
-					Name:     ingredient.Name,
-					Quantity: ingredient.Quantity,
-					Unit:     ingredient.Unit,
-				}
-
-				continue
+			if err != nil {
+				return nil, err
 			}
 
-			total.Quantity += ingredient.Quantity
+			ingredients := meal.Ingredients
 
-			totals[totalsKey] = total
+			for _, ingredient := range ingredients {
+				totalsKey := ingredient.Name + "|" + ingredient.Unit
+
+				total, ok := totals[totalsKey]
+
+				if !ok {
+					totals[totalsKey] = meals.IngredientTotal{
+						Name:     ingredient.Name,
+						Quantity: ingredient.Quantity,
+						Unit:     ingredient.Unit,
+					}
+
+					continue
+				}
+
+				total.Quantity += ingredient.Quantity
+
+				totals[totalsKey] = total
+			}
 		}
 
 	}

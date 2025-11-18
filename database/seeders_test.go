@@ -62,7 +62,7 @@ func seedMeal(conn *sql.DB, meal meals.Meal) {
 		`, mealId, tag.Name)
 
 		if err != nil {
-			log.Fatalf("Unable to seed meal: %v", err)
+			log.Fatalf("Unable to seed tag: %v", err)
 		}
 	}
 }
